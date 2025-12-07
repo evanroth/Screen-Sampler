@@ -325,6 +325,8 @@ function Scene({ videoElement, regions, settings, audioLevel, defaultMode, onUpd
         rotateSpeed={0.5}
         zoomSpeed={0.5}
         enablePan={false}
+        autoRotate={settings.autoRotateCamera}
+        autoRotateSpeed={settings.autoRotateCameraSpeed}
       />
     </>
   );
