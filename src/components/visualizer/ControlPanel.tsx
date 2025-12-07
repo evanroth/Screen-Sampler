@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw } from 'lucide-react';
+import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -179,17 +179,54 @@ export function ControlPanel({
             <h3 className="text-sm font-medium text-foreground">Settings</h3>
 
             <div className="space-y-3">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <Label className="text-muted-foreground">Panel Scale</Label>
-                <span className="text-sm text-foreground">{(settings.panelScale * 100).toFixed(0)}%</span>
+                <button
+                  onClick={() => onUpdateSetting('panelScaleLinked', !settings.panelScaleLinked)}
+                  className={`p-1 rounded transition-colors ${settings.panelScaleLinked ? 'text-primary' : 'text-muted-foreground'}`}
+                  title={settings.panelScaleLinked ? 'Linked (click to unlink)' : 'Unlinked (click to link)'}
+                >
+                  {settings.panelScaleLinked ? <Link className="w-4 h-4" /> : <Unlink className="w-4 h-4" />}
+                </button>
               </div>
-              <Slider
-                value={[settings.panelScale]}
-                onValueChange={([v]) => onUpdateSetting('panelScale', v)}
-                min={0.1}
-                max={1.5}
-                step={0.05}
-              />
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-xs text-muted-foreground">Width</span>
+                  <span className="text-xs text-foreground">{(settings.panelScaleX * 100).toFixed(0)}%</span>
+                </div>
+                <Slider
+                  value={[settings.panelScaleX]}
+                  onValueChange={([v]) => {
+                    onUpdateSetting('panelScaleX', v);
+                    if (settings.panelScaleLinked) {
+                      onUpdateSetting('panelScaleY', v);
+                    }
+                  }}
+                  min={0.1}
+                  max={2}
+                  step={0.05}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-xs text-muted-foreground">Height</span>
+                  <span className="text-xs text-foreground">{(settings.panelScaleY * 100).toFixed(0)}%</span>
+                </div>
+                <Slider
+                  value={[settings.panelScaleY]}
+                  onValueChange={([v]) => {
+                    onUpdateSetting('panelScaleY', v);
+                    if (settings.panelScaleLinked) {
+                      onUpdateSetting('panelScaleX', v);
+                    }
+                  }}
+                  min={0.1}
+                  max={2}
+                  step={0.05}
+                />
+              </div>
             </div>
 
             <div className="space-y-3">

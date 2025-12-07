@@ -24,7 +24,9 @@ export const ANIMATION_MODES: AnimationMode[] = [
 ];
 
 export interface VisualizerSettings {
-  panelScale: number;
+  panelScaleX: number;
+  panelScaleY: number;
+  panelScaleLinked: boolean;
   movementSpeed: number;
   bounceStrength: number;
   opacityVariation: number;
@@ -41,7 +43,9 @@ export interface VisualizerSettings {
 }
 
 const defaultSettings: VisualizerSettings = {
-  panelScale: 1.15,
+  panelScaleX: 1.15,
+  panelScaleY: 1.15,
+  panelScaleLinked: true,
   movementSpeed: 0.8,
   bounceStrength: 0.11,
   opacityVariation: 0.7,
