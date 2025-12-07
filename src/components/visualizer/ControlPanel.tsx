@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode, AnimationMode3D, VisualizerMode } from '@/hooks/useVisualizerSettings';
+import { CaptureRegion } from '@/hooks/useScreenCapture';
 import { cn } from '@/lib/utils';
 
 interface ControlPanelProps {
@@ -29,6 +30,8 @@ interface ControlPanelProps {
   onResetSettings: () => void;
   hasRegions: boolean;
   regionCount: number;
+  regions?: CaptureRegion[];
+  onUpdateRegion?: (regionId: string, updates: Partial<CaptureRegion>) => void;
 }
 
 export function ControlPanel({
@@ -50,6 +53,8 @@ export function ControlPanel({
   onResetSettings,
   hasRegions,
   regionCount,
+  regions = [],
+  onUpdateRegion,
 }: ControlPanelProps) {
   return (
     <>
@@ -452,7 +457,7 @@ export function ControlPanel({
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">3D Animation Mode</Label>
+                  <Label className="text-muted-foreground">Default 3D Animation</Label>
                   <Select
                     value={settings.animationMode3D}
                     onValueChange={(v) => onUpdateSetting('animationMode3D', v as AnimationMode3D)}
@@ -492,8 +497,65 @@ export function ControlPanel({
                   </div>
                 )}
 
+                {/* Per-Region 3D Animation Controls */}
+                {regions.length > 0 && (
+                  <div className="space-y-3">
+                    <Separator className="bg-border" />
+                    <Label className="text-muted-foreground font-medium">Per-Region 3D Modes</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Override the default mode for each region, or leave as "Default" to use the global setting.
+                    </p>
+                    {regions.map((region, index) => (
+                      <div key={region.id} className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Region {index + 1}</Label>
+                        <Select
+                          value={region.animationMode3D || 'default'}
+                          onValueChange={(v) => {
+                            if (onUpdateRegion) {
+                              onUpdateRegion(region.id, { 
+                                animationMode3D: v === 'default' ? undefined : v as AnimationMode3D 
+                              });
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="bg-secondary border-border">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="default">Default (Use Global)</SelectItem>
+                            <SelectItem value="floating3D">Floating Panels</SelectItem>
+                            <SelectItem value="orbit3D">Orbit</SelectItem>
+                            <SelectItem value="carousel3D">Carousel</SelectItem>
+                            <SelectItem value="helix3D">Helix</SelectItem>
+                            <SelectItem value="explode3D">Explode</SelectItem>
+                            <SelectItem value="wave3D">Wave</SelectItem>
+                            <SelectItem value="sphere3D">Sphere</SelectItem>
+                            <SelectItem value="cube3D">Cube</SelectItem>
+                            <SelectItem value="cylinder3D">Cylinder</SelectItem>
+                            <SelectItem value="torus3D">Torus</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {region.position3D && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs h-7"
+                            onClick={() => {
+                              if (onUpdateRegion) {
+                                onUpdateRegion(region.id, { position3D: undefined });
+                              }
+                            }}
+                          >
+                            Reset Position
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <p className="text-xs text-muted-foreground">
-                  Tip: Click and drag to rotate the 3D view. Scroll to zoom.
+                  Tip: Click and drag to rotate view. Shift+drag shapes to reposition.
                 </p>
               </>
             )}
