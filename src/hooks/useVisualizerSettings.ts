@@ -65,6 +65,8 @@ export interface VisualizerSettings {
   randomModeInterval: number;
   blackAsTransparent: boolean;
   blackThreshold: number;
+  autoRotateCamera: boolean;
+  autoRotateCameraSpeed: number;
 }
 
 const defaultSettings: VisualizerSettings = {
@@ -86,6 +88,8 @@ const defaultSettings: VisualizerSettings = {
   randomModeInterval: 10,
   blackAsTransparent: false,
   blackThreshold: 30,
+  autoRotateCamera: false,
+  autoRotateCameraSpeed: 1,
 };
 
 export function useVisualizerSettings() {
