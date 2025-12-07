@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { VisualizerSettings, BackgroundStyle, TileEffect } from '@/hooks/useVisualizerSettings';
+import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode } from '@/hooks/useVisualizerSettings';
 import { cn } from '@/lib/utils';
 
 interface ControlPanelProps {
@@ -307,6 +307,33 @@ export function ControlPanel({
                   <SelectItem value="opacity">Varied Opacity</SelectItem>
                   <SelectItem value="blur">Blur Depth</SelectItem>
                   <SelectItem value="all">All Effects</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Animation Mode</Label>
+              <Select
+                value={settings.animationMode}
+                onValueChange={(v) => onUpdateSetting('animationMode', v as AnimationMode)}
+              >
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bounce">Bounce</SelectItem>
+                  <SelectItem value="verticalDrop">Vertical Drop</SelectItem>
+                  <SelectItem value="horizontalSweep">Horizontal Sweep</SelectItem>
+                  <SelectItem value="clockwise">Rotate Clockwise</SelectItem>
+                  <SelectItem value="counterClockwise">Rotate Counter-Clockwise</SelectItem>
+                  <SelectItem value="clockHand">Clock Hand</SelectItem>
+                  <SelectItem value="pendulum">Pendulum</SelectItem>
+                  <SelectItem value="waterfall">Waterfall</SelectItem>
+                  <SelectItem value="spiral">Spiral</SelectItem>
+                  <SelectItem value="orbit">Orbit</SelectItem>
+                  <SelectItem value="zigzag">Zigzag</SelectItem>
+                  <SelectItem value="wave">Wave</SelectItem>
+                  <SelectItem value="float">Float</SelectItem>
                 </SelectContent>
               </Select>
             </div>
