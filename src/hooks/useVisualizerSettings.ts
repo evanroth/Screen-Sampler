@@ -57,7 +57,7 @@ const defaultSettings: VisualizerSettings = {
   enableTrails: false,
   animationMode: 'bounce',
   randomModeInterval: 10,
-  blackAsTransparent: true,
+  blackAsTransparent: false,
   blackThreshold: 30,
 };
 
