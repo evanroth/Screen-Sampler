@@ -97,10 +97,10 @@ export function VisualizerCanvas({
       return;
     }
 
-    // Trail effect: instead of clearing, draw semi-transparent background
-    const trailAlpha = 1 - settings.trailAmount;
+    // Determine if we should use trails
+    const useTrails = settings.enableTrails && settings.trailAmount > 0;
     
-    if (trailAlpha >= 1) {
+    if (!useTrails) {
       // No trail - clear fully
       if (settings.backgroundStyle === 'black') {
         ctx.fillStyle = '#000000';
@@ -133,7 +133,8 @@ export function VisualizerCanvas({
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
     } else {
-      // Trail effect - fade instead of clear
+      // Trail effect - fade instead of clear (no transparency processing on trails)
+      const trailAlpha = 1 - settings.trailAmount;
       ctx.fillStyle = `rgba(0, 0, 0, ${trailAlpha * 0.15})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }

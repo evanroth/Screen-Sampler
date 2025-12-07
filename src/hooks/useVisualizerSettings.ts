@@ -27,6 +27,7 @@ export interface VisualizerSettings {
   tileEffect: TileEffect;
   enableRotation: boolean;
   trailAmount: number;
+  enableTrails: boolean;
   animationMode: AnimationMode;
   blackAsTransparent: boolean;
   blackThreshold: number;
@@ -41,7 +42,8 @@ const defaultSettings: VisualizerSettings = {
   backgroundStyle: 'black',
   tileEffect: 'none',
   enableRotation: true,
-  trailAmount: 1.0,
+  trailAmount: 0.85,
+  enableTrails: false,
   animationMode: 'bounce',
   blackAsTransparent: true,
   blackThreshold: 30,
