@@ -5,6 +5,7 @@ import { useVisualizerSettings } from '@/hooks/useVisualizerSettings';
 import { Onboarding } from '@/components/visualizer/Onboarding';
 import { ScreenPreview } from '@/components/visualizer/ScreenPreview';
 import { VisualizerCanvas } from '@/components/visualizer/VisualizerCanvas';
+import { VisualizerCanvas3D } from '@/components/visualizer/VisualizerCanvas3D';
 import { ControlPanel } from '@/components/visualizer/ControlPanel';
 import { useToast } from '@/hooks/use-toast';
 
@@ -74,13 +75,23 @@ export default function Index() {
         />
       )}
       {appState === 'visualizing' && regions.length > 0 && (
-        <VisualizerCanvas 
-          videoElement={videoRef.current} 
-          regions={regions} 
-          settings={settings} 
-          audioLevel={audioAnalyzer.audioLevel} 
-          isActive={true} 
-        />
+        settings.visualizerMode === '3d' ? (
+          <VisualizerCanvas3D 
+            videoElement={videoRef.current} 
+            regions={regions} 
+            settings={settings} 
+            audioLevel={audioAnalyzer.audioLevel} 
+            isActive={true} 
+          />
+        ) : (
+          <VisualizerCanvas 
+            videoElement={videoRef.current} 
+            regions={regions} 
+            settings={settings} 
+            audioLevel={audioAnalyzer.audioLevel} 
+            isActive={true} 
+          />
+        )
       )}
       {(appState === 'ready' || appState === 'visualizing') && (
         <ControlPanel 
