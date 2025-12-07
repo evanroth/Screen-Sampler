@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { CaptureRegion } from '@/hooks/useScreenCapture';
-import { VisualizerSettings } from '@/hooks/useVisualizerSettings';
+import { VisualizerSettings, AnimationMode, ANIMATION_MODES } from '@/hooks/useVisualizerSettings';
 import { PanelState, createPanel, updatePanel } from './Panel';
 
 interface VisualizerCanvasProps {
@@ -24,6 +24,8 @@ export function VisualizerCanvas({
   const lastTimeRef = useRef<number>(0);
   const animationRef = useRef<number | null>(null);
   const initializedRef = useRef(false);
+  const currentRandomModeRef = useRef<AnimationMode>(ANIMATION_MODES[0]);
+  const lastModeChangeRef = useRef<number>(0);
 
   // Initialize panels when regions change
   useEffect(() => {
@@ -205,6 +207,18 @@ export function VisualizerCanvas({
       const finalWidth = baseWidth * audioScale;
       const finalHeight = baseHeight * audioScale;
 
+      // Determine actual animation mode (handle random)
+      let activeMode: AnimationMode = settings.animationMode;
+      if (settings.animationMode === 'random') {
+        const intervalMs = settings.randomModeInterval * 1000;
+        if (timestamp - lastModeChangeRef.current >= intervalMs) {
+          const randomIndex = Math.floor(Math.random() * ANIMATION_MODES.length);
+          currentRandomModeRef.current = ANIMATION_MODES[randomIndex];
+          lastModeChangeRef.current = timestamp;
+        }
+        activeMode = currentRandomModeRef.current;
+      }
+
       // Update panel position
       const updated = updatePanel(
         panel,
@@ -214,7 +228,7 @@ export function VisualizerCanvas({
         canvas.height,
         settings.movementSpeed,
         deltaTime,
-        settings.animationMode,
+        activeMode,
         timestamp
       );
 
