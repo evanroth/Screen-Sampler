@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 
 export type BackgroundStyle = 'black' | 'blurred' | 'gradient';
 export type TileEffect = 'none' | 'glow' | 'opacity' | 'blur' | 'all';
+
+// 2D Animation modes
 export type AnimationMode = 
   | 'bounce'
   | 'verticalDrop'
@@ -18,12 +20,34 @@ export type AnimationMode =
   | 'float'
   | 'random';
 
+// 3D Animation modes
+export type AnimationMode3D = 
+  | 'floating3D'
+  | 'orbit3D'
+  | 'carousel3D'
+  | 'helix3D'
+  | 'explode3D'
+  | 'wave3D'
+  | 'sphere3D'
+  | 'cube3D'
+  | 'cylinder3D'
+  | 'torus3D'
+  | 'random3D';
+
 export const ANIMATION_MODES: AnimationMode[] = [
   'bounce', 'verticalDrop', 'horizontalSweep', 'clockwise', 'counterClockwise',
   'clockHand', 'pendulum', 'waterfall', 'spiral', 'orbit', 'zigzag', 'wave', 'float'
 ];
 
+export const ANIMATION_MODES_3D: AnimationMode3D[] = [
+  'floating3D', 'orbit3D', 'carousel3D', 'helix3D', 'explode3D', 'wave3D',
+  'sphere3D', 'cube3D', 'cylinder3D', 'torus3D'
+];
+
+export type VisualizerMode = '2d' | '3d';
+
 export interface VisualizerSettings {
+  visualizerMode: VisualizerMode;
   panelScaleX: number;
   panelScaleY: number;
   panelScaleLinked: boolean;
@@ -37,12 +61,14 @@ export interface VisualizerSettings {
   trailAmount: number;
   enableTrails: boolean;
   animationMode: AnimationMode;
+  animationMode3D: AnimationMode3D;
   randomModeInterval: number;
   blackAsTransparent: boolean;
   blackThreshold: number;
 }
 
 const defaultSettings: VisualizerSettings = {
+  visualizerMode: '2d',
   panelScaleX: 1.15,
   panelScaleY: 1.15,
   panelScaleLinked: true,
@@ -56,6 +82,7 @@ const defaultSettings: VisualizerSettings = {
   trailAmount: 0.85,
   enableTrails: false,
   animationMode: 'bounce',
+  animationMode3D: 'floating3D',
   randomModeInterval: 10,
   blackAsTransparent: false,
   blackThreshold: 30,

@@ -1,12 +1,13 @@
 import React from 'react';
-import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink } from 'lucide-react';
+import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode } from '@/hooks/useVisualizerSettings';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode, AnimationMode3D, VisualizerMode } from '@/hooks/useVisualizerSettings';
 import { cn } from '@/lib/utils';
 
 interface ControlPanelProps {
@@ -383,47 +384,118 @@ export function ControlPanel({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Animation Mode</Label>
-              <Select
-                value={settings.animationMode}
-                onValueChange={(v) => onUpdateSetting('animationMode', v as AnimationMode)}
+              <Label className="text-muted-foreground">Visualizer Mode</Label>
+              <Tabs 
+                value={settings.visualizerMode} 
+                onValueChange={(v) => onUpdateSetting('visualizerMode', v as VisualizerMode)}
+                className="w-full"
               >
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="random">Random</SelectItem>
-                  <SelectItem value="bounce">Bounce</SelectItem>
-                  <SelectItem value="verticalDrop">Vertical Drop</SelectItem>
-                  <SelectItem value="horizontalSweep">Horizontal Sweep</SelectItem>
-                  <SelectItem value="clockwise">Rotate Clockwise</SelectItem>
-                  <SelectItem value="counterClockwise">Rotate Counter-Clockwise</SelectItem>
-                  <SelectItem value="clockHand">Clock Hand</SelectItem>
-                  <SelectItem value="pendulum">Pendulum</SelectItem>
-                  <SelectItem value="waterfall">Waterfall</SelectItem>
-                  <SelectItem value="spiral">Spiral</SelectItem>
-                  <SelectItem value="orbit">Orbit</SelectItem>
-                  <SelectItem value="zigzag">Zigzag</SelectItem>
-                  <SelectItem value="wave">Wave</SelectItem>
-                  <SelectItem value="float">Float</SelectItem>
-                </SelectContent>
-              </Select>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="2d" className="gap-2">
+                    <Layers className="w-4 h-4" />
+                    2D
+                  </TabsTrigger>
+                  <TabsTrigger value="3d" className="gap-2">
+                    <Box className="w-4 h-4" />
+                    3D
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
-            {settings.animationMode === 'random' && (
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <Label className="text-muted-foreground">Change Interval</Label>
-                  <span className="text-sm text-foreground">{settings.randomModeInterval}s</span>
+            {settings.visualizerMode === '2d' ? (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Animation Mode</Label>
+                  <Select
+                    value={settings.animationMode}
+                    onValueChange={(v) => onUpdateSetting('animationMode', v as AnimationMode)}
+                  >
+                    <SelectTrigger className="bg-secondary border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="random">Random</SelectItem>
+                      <SelectItem value="bounce">Bounce</SelectItem>
+                      <SelectItem value="verticalDrop">Vertical Drop</SelectItem>
+                      <SelectItem value="horizontalSweep">Horizontal Sweep</SelectItem>
+                      <SelectItem value="clockwise">Rotate Clockwise</SelectItem>
+                      <SelectItem value="counterClockwise">Rotate Counter-Clockwise</SelectItem>
+                      <SelectItem value="clockHand">Clock Hand</SelectItem>
+                      <SelectItem value="pendulum">Pendulum</SelectItem>
+                      <SelectItem value="waterfall">Waterfall</SelectItem>
+                      <SelectItem value="spiral">Spiral</SelectItem>
+                      <SelectItem value="orbit">Orbit</SelectItem>
+                      <SelectItem value="zigzag">Zigzag</SelectItem>
+                      <SelectItem value="wave">Wave</SelectItem>
+                      <SelectItem value="float">Float</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Slider
-                  value={[settings.randomModeInterval]}
-                  onValueChange={([v]) => onUpdateSetting('randomModeInterval', v)}
-                  min={2}
-                  max={90}
-                  step={1}
-                />
-              </div>
+
+                {settings.animationMode === 'random' && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <Label className="text-muted-foreground">Change Interval</Label>
+                      <span className="text-sm text-foreground">{settings.randomModeInterval}s</span>
+                    </div>
+                    <Slider
+                      value={[settings.randomModeInterval]}
+                      onValueChange={([v]) => onUpdateSetting('randomModeInterval', v)}
+                      min={2}
+                      max={90}
+                      step={1}
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">3D Animation Mode</Label>
+                  <Select
+                    value={settings.animationMode3D}
+                    onValueChange={(v) => onUpdateSetting('animationMode3D', v as AnimationMode3D)}
+                  >
+                    <SelectTrigger className="bg-secondary border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="random3D">Random</SelectItem>
+                      <SelectItem value="floating3D">Floating Panels</SelectItem>
+                      <SelectItem value="orbit3D">Orbit</SelectItem>
+                      <SelectItem value="carousel3D">Carousel</SelectItem>
+                      <SelectItem value="helix3D">Helix</SelectItem>
+                      <SelectItem value="explode3D">Explode</SelectItem>
+                      <SelectItem value="wave3D">Wave</SelectItem>
+                      <SelectItem value="sphere3D">Sphere Mapping</SelectItem>
+                      <SelectItem value="cube3D">Cube Mapping</SelectItem>
+                      <SelectItem value="cylinder3D">Cylinder Mapping</SelectItem>
+                      <SelectItem value="torus3D">Torus Mapping</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {settings.animationMode3D === 'random3D' && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <Label className="text-muted-foreground">Change Interval</Label>
+                      <span className="text-sm text-foreground">{settings.randomModeInterval}s</span>
+                    </div>
+                    <Slider
+                      value={[settings.randomModeInterval]}
+                      onValueChange={([v]) => onUpdateSetting('randomModeInterval', v)}
+                      min={2}
+                      max={90}
+                      step={1}
+                    />
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">
+                  Tip: Click and drag to rotate the 3D view. Scroll to zoom.
+                </p>
+              </>
             )}
           </div>
 
