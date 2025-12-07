@@ -220,19 +220,29 @@ export function ControlPanel({
               />
             </div>
 
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <Label className="text-muted-foreground">Trail Amount</Label>
-                <span className="text-sm text-foreground">{(settings.trailAmount * 100).toFixed(0)}%</span>
-              </div>
-              <Slider
-                value={[settings.trailAmount]}
-                onValueChange={([v]) => onUpdateSetting('trailAmount', v)}
-                min={0}
-                max={1}
-                step={0.05}
+            <div className="flex items-center justify-between">
+              <Label className="text-muted-foreground">Enable Trails</Label>
+              <Switch
+                checked={settings.enableTrails}
+                onCheckedChange={(v) => onUpdateSetting('enableTrails', v)}
               />
             </div>
+
+            {settings.enableTrails && (
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <Label className="text-muted-foreground">Trail Amount</Label>
+                  <span className="text-sm text-foreground">{(settings.trailAmount * 100).toFixed(0)}%</span>
+                </div>
+                <Slider
+                  value={[settings.trailAmount]}
+                  onValueChange={([v]) => onUpdateSetting('trailAmount', v)}
+                  min={0}
+                  max={1}
+                  step={0.05}
+                />
+              </div>
+            )}
 
             <div className="space-y-3">
               <div className="flex justify-between">
