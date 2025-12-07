@@ -2,6 +2,20 @@ import { useState, useCallback } from 'react';
 
 export type BackgroundStyle = 'black' | 'blurred' | 'gradient';
 export type TileEffect = 'none' | 'glow' | 'opacity' | 'blur' | 'all';
+export type AnimationMode = 
+  | 'bounce'
+  | 'verticalDrop'
+  | 'horizontalSweep'
+  | 'clockwise'
+  | 'counterClockwise'
+  | 'clockHand'
+  | 'pendulum'
+  | 'waterfall'
+  | 'spiral'
+  | 'orbit'
+  | 'zigzag'
+  | 'wave'
+  | 'float';
 
 export interface VisualizerSettings {
   panelScale: number;
@@ -12,19 +26,21 @@ export interface VisualizerSettings {
   backgroundStyle: BackgroundStyle;
   tileEffect: TileEffect;
   enableRotation: boolean;
-  trailAmount: number; // 0 = no trail, 1 = full trail (no fade)
+  trailAmount: number;
+  animationMode: AnimationMode;
 }
 
 const defaultSettings: VisualizerSettings = {
-  panelScale: 0.3,
-  movementSpeed: 0.5,
-  bounceStrength: 0.12,
-  opacityVariation: 0.3,
-  blurIntensity: 0.5,
+  panelScale: 1.15,
+  movementSpeed: 0.8,
+  bounceStrength: 0.11,
+  opacityVariation: 0.7,
+  blurIntensity: 1.0,
   backgroundStyle: 'black',
-  tileEffect: 'all',
+  tileEffect: 'none',
   enableRotation: true,
-  trailAmount: 0.5,
+  trailAmount: 1.0,
+  animationMode: 'bounce',
 };
 
 export function useVisualizerSettings() {

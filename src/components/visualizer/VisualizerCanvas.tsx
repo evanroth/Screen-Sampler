@@ -39,11 +39,12 @@ export function VisualizerCanvas({
     // Add panels for new regions
     for (const region of regions) {
       if (!existingIds.has(region.id)) {
+        const idx = panelsRef.current.length;
         panelsRef.current.push(createPanel(region, canvas.width, canvas.height, {
           opacityVariation: settings.opacityVariation,
           blurIntensity: settings.blurIntensity,
           enableRotation: settings.enableRotation,
-        }));
+        }, idx));
       }
     }
     
@@ -63,12 +64,12 @@ export function VisualizerCanvas({
       canvasRef.current.height = window.innerHeight;
       
       // Reinitialize panels for new dimensions
-      panelsRef.current = regions.map(region => 
+      panelsRef.current = regions.map((region, idx) => 
         createPanel(region, canvasRef.current!.width, canvasRef.current!.height, {
           opacityVariation: settings.opacityVariation,
           blurIntensity: settings.blurIntensity,
           enableRotation: settings.enableRotation,
-        })
+        }, idx)
       );
       initializedRef.current = true;
     };
@@ -190,7 +191,9 @@ export function VisualizerCanvas({
         canvas.width,
         canvas.height,
         settings.movementSpeed,
-        deltaTime
+        deltaTime,
+        settings.animationMode,
+        timestamp
       );
 
       ctx.save();
