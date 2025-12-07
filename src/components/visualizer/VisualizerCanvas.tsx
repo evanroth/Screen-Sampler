@@ -172,6 +172,27 @@ export function VisualizerCanvas({
         0, 0, regionW, regionH
       );
 
+      // Make black pixels transparent if enabled
+      if (settings.blackAsTransparent) {
+        const imageData = offCtx.getImageData(0, 0, regionW, regionH);
+        const data = imageData.data;
+        const threshold = 30; // Pixels with R, G, B all below this are considered black
+        
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          if (r < threshold && g < threshold && b < threshold) {
+            // Calculate how "black" the pixel is (0-1, where 1 is pure black)
+            const darkness = 1 - Math.max(r, g, b) / threshold;
+            data[i + 3] = Math.round(data[i + 3] * (1 - darkness));
+          }
+        }
+        
+        offCtx.putImageData(imageData, 0, 0);
+      }
+
       // Calculate scaled size
       const baseWidth = canvas.width * settings.panelScale;
       const aspectRatio = regionH / regionW;
