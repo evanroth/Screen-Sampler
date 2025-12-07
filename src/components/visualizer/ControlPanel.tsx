@@ -26,7 +26,8 @@ interface ControlPanelProps {
   onReselectRegion: () => void;
   onUpdateSetting: <K extends keyof VisualizerSettings>(key: K, value: VisualizerSettings[K]) => void;
   onResetSettings: () => void;
-  hasRegion: boolean;
+  hasRegions: boolean;
+  regionCount: number;
 }
 
 export function ControlPanel({
@@ -46,7 +47,8 @@ export function ControlPanel({
   onReselectRegion,
   onUpdateSetting,
   onResetSettings,
-  hasRegion,
+  hasRegions,
+  regionCount,
 }: ControlPanelProps) {
   return (
     <>
@@ -90,6 +92,12 @@ export function ControlPanel({
               )} />
               <span className="text-muted-foreground">Microphone</span>
             </div>
+            {hasRegions && (
+              <div className="flex items-center gap-2 text-sm">
+                <div className="w-2 h-2 rounded-full bg-purple-500" />
+                <span className="text-muted-foreground">{regionCount} Region{regionCount > 1 ? 's' : ''}</span>
+              </div>
+            )}
           </div>
 
           <Separator className="bg-border" />
@@ -112,7 +120,7 @@ export function ControlPanel({
                 className="w-full"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
-                Re-select Region
+                Edit Regions
               </Button>
             )}
 
@@ -125,7 +133,7 @@ export function ControlPanel({
               {isMicActive ? "Disable Mic" : "Enable Mic"}
             </Button>
 
-            {hasRegion && (
+            {hasRegions && (
               <Button
                 onClick={isVisualizerActive ? onStopVisualizer : onStartVisualizer}
                 variant={isVisualizerActive ? "destructive" : "default"}
@@ -172,15 +180,15 @@ export function ControlPanel({
 
             <div className="space-y-3">
               <div className="flex justify-between">
-                <Label className="text-muted-foreground">Tiles</Label>
-                <span className="text-sm text-foreground">{settings.tileCount}</span>
+                <Label className="text-muted-foreground">Panel Scale</Label>
+                <span className="text-sm text-foreground">{(settings.panelScale * 100).toFixed(0)}%</span>
               </div>
               <Slider
-                value={[settings.tileCount]}
-                onValueChange={([v]) => onUpdateSetting('tileCount', v)}
-                min={5}
-                max={50}
-                step={1}
+                value={[settings.panelScale]}
+                onValueChange={([v]) => onUpdateSetting('panelScale', v)}
+                min={0.1}
+                max={1.5}
+                step={0.05}
               />
             </div>
 
@@ -209,6 +217,20 @@ export function ControlPanel({
                 min={0}
                 max={0.3}
                 step={0.01}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <Label className="text-muted-foreground">Trail Amount</Label>
+                <span className="text-sm text-foreground">{(settings.trailAmount * 100).toFixed(0)}%</span>
+              </div>
+              <Slider
+                value={[settings.trailAmount]}
+                onValueChange={([v]) => onUpdateSetting('trailAmount', v)}
+                min={0}
+                max={1}
+                step={0.05}
               />
             </div>
 
@@ -271,7 +293,7 @@ export function ControlPanel({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Tile Effects</Label>
+              <Label className="text-muted-foreground">Panel Effects</Label>
               <Select
                 value={settings.tileEffect}
                 onValueChange={(v) => onUpdateSetting('tileEffect', v as TileEffect)}

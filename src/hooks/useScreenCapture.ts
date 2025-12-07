@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 
 export interface CaptureRegion {
+  id: string;
   x: number;
   y: number;
   width: number;

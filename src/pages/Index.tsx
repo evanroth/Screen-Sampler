@@ -12,7 +12,7 @@ type AppState = 'onboarding' | 'selecting' | 'ready' | 'visualizing';
 
 export default function Index() {
   const [appState, setAppState] = useState<AppState>('onboarding');
-  const [region, setRegion] = useState<CaptureRegion | null>(null);
+  const [regions, setRegions] = useState<CaptureRegion[]>([]);
   const [isRegionConfirmed, setIsRegionConfirmed] = useState(false);
   const [isControlPanelOpen, setIsControlPanelOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -42,10 +42,16 @@ export default function Index() {
     else if (screenCapture.error) toast({ title: "Capture failed", description: screenCapture.error, variant: "destructive" });
   }, [screenCapture, toast]);
 
-  const handleStopCapture = useCallback(() => { screenCapture.stopCapture(); setAppState('onboarding'); setRegion(null); setIsRegionConfirmed(false); }, [screenCapture]);
-  const handleRegionChange = useCallback((r: CaptureRegion) => setRegion(r), []);
-  const handleConfirmRegion = useCallback(() => { if (region) { setIsRegionConfirmed(true); setAppState('ready'); setIsControlPanelOpen(true); } }, [region]);
-  const handleResetRegion = useCallback(() => { setIsRegionConfirmed(false); setAppState('selecting'); }, []);
+  const handleStopCapture = useCallback(() => { 
+    screenCapture.stopCapture(); 
+    setAppState('onboarding'); 
+    setRegions([]); 
+    setIsRegionConfirmed(false); 
+  }, [screenCapture]);
+  
+  const handleRegionsChange = useCallback((newRegions: CaptureRegion[]) => setRegions(newRegions), []);
+  const handleConfirmRegions = useCallback(() => { if (regions.length > 0) { setIsRegionConfirmed(true); setAppState('ready'); setIsControlPanelOpen(true); } }, [regions]);
+  const handleResetRegions = useCallback(() => { setIsRegionConfirmed(false); setAppState('selecting'); }, []);
   const handleToggleMic = useCallback(async () => { if (audioAnalyzer.isActive) audioAnalyzer.stopAudio(); else await audioAnalyzer.startAudio(); }, [audioAnalyzer]);
   const handleStartVisualizer = useCallback(() => { setAppState('visualizing'); setIsControlPanelOpen(false); }, []);
   const handleStopVisualizer = useCallback(() => setAppState('ready'), []);
@@ -57,9 +63,47 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       {appState === 'onboarding' && <Onboarding onStartCapture={handleStartCapture} />}
-      {(appState === 'selecting' || appState === 'ready') && screenCapture.stream && <ScreenPreview stream={screenCapture.stream} region={region} onRegionChange={handleRegionChange} onConfirmRegion={handleConfirmRegion} onResetRegion={handleResetRegion} isRegionConfirmed={isRegionConfirmed} />}
-      {appState === 'visualizing' && region && <VisualizerCanvas videoElement={videoRef.current} region={region} settings={settings} audioLevel={audioAnalyzer.audioLevel} isActive={true} />}
-      {(appState === 'ready' || appState === 'visualizing') && <ControlPanel isOpen={isControlPanelOpen} onToggle={() => setIsControlPanelOpen(!isControlPanelOpen)} isCapturing={screenCapture.isCapturing} isMicActive={audioAnalyzer.isActive} isVisualizerActive={appState === 'visualizing'} isFullscreen={isFullscreen} settings={settings} onStartCapture={handleStartCapture} onStopCapture={handleStopCapture} onToggleMic={handleToggleMic} onStartVisualizer={handleStartVisualizer} onStopVisualizer={handleStopVisualizer} onToggleFullscreen={handleToggleFullscreen} onReselectRegion={handleResetRegion} onUpdateSetting={updateSetting} onResetSettings={resetSettings} hasRegion={!!region} />}
+      {(appState === 'selecting' || appState === 'ready') && screenCapture.stream && (
+        <ScreenPreview 
+          stream={screenCapture.stream} 
+          regions={regions} 
+          onRegionsChange={handleRegionsChange} 
+          onConfirmRegions={handleConfirmRegions} 
+          onResetRegions={handleResetRegions} 
+          isRegionConfirmed={isRegionConfirmed} 
+        />
+      )}
+      {appState === 'visualizing' && regions.length > 0 && (
+        <VisualizerCanvas 
+          videoElement={videoRef.current} 
+          regions={regions} 
+          settings={settings} 
+          audioLevel={audioAnalyzer.audioLevel} 
+          isActive={true} 
+        />
+      )}
+      {(appState === 'ready' || appState === 'visualizing') && (
+        <ControlPanel 
+          isOpen={isControlPanelOpen} 
+          onToggle={() => setIsControlPanelOpen(!isControlPanelOpen)} 
+          isCapturing={screenCapture.isCapturing} 
+          isMicActive={audioAnalyzer.isActive} 
+          isVisualizerActive={appState === 'visualizing'} 
+          isFullscreen={isFullscreen} 
+          settings={settings} 
+          onStartCapture={handleStartCapture} 
+          onStopCapture={handleStopCapture} 
+          onToggleMic={handleToggleMic} 
+          onStartVisualizer={handleStartVisualizer} 
+          onStopVisualizer={handleStopVisualizer} 
+          onToggleFullscreen={handleToggleFullscreen} 
+          onReselectRegion={handleResetRegions} 
+          onUpdateSetting={updateSetting} 
+          onResetSettings={resetSettings} 
+          hasRegions={regions.length > 0}
+          regionCount={regions.length}
+        />
+      )}
     </div>
   );
 }
