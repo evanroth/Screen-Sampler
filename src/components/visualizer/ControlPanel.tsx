@@ -355,6 +355,7 @@ export function ControlPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="random">Random</SelectItem>
                   <SelectItem value="bounce">Bounce</SelectItem>
                   <SelectItem value="verticalDrop">Vertical Drop</SelectItem>
                   <SelectItem value="horizontalSweep">Horizontal Sweep</SelectItem>
@@ -371,6 +372,22 @@ export function ControlPanel({
                 </SelectContent>
               </Select>
             </div>
+
+            {settings.animationMode === 'random' && (
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <Label className="text-muted-foreground">Change Interval</Label>
+                  <span className="text-sm text-foreground">{settings.randomModeInterval}s</span>
+                </div>
+                <Slider
+                  value={[settings.randomModeInterval]}
+                  onValueChange={([v]) => onUpdateSetting('randomModeInterval', v)}
+                  min={2}
+                  max={90}
+                  step={1}
+                />
+              </div>
+            )}
           </div>
 
           <Separator className="bg-border" />

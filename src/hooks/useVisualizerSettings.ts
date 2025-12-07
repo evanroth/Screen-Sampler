@@ -15,7 +15,13 @@ export type AnimationMode =
   | 'orbit'
   | 'zigzag'
   | 'wave'
-  | 'float';
+  | 'float'
+  | 'random';
+
+export const ANIMATION_MODES: AnimationMode[] = [
+  'bounce', 'verticalDrop', 'horizontalSweep', 'clockwise', 'counterClockwise',
+  'clockHand', 'pendulum', 'waterfall', 'spiral', 'orbit', 'zigzag', 'wave', 'float'
+];
 
 export interface VisualizerSettings {
   panelScale: number;
@@ -29,6 +35,7 @@ export interface VisualizerSettings {
   trailAmount: number;
   enableTrails: boolean;
   animationMode: AnimationMode;
+  randomModeInterval: number;
   blackAsTransparent: boolean;
   blackThreshold: number;
 }
@@ -45,6 +52,7 @@ const defaultSettings: VisualizerSettings = {
   trailAmount: 0.85,
   enableTrails: false,
   animationMode: 'bounce',
+  randomModeInterval: 10,
   blackAsTransparent: true,
   blackThreshold: 30,
 };
