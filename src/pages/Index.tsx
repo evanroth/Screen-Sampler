@@ -23,15 +23,17 @@ export default function Index() {
   const { settings, updateSetting, resetSettings } = useVisualizerSettings();
 
   useEffect(() => {
-    if (screenCapture.stream && !videoRef.current) {
+    if (screenCapture.stream) {
       const video = document.createElement('video');
       video.autoplay = true;
       video.playsInline = true;
       video.muted = true;
       video.srcObject = screenCapture.stream;
+      video.play().catch(console.error);
       videoRef.current = video;
+    } else {
+      videoRef.current = null;
     }
-    if (!screenCapture.stream) videoRef.current = null;
   }, [screenCapture.stream]);
 
   const handleStartCapture = useCallback(async () => {
