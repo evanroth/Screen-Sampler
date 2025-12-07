@@ -51,6 +51,9 @@ export default function Index() {
   }, [screenCapture]);
   
   const handleRegionsChange = useCallback((newRegions: CaptureRegion[]) => setRegions(newRegions), []);
+  const handleUpdateRegion = useCallback((regionId: string, updates: Partial<CaptureRegion>) => {
+    setRegions(prev => prev.map(r => r.id === regionId ? { ...r, ...updates } : r));
+  }, []);
   const handleConfirmRegions = useCallback(() => { if (regions.length > 0) { setIsRegionConfirmed(true); setAppState('ready'); setIsControlPanelOpen(true); } }, [regions]);
   const handleResetRegions = useCallback(() => { setIsRegionConfirmed(false); setAppState('selecting'); }, []);
   const handleToggleMic = useCallback(async () => { if (audioAnalyzer.isActive) audioAnalyzer.stopAudio(); else await audioAnalyzer.startAudio(); }, [audioAnalyzer]);
@@ -81,7 +84,8 @@ export default function Index() {
             regions={regions} 
             settings={settings} 
             audioLevel={audioAnalyzer.audioLevel} 
-            isActive={true} 
+            isActive={true}
+            onUpdateRegion={handleUpdateRegion}
           />
         ) : (
           <VisualizerCanvas 
@@ -113,6 +117,8 @@ export default function Index() {
           onResetSettings={resetSettings} 
           hasRegions={regions.length > 0}
           regionCount={regions.length}
+          regions={regions}
+          onUpdateRegion={handleUpdateRegion}
         />
       )}
     </div>

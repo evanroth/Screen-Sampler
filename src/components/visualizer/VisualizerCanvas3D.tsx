@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, useState } from 'react';
+import React, { useRef, useEffect, useMemo, useState, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -11,6 +11,7 @@ interface VisualizerCanvas3DProps {
   settings: VisualizerSettings;
   audioLevel: number;
   isActive: boolean;
+  onUpdateRegion?: (regionId: string, updates: Partial<CaptureRegion>) => void;
 }
 
 interface RegionTextureProps {
@@ -20,16 +21,37 @@ interface RegionTextureProps {
   totalRegions: number;
   settings: VisualizerSettings;
   audioLevel: number;
-  mode: AnimationMode3D;
+  defaultMode: AnimationMode3D;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onPositionChange: (position: { x: number; y: number; z: number }) => void;
 }
 
-function RegionMesh({ videoElement, region, index, totalRegions, settings, audioLevel, mode }: RegionTextureProps) {
+function RegionMesh({ 
+  videoElement, 
+  region, 
+  index, 
+  totalRegions, 
+  settings, 
+  audioLevel, 
+  defaultMode,
+  onDragStart,
+  onDragEnd,
+  onPositionChange
+}: RegionTextureProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
   const timeRef = useRef(0);
   const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
+  const isDraggingRef = useRef(false);
+  const customPositionRef = useRef<{ x: number; y: number; z: number } | null>(
+    region.position3D || null
+  );
+  
+  // Use region-specific mode or fall back to default
+  const mode = region.animationMode3D || defaultMode;
 
   // Create offscreen canvas for region capture
   useEffect(() => {
@@ -44,6 +66,13 @@ function RegionMesh({ videoElement, region, index, totalRegions, settings, audio
       textureRef.current?.dispose();
     };
   }, []);
+
+  // Sync custom position from region prop
+  useEffect(() => {
+    if (region.position3D) {
+      customPositionRef.current = region.position3D;
+    }
+  }, [region.position3D]);
 
   useFrame((state, delta) => {
     if (!meshRef.current || !canvasRef.current || !textureRef.current || !videoElement) return;
@@ -74,8 +103,30 @@ function RegionMesh({ videoElement, region, index, totalRegions, settings, audio
     const audioScale = 1 + audioLevel * settings.bounceStrength * 2;
     const baseScale = settings.panelScaleX;
 
-    // Animation based on mode
     const mesh = meshRef.current;
+    
+    // If dragging or has custom position, don't animate position
+    if (isDraggingRef.current) {
+      mesh.scale.setScalar(baseScale * audioScale);
+      return;
+    }
+    
+    if (customPositionRef.current) {
+      mesh.position.set(
+        customPositionRef.current.x,
+        customPositionRef.current.y,
+        customPositionRef.current.z
+      );
+      // Still rotate for shape modes
+      if (['sphere3D', 'cube3D', 'cylinder3D', 'torus3D'].includes(mode)) {
+        mesh.rotation.y = time * settings.movementSpeed * 0.2;
+        mesh.rotation.x = Math.sin(time * settings.movementSpeed * 0.1) * 0.1;
+      }
+      mesh.scale.setScalar(baseScale * audioScale);
+      return;
+    }
+
+    // Animation based on mode
     const speed = settings.movementSpeed;
     const angleOffset = (index / totalRegions) * Math.PI * 2;
 
@@ -137,7 +188,11 @@ function RegionMesh({ videoElement, region, index, totalRegions, settings, audio
       case 'cube3D':
       case 'cylinder3D':
       case 'torus3D':
-        // For shape modes, just subtle movement
+        // For shape modes, spread out by index
+        const shapeSpacing = 3;
+        mesh.position.x = (index - (totalRegions - 1) / 2) * shapeSpacing;
+        mesh.position.y = 0;
+        mesh.position.z = 0;
         mesh.rotation.y = time * speed * 0.2;
         mesh.rotation.x = Math.sin(time * speed * 0.1) * 0.1;
         break;
@@ -162,8 +217,41 @@ function RegionMesh({ videoElement, region, index, totalRegions, settings, audio
     }
   }, [mode]);
 
+  const handlePointerDown = useCallback((e: any) => {
+    if (e.nativeEvent?.shiftKey || e.shiftKey) {
+      if (e.stopPropagation) e.stopPropagation();
+      isDraggingRef.current = true;
+      onDragStart();
+    }
+  }, [onDragStart]);
+
+  const handlePointerUp = useCallback(() => {
+    if (isDraggingRef.current && meshRef.current) {
+      isDraggingRef.current = false;
+      const pos = meshRef.current.position;
+      customPositionRef.current = { x: pos.x, y: pos.y, z: pos.z };
+      onPositionChange({ x: pos.x, y: pos.y, z: pos.z });
+      onDragEnd();
+    }
+  }, [onDragEnd, onPositionChange]);
+
+  const handlePointerMove = useCallback((e: THREE.Event) => {
+    if (isDraggingRef.current && meshRef.current) {
+      const event = e as unknown as { point: THREE.Vector3 };
+      if (event.point) {
+        meshRef.current.position.copy(event.point);
+      }
+    }
+  }, []);
+
   return (
-    <mesh ref={meshRef}>
+    <mesh 
+      ref={meshRef}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerUp}
+    >
       {geometry}
       <meshBasicMaterial 
         ref={materialRef} 
@@ -175,24 +263,44 @@ function RegionMesh({ videoElement, region, index, totalRegions, settings, audio
   );
 }
 
-function Scene({ videoElement, regions, settings, audioLevel, mode }: {
+function Scene({ videoElement, regions, settings, audioLevel, defaultMode, onUpdateRegion }: {
   videoElement: HTMLVideoElement;
   regions: CaptureRegion[];
   settings: VisualizerSettings;
   audioLevel: number;
-  mode: AnimationMode3D;
+  defaultMode: AnimationMode3D;
+  onUpdateRegion?: (regionId: string, updates: Partial<CaptureRegion>) => void;
 }) {
   const { camera } = useThree();
+  const controlsRef = useRef<any>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   useEffect(() => {
     camera.position.set(0, 0, 8);
   }, [camera]);
+
+  // Disable orbit controls when dragging a shape
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.enabled = !isDragging;
+    }
+  }, [isDragging]);
+
+  const handlePositionChange = useCallback((regionId: string, position: { x: number; y: number; z: number }) => {
+    onUpdateRegion?.(regionId, { position3D: position });
+  }, [onUpdateRegion]);
 
   return (
     <>
       <ambientLight intensity={0.8} />
       <pointLight position={[10, 10, 10]} intensity={1} />
       <pointLight position={[-10, -10, -10]} intensity={0.5} />
+      
+      {/* Invisible plane for drag detection */}
+      <mesh visible={false} position={[0, 0, 0]}>
+        <planeGeometry args={[100, 100]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
       
       {regions.map((region, index) => (
         <RegionMesh
@@ -203,11 +311,15 @@ function Scene({ videoElement, regions, settings, audioLevel, mode }: {
           totalRegions={regions.length}
           settings={settings}
           audioLevel={audioLevel}
-          mode={mode}
+          defaultMode={defaultMode}
+          onDragStart={() => setIsDragging(true)}
+          onDragEnd={() => setIsDragging(false)}
+          onPositionChange={(pos) => handlePositionChange(region.id, pos)}
         />
       ))}
       
       <OrbitControls 
+        ref={controlsRef}
         enableDamping 
         dampingFactor={0.05}
         rotateSpeed={0.5}
@@ -224,24 +336,25 @@ export function VisualizerCanvas3D({
   settings,
   audioLevel,
   isActive,
+  onUpdateRegion,
 }: VisualizerCanvas3DProps) {
-  const [currentMode, setCurrentMode] = useState<AnimationMode3D>(
+  const [currentDefaultMode, setCurrentDefaultMode] = useState<AnimationMode3D>(
     settings.animationMode3D === 'random3D' 
       ? ANIMATION_MODES_3D[0] 
       : settings.animationMode3D
   );
   const lastModeChangeRef = useRef<number>(Date.now());
 
-  // Handle random mode switching
+  // Handle random mode switching for default mode
   useEffect(() => {
     if (settings.animationMode3D !== 'random3D') {
-      setCurrentMode(settings.animationMode3D);
+      setCurrentDefaultMode(settings.animationMode3D);
       return;
     }
 
     const interval = setInterval(() => {
       const randomIndex = Math.floor(Math.random() * ANIMATION_MODES_3D.length);
-      setCurrentMode(ANIMATION_MODES_3D[randomIndex]);
+      setCurrentDefaultMode(ANIMATION_MODES_3D[randomIndex]);
     }, settings.randomModeInterval * 1000);
 
     return () => clearInterval(interval);
@@ -264,9 +377,13 @@ export function VisualizerCanvas3D({
           regions={regions}
           settings={settings}
           audioLevel={audioLevel}
-          mode={currentMode}
+          defaultMode={currentDefaultMode}
+          onUpdateRegion={onUpdateRegion}
         />
       </Canvas>
+      <div className="fixed bottom-4 left-4 text-xs text-muted-foreground bg-background/80 px-3 py-2 rounded-lg">
+        Shift + Drag to reposition shapes
+      </div>
     </div>
   );
 }

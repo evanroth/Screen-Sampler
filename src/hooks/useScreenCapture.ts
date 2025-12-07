@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { AnimationMode3D } from './useVisualizerSettings';
 
 export interface CaptureRegion {
   id: string;
@@ -6,6 +7,8 @@ export interface CaptureRegion {
   y: number;
   width: number;
   height: number;
+  animationMode3D?: AnimationMode3D;
+  position3D?: { x: number; y: number; z: number };
 }
 
 export function useScreenCapture() {
