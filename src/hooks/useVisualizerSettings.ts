@@ -28,6 +28,7 @@ export interface VisualizerSettings {
   enableRotation: boolean;
   trailAmount: number;
   animationMode: AnimationMode;
+  blackAsTransparent: boolean;
 }
 
 const defaultSettings: VisualizerSettings = {
@@ -41,6 +42,7 @@ const defaultSettings: VisualizerSettings = {
   enableRotation: true,
   trailAmount: 1.0,
   animationMode: 'bounce',
+  blackAsTransparent: true,
 };
 
 export function useVisualizerSettings() {

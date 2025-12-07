@@ -269,6 +269,14 @@ export function ControlPanel({
                 onCheckedChange={(v) => onUpdateSetting('enableRotation', v)}
               />
             </div>
+
+            <div className="flex items-center justify-between">
+              <Label className="text-muted-foreground">Black as Transparent</Label>
+              <Switch
+                checked={settings.blackAsTransparent}
+                onCheckedChange={(v) => onUpdateSetting('blackAsTransparent', v)}
+              />
+            </div>
           </div>
 
           <Separator className="bg-border" />
