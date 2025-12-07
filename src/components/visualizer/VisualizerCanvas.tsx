@@ -176,7 +176,7 @@ export function VisualizerCanvas({
       if (settings.blackAsTransparent) {
         const imageData = offCtx.getImageData(0, 0, regionW, regionH);
         const data = imageData.data;
-        const threshold = 30; // Pixels with R, G, B all below this are considered black
+        const threshold = settings.blackThreshold;
         
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];

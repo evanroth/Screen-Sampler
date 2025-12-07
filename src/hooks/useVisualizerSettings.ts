@@ -29,6 +29,7 @@ export interface VisualizerSettings {
   trailAmount: number;
   animationMode: AnimationMode;
   blackAsTransparent: boolean;
+  blackThreshold: number;
 }
 
 const defaultSettings: VisualizerSettings = {
@@ -43,6 +44,7 @@ const defaultSettings: VisualizerSettings = {
   trailAmount: 1.0,
   animationMode: 'bounce',
   blackAsTransparent: true,
+  blackThreshold: 30,
 };
 
 export function useVisualizerSettings() {
