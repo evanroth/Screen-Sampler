@@ -3,143 +3,174 @@ import { CaptureRegion } from '@/hooks/useScreenCapture';
 
 interface RegionSelectorProps {
   videoElement: HTMLVideoElement | null;
+  region: CaptureRegion;
   onRegionChange: (region: CaptureRegion) => void;
-  initialRegion?: CaptureRegion;
+  isActive: boolean;
+  colorClass: string;
+  label: string;
+  onClick: () => void;
 }
 
-export function RegionSelector({ videoElement, onRegionChange, initialRegion }: RegionSelectorProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [region, setRegion] = useState<CaptureRegion>(
-    initialRegion || { x: 0.25, y: 0.25, width: 0.5, height: 0.5 }
-  );
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState<string | null>(null);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [regionStart, setRegionStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+type DragType = 'move' | 'resize-nw' | 'resize-ne' | 'resize-sw' | 'resize-se' | 'resize-n' | 'resize-s' | 'resize-e' | 'resize-w';
 
-  const getRelativePosition = useCallback((e: React.MouseEvent | MouseEvent) => {
+export function RegionSelector({
+  videoElement,
+  region,
+  onRegionChange,
+  isActive,
+  colorClass,
+  label,
+  onClick,
+}: RegionSelectorProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dragType, setDragType] = useState<DragType | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [initialRegion, setInitialRegion] = useState(region);
+
+  const getRelativePosition = useCallback((clientX: number, clientY: number) => {
     if (!containerRef.current) return { x: 0, y: 0 };
     const rect = containerRef.current.getBoundingClientRect();
     return {
-      x: (e.clientX - rect.left) / rect.width,
-      y: (e.clientY - rect.top) / rect.height,
+      x: (clientX - rect.left) / rect.width,
+      y: (clientY - rect.top) / rect.height,
     };
   }, []);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent, action: 'drag' | string) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent, type: DragType) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    const pos = getRelativePosition(e);
-    setDragStart(pos);
-    setRegionStart({ ...region });
-    
-    if (action === 'drag') {
-      setIsDragging(true);
-    } else {
-      setIsResizing(action);
-    }
-  }, [getRelativePosition, region]);
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging && !isResizing) return;
-    
-    const pos = getRelativePosition(e);
-    const deltaX = pos.x - dragStart.x;
-    const deltaY = pos.y - dragStart.y;
-
-    let newRegion = { ...region };
-
-    if (isDragging) {
-      newRegion.x = Math.max(0, Math.min(1 - regionStart.width, regionStart.x + deltaX));
-      newRegion.y = Math.max(0, Math.min(1 - regionStart.height, regionStart.y + deltaY));
-    } else if (isResizing) {
-      const minSize = 0.1;
-      
-      if (isResizing.includes('w')) {
-        const newX = Math.max(0, regionStart.x + deltaX);
-        const newWidth = regionStart.width - (newX - regionStart.x);
-        if (newWidth >= minSize) {
-          newRegion.x = newX;
-          newRegion.width = newWidth;
-        }
-      }
-      if (isResizing.includes('e')) {
-        newRegion.width = Math.max(minSize, Math.min(1 - regionStart.x, regionStart.width + deltaX));
-      }
-      if (isResizing.includes('n')) {
-        const newY = Math.max(0, regionStart.y + deltaY);
-        const newHeight = regionStart.height - (newY - regionStart.y);
-        if (newHeight >= minSize) {
-          newRegion.y = newY;
-          newRegion.height = newHeight;
-        }
-      }
-      if (isResizing.includes('s')) {
-        newRegion.height = Math.max(minSize, Math.min(1 - regionStart.y, regionStart.height + deltaY));
-      }
-    }
-
-    setRegion(newRegion);
-  }, [isDragging, isResizing, dragStart, regionStart, getRelativePosition, region]);
-
-  const handleMouseUp = useCallback(() => {
-    if (isDragging || isResizing) {
-      onRegionChange(region);
-    }
-    setIsDragging(false);
-    setIsResizing(null);
-  }, [isDragging, isResizing, region, onRegionChange]);
+    onClick();
+    setDragType(type);
+    setDragStart(getRelativePosition(e.clientX, e.clientY));
+    setInitialRegion(region);
+  }, [getRelativePosition, region, onClick]);
 
   useEffect(() => {
-    if (isDragging || isResizing) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
+    if (!dragType) return;
 
-  const handleStyle = "absolute w-3 h-3 bg-primary rounded-full border-2 border-primary-foreground cursor-pointer hover:scale-125 transition-transform";
+    const handleMouseMove = (e: MouseEvent) => {
+      const current = getRelativePosition(e.clientX, e.clientY);
+      const dx = current.x - dragStart.x;
+      const dy = current.y - dragStart.y;
+
+      let newRegion = { ...initialRegion };
+
+      if (dragType === 'move') {
+        newRegion.x = Math.max(0, Math.min(1 - initialRegion.width, initialRegion.x + dx));
+        newRegion.y = Math.max(0, Math.min(1 - initialRegion.height, initialRegion.y + dy));
+      } else {
+        // Handle resize
+        if (dragType.includes('w')) {
+          const newX = initialRegion.x + dx;
+          const newWidth = initialRegion.width - dx;
+          if (newX >= 0 && newWidth >= 0.05) {
+            newRegion.x = newX;
+            newRegion.width = newWidth;
+          }
+        }
+        if (dragType.includes('e')) {
+          const newWidth = initialRegion.width + dx;
+          if (initialRegion.x + newWidth <= 1 && newWidth >= 0.05) {
+            newRegion.width = newWidth;
+          }
+        }
+        if (dragType.includes('n')) {
+          const newY = initialRegion.y + dy;
+          const newHeight = initialRegion.height - dy;
+          if (newY >= 0 && newHeight >= 0.05) {
+            newRegion.y = newY;
+            newRegion.height = newHeight;
+          }
+        }
+        if (dragType.includes('s')) {
+          const newHeight = initialRegion.height + dy;
+          if (initialRegion.y + newHeight <= 1 && newHeight >= 0.05) {
+            newRegion.height = newHeight;
+          }
+        }
+      }
+
+      onRegionChange(newRegion);
+    };
+
+    const handleMouseUp = () => {
+      setDragType(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragType, dragStart, initialRegion, getRelativePosition, onRegionChange]);
+
+  const handleStyle = "absolute w-3 h-3 bg-background rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2";
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="absolute inset-0 cursor-crosshair"
+      className="absolute inset-0"
+      onClick={onClick}
     >
-      {/* Darkened overlay outside selection */}
-      <div className="absolute inset-0 bg-background/60 pointer-events-none" />
-      
-      {/* Selected region */}
+      {/* Region Box */}
       <div
-        className="absolute border-2 border-primary bg-transparent cursor-move glow-primary"
+        className={`absolute border-2 ${colorClass} ${isActive ? 'ring-2 ring-white/30' : 'opacity-70'} transition-all cursor-move`}
         style={{
           left: `${region.x * 100}%`,
           top: `${region.y * 100}%`,
           width: `${region.width * 100}%`,
           height: `${region.height * 100}%`,
         }}
-        onMouseDown={(e) => handleMouseDown(e, 'drag')}
+        onMouseDown={(e) => handleMouseDown(e, 'move')}
       >
-        {/* Clear the overlay inside selection */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            boxShadow: `0 0 0 9999px hsl(var(--background) / 0.6)`,
-          }}
-        />
-        
-        {/* Resize handles */}
-        <div className={`${handleStyle} -top-1.5 -left-1.5`} onMouseDown={(e) => handleMouseDown(e, 'nw')} />
-        <div className={`${handleStyle} -top-1.5 -right-1.5`} onMouseDown={(e) => handleMouseDown(e, 'ne')} />
-        <div className={`${handleStyle} -bottom-1.5 -left-1.5`} onMouseDown={(e) => handleMouseDown(e, 'sw')} />
-        <div className={`${handleStyle} -bottom-1.5 -right-1.5`} onMouseDown={(e) => handleMouseDown(e, 'se')} />
-        <div className={`${handleStyle} -top-1.5 left-1/2 -translate-x-1/2`} onMouseDown={(e) => handleMouseDown(e, 'n')} />
-        <div className={`${handleStyle} -bottom-1.5 left-1/2 -translate-x-1/2`} onMouseDown={(e) => handleMouseDown(e, 's')} />
-        <div className={`${handleStyle} top-1/2 -left-1.5 -translate-y-1/2`} onMouseDown={(e) => handleMouseDown(e, 'w')} />
-        <div className={`${handleStyle} top-1/2 -right-1.5 -translate-y-1/2`} onMouseDown={(e) => handleMouseDown(e, 'e')} />
+        {/* Label */}
+        <div className={`absolute -top-6 left-1/2 -translate-x-1/2 ${
+          colorClass.replace('border-', 'bg-')
+        } text-background text-xs px-2 py-0.5 rounded whitespace-nowrap`}>
+          {label}
+        </div>
+
+        {/* Resize Handles - only show when active */}
+        {isActive && (
+          <>
+            {/* Corners */}
+            <div
+              className={`${handleStyle} ${colorClass} top-0 left-0 cursor-nw-resize`}
+              onMouseDown={(e) => handleMouseDown(e, 'resize-nw')}
+            />
+            <div
+              className={`${handleStyle} ${colorClass} top-0 left-full cursor-ne-resize`}
+              onMouseDown={(e) => handleMouseDown(e, 'resize-ne')}
+            />
+            <div
+              className={`${handleStyle} ${colorClass} top-full left-0 cursor-sw-resize`}
+              onMouseDown={(e) => handleMouseDown(e, 'resize-sw')}
+            />
+            <div
+              className={`${handleStyle} ${colorClass} top-full left-full cursor-se-resize`}
+              onMouseDown={(e) => handleMouseDown(e, 'resize-se')}
+            />
+            {/* Edges */}
+            <div
+              className={`${handleStyle} ${colorClass} top-0 left-1/2 cursor-n-resize`}
+              onMouseDown={(e) => handleMouseDown(e, 'resize-n')}
+            />
+            <div
+              className={`${handleStyle} ${colorClass} top-full left-1/2 cursor-s-resize`}
+              onMouseDown={(e) => handleMouseDown(e, 'resize-s')}
+            />
+            <div
+              className={`${handleStyle} ${colorClass} top-1/2 left-0 cursor-w-resize`}
+              onMouseDown={(e) => handleMouseDown(e, 'resize-w')}
+            />
+            <div
+              className={`${handleStyle} ${colorClass} top-1/2 left-full cursor-e-resize`}
+              onMouseDown={(e) => handleMouseDown(e, 'resize-e')}
+            />
+          </>
+        )}
       </div>
     </div>
   );

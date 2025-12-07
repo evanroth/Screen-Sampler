@@ -4,7 +4,7 @@ export type BackgroundStyle = 'black' | 'blurred' | 'gradient';
 export type TileEffect = 'none' | 'glow' | 'opacity' | 'blur' | 'all';
 
 export interface VisualizerSettings {
-  tileCount: number;
+  panelScale: number;
   movementSpeed: number;
   bounceStrength: number;
   opacityVariation: number;
@@ -12,10 +12,11 @@ export interface VisualizerSettings {
   backgroundStyle: BackgroundStyle;
   tileEffect: TileEffect;
   enableRotation: boolean;
+  trailAmount: number; // 0 = no trail, 1 = full trail (no fade)
 }
 
 const defaultSettings: VisualizerSettings = {
-  tileCount: 25,
+  panelScale: 0.3,
   movementSpeed: 0.5,
   bounceStrength: 0.12,
   opacityVariation: 0.3,
@@ -23,6 +24,7 @@ const defaultSettings: VisualizerSettings = {
   backgroundStyle: 'black',
   tileEffect: 'all',
   enableRotation: true,
+  trailAmount: 0.5,
 };
 
 export function useVisualizerSettings() {

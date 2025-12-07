@@ -1,31 +1,34 @@
-export interface TileState {
-  id: number;
+import { CaptureRegion } from '@/hooks/useScreenCapture';
+
+export interface PanelState {
+  regionId: string;
   x: number;
   y: number;
   vx: number;
   vy: number;
-  baseSize: number;
   rotation: number;
   rotationSpeed: number;
   opacity: number;
   blurAmount: number;
-  phase: number; // For audio variation
+  phase: number;
 }
 
-export function createTile(id: number, canvasWidth: number, canvasHeight: number, settings: {
-  opacityVariation: number;
-  blurIntensity: number;
-  enableRotation: boolean;
-}): TileState {
-  const baseSize = 80 + Math.random() * 200;
-  
+export function createPanel(
+  region: CaptureRegion,
+  canvasWidth: number,
+  canvasHeight: number,
+  settings: {
+    opacityVariation: number;
+    blurIntensity: number;
+    enableRotation: boolean;
+  }
+): PanelState {
   return {
-    id,
-    x: Math.random() * (canvasWidth - baseSize),
-    y: Math.random() * (canvasHeight - baseSize),
+    regionId: region.id,
+    x: Math.random() * canvasWidth * 0.5,
+    y: Math.random() * canvasHeight * 0.5,
     vx: (Math.random() - 0.5) * 2,
     vy: (Math.random() - 0.5) * 2,
-    baseSize,
     rotation: settings.enableRotation ? Math.random() * 360 : 0,
     rotationSpeed: settings.enableRotation ? (Math.random() - 0.5) * 0.5 : 0,
     opacity: 1 - Math.random() * settings.opacityVariation,
@@ -34,33 +37,35 @@ export function createTile(id: number, canvasWidth: number, canvasHeight: number
   };
 }
 
-export function updateTile(
-  tile: TileState,
+export function updatePanel(
+  panel: PanelState,
+  panelWidth: number,
+  panelHeight: number,
   canvasWidth: number,
   canvasHeight: number,
   speedMultiplier: number,
   deltaTime: number
-): TileState {
+): PanelState {
   const dt = deltaTime / 16.67; // Normalize to 60fps
   
-  let { x, y, vx, vy, rotation, rotationSpeed } = tile;
+  let { x, y, vx, vy, rotation, rotationSpeed } = panel;
   
   // Update position
   x += vx * speedMultiplier * dt;
   y += vy * speedMultiplier * dt;
   
   // Bounce off edges
-  if (x <= 0 || x + tile.baseSize >= canvasWidth) {
+  if (x <= 0 || x + panelWidth >= canvasWidth) {
     vx = -vx;
-    x = Math.max(0, Math.min(canvasWidth - tile.baseSize, x));
+    x = Math.max(0, Math.min(canvasWidth - panelWidth, x));
   }
-  if (y <= 0 || y + tile.baseSize >= canvasHeight) {
+  if (y <= 0 || y + panelHeight >= canvasHeight) {
     vy = -vy;
-    y = Math.max(0, Math.min(canvasHeight - tile.baseSize, y));
+    y = Math.max(0, Math.min(canvasHeight - panelHeight, y));
   }
   
   // Update rotation
   rotation += rotationSpeed * dt;
   
-  return { ...tile, x, y, vx, vy, rotation };
+  return { ...panel, x, y, vx, vy, rotation };
 }
