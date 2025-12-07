@@ -197,9 +197,9 @@ export function VisualizerCanvas({
       }
 
       // Calculate scaled size
-      const baseWidth = canvas.width * settings.panelScale;
+      const baseWidth = canvas.width * settings.panelScaleX;
       const aspectRatio = regionH / regionW;
-      const baseHeight = baseWidth * aspectRatio;
+      const baseHeight = canvas.width * settings.panelScaleY * aspectRatio;
 
       // Calculate audio-reactive scale
       const phaseOffset = Math.sin(panel.phase + timestamp * 0.001) * 0.5 + 0.5;
