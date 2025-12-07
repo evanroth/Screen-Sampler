@@ -106,7 +106,7 @@ export function RegionSelector({
     };
   }, [dragType, dragStart, initialRegion, getRelativePosition, onRegionChange]);
 
-  const handleStyle = "absolute w-3 h-3 bg-background rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2";
+  const handleStyle = "absolute w-5 h-5 bg-background rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform shadow-lg";
 
   return (
     <div
