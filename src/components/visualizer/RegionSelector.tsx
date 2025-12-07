@@ -26,10 +26,12 @@ export function RegionSelector({
   const [dragType, setDragType] = useState<DragType | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialRegion, setInitialRegion] = useState(region);
+  const containerRectRef = useRef<DOMRect | null>(null);
 
   const getRelativePosition = useCallback((clientX: number, clientY: number) => {
-    if (!containerRef.current) return { x: 0, y: 0 };
-    const rect = containerRef.current.getBoundingClientRect();
+    // Use cached rect during drag for better performance
+    const rect = containerRectRef.current || containerRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 0, y: 0 };
     return {
       x: (clientX - rect.left) / rect.width,
       y: (clientY - rect.top) / rect.height,
@@ -39,11 +41,22 @@ export function RegionSelector({
   const handleMouseDown = useCallback((e: React.MouseEvent, type: DragType) => {
     e.preventDefault();
     e.stopPropagation();
-    onClick();
-    setDragType(type);
-    setDragStart(getRelativePosition(e.clientX, e.clientY));
+    
+    // Cache the container rect at drag start for consistent calculations
+    if (containerRef.current) {
+      containerRectRef.current = containerRef.current.getBoundingClientRect();
+    }
+    
+    // Select this region if not already active
+    if (!isActive) {
+      onClick();
+    }
+    
+    const startPos = getRelativePosition(e.clientX, e.clientY);
+    setDragStart(startPos);
     setInitialRegion(region);
-  }, [getRelativePosition, region, onClick]);
+    setDragType(type);
+  }, [getRelativePosition, region, onClick, isActive]);
 
   useEffect(() => {
     if (!dragType) return;
@@ -95,6 +108,7 @@ export function RegionSelector({
 
     const handleMouseUp = () => {
       setDragType(null);
+      containerRectRef.current = null; // Clear cached rect
     };
 
     document.addEventListener('mousemove', handleMouseMove);
