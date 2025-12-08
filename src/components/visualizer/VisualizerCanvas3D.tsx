@@ -172,10 +172,17 @@ function RegionMesh({
       case 'capsule3D':
       case 'ring3D':
       case 'mobius3D':
-        // For shape modes, spread out by index
-        mesh.position.x = (index - (totalRegions - 1) / 2) * settings.regionSpacing3D;
-        mesh.position.y = 0;
-        mesh.position.z = 0;
+        // For shape modes, use custom position if set, otherwise spread out by index
+        const customPos = region.position3D;
+        if (customPos) {
+          mesh.position.x = customPos.x;
+          mesh.position.y = customPos.y;
+          mesh.position.z = customPos.z;
+        } else {
+          mesh.position.x = (index - (totalRegions - 1) / 2) * settings.regionSpacing3D;
+          mesh.position.y = 0;
+          mesh.position.z = 0;
+        }
         mesh.rotation.y = time * speed * 0.2;
         mesh.rotation.x = Math.sin(time * speed * 0.1) * 0.1;
         break;

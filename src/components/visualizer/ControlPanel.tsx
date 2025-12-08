@@ -505,8 +505,10 @@ export function ControlPanel({
                       <SelectItem value="torusKnot3D">Torus Knot</SelectItem>
                       <SelectItem value="trefoil3D">Trefoil Knot</SelectItem>
                       <SelectItem value="cinquefoil3D">Cinquefoil Knot</SelectItem>
-                      <SelectItem value="star3D">Star</SelectItem>
-                      <SelectItem value="heart3D">Heart</SelectItem>
+                      <SelectItem value="septafoil3D">Septafoil Knot</SelectItem>
+                      <SelectItem value="figure8_3D">Figure-8 Knot</SelectItem>
+                      <SelectItem value="granny3D">Granny Knot</SelectItem>
+                      <SelectItem value="lissajous3D">Lissajous Knot</SelectItem>
                       <SelectItem value="capsule3D">Capsule</SelectItem>
                       <SelectItem value="ring3D">Ring</SelectItem>
                       <SelectItem value="mobius3D">Möbius</SelectItem>
@@ -575,27 +577,102 @@ export function ControlPanel({
                             <SelectItem value="torusKnot3D">Torus Knot</SelectItem>
                             <SelectItem value="trefoil3D">Trefoil Knot</SelectItem>
                             <SelectItem value="cinquefoil3D">Cinquefoil Knot</SelectItem>
-                            <SelectItem value="star3D">Star</SelectItem>
-                            <SelectItem value="heart3D">Heart</SelectItem>
+                            <SelectItem value="septafoil3D">Septafoil Knot</SelectItem>
+                            <SelectItem value="figure8_3D">Figure-8 Knot</SelectItem>
+                            <SelectItem value="granny3D">Granny Knot</SelectItem>
+                            <SelectItem value="lissajous3D">Lissajous Knot</SelectItem>
                             <SelectItem value="capsule3D">Capsule</SelectItem>
                             <SelectItem value="ring3D">Ring</SelectItem>
                             <SelectItem value="mobius3D">Möbius</SelectItem>
                           </SelectContent>
                         </Select>
-                        {region.position3D && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs h-7"
-                            onClick={() => {
-                              if (onUpdateRegion) {
-                                onUpdateRegion(region.id, { position3D: undefined });
-                              }
-                            }}
-                          >
-                            Reset Position
-                          </Button>
-                        )}
+                        
+                        {/* Position X/Y/Z Controls */}
+                        <div className="mt-2 space-y-2 pl-2 border-l-2 border-border">
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-xs text-muted-foreground">Position X</span>
+                              <span className="text-xs text-foreground">{(region.position3D?.x ?? 0).toFixed(1)}</span>
+                            </div>
+                            <Slider
+                              value={[region.position3D?.x ?? 0]}
+                              onValueChange={([v]) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { 
+                                    position3D: { 
+                                      x: v, 
+                                      y: region.position3D?.y ?? 0, 
+                                      z: region.position3D?.z ?? 0 
+                                    } 
+                                  });
+                                }
+                              }}
+                              min={-10}
+                              max={10}
+                              step={0.1}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-xs text-muted-foreground">Position Y</span>
+                              <span className="text-xs text-foreground">{(region.position3D?.y ?? 0).toFixed(1)}</span>
+                            </div>
+                            <Slider
+                              value={[region.position3D?.y ?? 0]}
+                              onValueChange={([v]) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { 
+                                    position3D: { 
+                                      x: region.position3D?.x ?? 0, 
+                                      y: v, 
+                                      z: region.position3D?.z ?? 0 
+                                    } 
+                                  });
+                                }
+                              }}
+                              min={-10}
+                              max={10}
+                              step={0.1}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-xs text-muted-foreground">Position Z</span>
+                              <span className="text-xs text-foreground">{(region.position3D?.z ?? 0).toFixed(1)}</span>
+                            </div>
+                            <Slider
+                              value={[region.position3D?.z ?? 0]}
+                              onValueChange={([v]) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { 
+                                    position3D: { 
+                                      x: region.position3D?.x ?? 0, 
+                                      y: region.position3D?.y ?? 0, 
+                                      z: v 
+                                    } 
+                                  });
+                                }
+                              }}
+                              min={-10}
+                              max={10}
+                              step={0.1}
+                            />
+                          </div>
+                          {region.position3D && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs h-7"
+                              onClick={() => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { position3D: undefined });
+                                }
+                              }}
+                            >
+                              Reset Position
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
