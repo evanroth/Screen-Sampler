@@ -658,18 +658,36 @@ export function ControlPanel({
                               step={0.1}
                             />
                           </div>
-                          {region.position3D && (
+                          {/* Scale Control */}
+                          <div className="space-y-1 mt-2">
+                            <div className="flex justify-between">
+                              <span className="text-xs text-muted-foreground">Scale</span>
+                              <span className="text-xs text-foreground">{((region.scale3D ?? 1) * 100).toFixed(0)}%</span>
+                            </div>
+                            <Slider
+                              value={[region.scale3D ?? 1]}
+                              onValueChange={([v]) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { scale3D: v });
+                                }
+                              }}
+                              min={0.1}
+                              max={3}
+                              step={0.1}
+                            />
+                          </div>
+                          {(region.position3D || region.scale3D !== undefined) && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-xs h-7"
+                              className="text-xs h-7 mt-2"
                               onClick={() => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { position3D: undefined });
+                                  onUpdateRegion(region.id, { position3D: undefined, scale3D: undefined });
                                 }
                               }}
                             >
-                              Reset Position
+                              Reset Transform
                             </Button>
                           )}
                         </div>
