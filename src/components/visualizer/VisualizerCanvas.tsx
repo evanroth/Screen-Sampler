@@ -203,7 +203,7 @@ export function VisualizerCanvas({
         0, 0, regionW, regionH
       );
 
-      // Make black pixels transparent if enabled
+      // Make black pixels transparent if enabled (global setting)
       if (settings.blackAsTransparent) {
         const imageData = offCtx.getImageData(0, 0, regionW, regionH);
         const data = imageData.data;
@@ -215,9 +215,42 @@ export function VisualizerCanvas({
           const b = data[i + 2];
           
           if (r < threshold && g < threshold && b < threshold) {
-            // Calculate how "black" the pixel is (0-1, where 1 is pure black)
             const darkness = 1 - Math.max(r, g, b) / threshold;
             data[i + 3] = Math.round(data[i + 3] * (1 - darkness));
+          }
+        }
+        
+        offCtx.putImageData(imageData, 0, 0);
+      }
+
+      // Per-region transparent color
+      if (region.transparentColor) {
+        const imageData = offCtx.getImageData(0, 0, regionW, regionH);
+        const data = imageData.data;
+        const threshold = region.transparentThreshold ?? 30;
+        
+        // Parse the hex color
+        const hex = region.transparentColor.replace('#', '');
+        const targetR = parseInt(hex.substring(0, 2), 16);
+        const targetG = parseInt(hex.substring(2, 4), 16);
+        const targetB = parseInt(hex.substring(4, 6), 16);
+        
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // Calculate color distance from target
+          const distance = Math.sqrt(
+            Math.pow(r - targetR, 2) + 
+            Math.pow(g - targetG, 2) + 
+            Math.pow(b - targetB, 2)
+          );
+          
+          if (distance < threshold) {
+            // Calculate how close to target (0-1, where 1 is exact match)
+            const closeness = 1 - distance / threshold;
+            data[i + 3] = Math.round(data[i + 3] * (1 - closeness));
           }
         }
         
