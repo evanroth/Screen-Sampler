@@ -188,7 +188,9 @@ function RegionMesh({
         break;
     }
 
-    mesh.scale.setScalar(baseScale * audioScale);
+    // Apply scale with optional per-region override
+    const regionScale = region.scale3D ?? 1;
+    mesh.scale.setScalar(baseScale * audioScale * regionScale);
   });
 
   // Create mobius geometry using TubeGeometry with a custom curve
