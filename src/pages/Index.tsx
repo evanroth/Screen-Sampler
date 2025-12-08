@@ -62,7 +62,18 @@ export default function Index() {
   const handleToggleFullscreen = useCallback(async () => { if (!document.fullscreenElement) { await document.documentElement.requestFullscreen(); setIsFullscreen(true); } else { await document.exitFullscreen(); setIsFullscreen(false); } }, []);
 
   useEffect(() => { const h = () => setIsFullscreen(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => document.removeEventListener('fullscreenchange', h); }, []);
-  useEffect(() => { const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && appState === 'visualizing') setIsControlPanelOpen(true); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [appState]);
+  useEffect(() => { 
+    const h = (e: KeyboardEvent) => { 
+      if (e.key === 'Escape' && appState === 'visualizing') setIsControlPanelOpen(true);
+      if (e.key === 's' || e.key === 'S') {
+        // Don't toggle if user is typing in an input
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+        setIsControlPanelOpen(prev => !prev);
+      }
+    }; 
+    window.addEventListener('keydown', h); 
+    return () => window.removeEventListener('keydown', h); 
+  }, [appState]);
 
   return (
     <div className="min-h-screen bg-background">
