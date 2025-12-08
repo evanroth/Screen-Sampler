@@ -10,6 +10,8 @@ export interface CaptureRegion {
   animationMode3D?: AnimationMode3D;
   position3D?: { x: number; y: number; z: number };
   scale3D?: number;
+  position2D?: { x: number; y: number; z: number };
+  scale2D?: number;
 }
 
 export function useScreenCapture() {

@@ -506,6 +506,127 @@ export function ControlPanel({
                     />
                   </div>
                 )}
+
+                {/* Per-Region 2D Transform Controls */}
+                {regions.length > 0 && (
+                  <div className="space-y-3">
+                    <Separator className="bg-border" />
+                    <Label className="text-muted-foreground font-medium">Per-Region 2D Transforms</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Adjust position and scale for each region.
+                    </p>
+                    {regions.map((region, index) => (
+                      <div key={region.id} className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Region {index + 1}</Label>
+                        
+                        {/* Position X/Y/Z Controls */}
+                        <div className="mt-2 space-y-2 pl-2 border-l-2 border-border">
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-xs text-muted-foreground">Position X</span>
+                              <span className="text-xs text-foreground">{(region.position2D?.x ?? 0).toFixed(0)}px</span>
+                            </div>
+                            <Slider
+                              value={[region.position2D?.x ?? 0]}
+                              onValueChange={([v]) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { 
+                                    position2D: { 
+                                      x: v, 
+                                      y: region.position2D?.y ?? 0, 
+                                      z: region.position2D?.z ?? 0 
+                                    } 
+                                  });
+                                }
+                              }}
+                              min={-500}
+                              max={500}
+                              step={10}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-xs text-muted-foreground">Position Y</span>
+                              <span className="text-xs text-foreground">{(region.position2D?.y ?? 0).toFixed(0)}px</span>
+                            </div>
+                            <Slider
+                              value={[region.position2D?.y ?? 0]}
+                              onValueChange={([v]) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { 
+                                    position2D: { 
+                                      x: region.position2D?.x ?? 0, 
+                                      y: v, 
+                                      z: region.position2D?.z ?? 0 
+                                    } 
+                                  });
+                                }
+                              }}
+                              min={-500}
+                              max={500}
+                              step={10}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-xs text-muted-foreground">Z-Index (Layer)</span>
+                              <span className="text-xs text-foreground">{(region.position2D?.z ?? 0).toFixed(0)}</span>
+                            </div>
+                            <Slider
+                              value={[region.position2D?.z ?? 0]}
+                              onValueChange={([v]) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { 
+                                    position2D: { 
+                                      x: region.position2D?.x ?? 0, 
+                                      y: region.position2D?.y ?? 0, 
+                                      z: v 
+                                    } 
+                                  });
+                                }
+                              }}
+                              min={-10}
+                              max={10}
+                              step={1}
+                            />
+                          </div>
+                          {/* Scale Control */}
+                          <div className="space-y-1 mt-2">
+                            <div className="flex justify-between">
+                              <span className="text-xs text-muted-foreground">Scale</span>
+                              <span className="text-xs text-foreground">{((region.scale2D ?? 1) * 100).toFixed(0)}%</span>
+                            </div>
+                            <Slider
+                              value={[region.scale2D ?? 1]}
+                              onValueChange={([v]) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { scale2D: v });
+                                }
+                              }}
+                              min={0.1}
+                              max={3}
+                              step={0.1}
+                            />
+                          </div>
+                          {(region.position2D || region.scale2D !== undefined) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs h-7 mt-2"
+                              onClick={() => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { position2D: undefined, scale2D: undefined });
+                                }
+                              }}
+                            >
+                              Reset Transform
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 

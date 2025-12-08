@@ -162,11 +162,18 @@ export function VisualizerCanvas({
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Create region lookup
+    // Create region lookup and sort by z-index for proper layering
     const regionMap = new Map(regions.map(r => [r.id, r]));
+    const sortedPanels = [...panelsRef.current].sort((a, b) => {
+      const regionA = regionMap.get(a.regionId);
+      const regionB = regionMap.get(b.regionId);
+      const zA = regionA?.position2D?.z ?? 0;
+      const zB = regionB?.position2D?.z ?? 0;
+      return zA - zB;
+    });
 
     // Update and draw panels
-    panelsRef.current = panelsRef.current.map(panel => {
+    panelsRef.current = sortedPanels.map(panel => {
       const region = regionMap.get(panel.regionId);
       if (!region) return panel;
 
@@ -217,10 +224,11 @@ export function VisualizerCanvas({
         offCtx.putImageData(imageData, 0, 0);
       }
 
-      // Calculate scaled size
-      const baseWidth = canvas.width * settings.panelScaleX;
+      // Calculate scaled size with per-region scale override
+      const regionScale = region.scale2D ?? 1;
+      const baseWidth = canvas.width * settings.panelScaleX * regionScale;
       const aspectRatio = regionH / regionW;
-      const baseHeight = canvas.width * settings.panelScaleY * aspectRatio;
+      const baseHeight = canvas.width * settings.panelScaleY * aspectRatio * regionScale;
 
       // Calculate audio-reactive scale
       const phaseOffset = Math.sin(panel.phase + timestamp * 0.001) * 0.5 + 0.5;
@@ -255,8 +263,10 @@ export function VisualizerCanvas({
 
       ctx.save();
       
-      // Position at panel center
-      ctx.translate(updated.x + finalWidth / 2, updated.y + finalHeight / 2);
+      // Position at panel center with per-region offset
+      const offsetX = region.position2D?.x ?? 0;
+      const offsetY = region.position2D?.y ?? 0;
+      ctx.translate(updated.x + finalWidth / 2 + offsetX, updated.y + finalHeight / 2 + offsetY);
       
       // Apply rotation
       if (settings.enableRotation) {
