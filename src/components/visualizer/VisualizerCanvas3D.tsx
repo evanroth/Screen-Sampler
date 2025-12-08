@@ -45,18 +45,20 @@ function RegionMesh({
 
   // Create offscreen canvas for region capture
   useEffect(() => {
+    const quality = settings.textureQuality;
     canvasRef.current = document.createElement('canvas');
-    canvasRef.current.width = 1024;
-    canvasRef.current.height = 1024;
+    canvasRef.current.width = quality;
+    canvasRef.current.height = quality;
     textureRef.current = new THREE.CanvasTexture(canvasRef.current);
-    // Use NearestFilter to maintain hard pixel edges (no interpolation)
-    textureRef.current.minFilter = THREE.NearestFilter;
-    textureRef.current.magFilter = THREE.NearestFilter;
+    // Use NearestFilter for crisp pixels, LinearFilter for smooth
+    const filter = settings.textureSmoothing ? THREE.LinearFilter : THREE.NearestFilter;
+    textureRef.current.minFilter = filter;
+    textureRef.current.magFilter = filter;
     
     return () => {
       textureRef.current?.dispose();
     };
-  }, []);
+  }, [settings.textureQuality, settings.textureSmoothing]);
 
 
   useFrame((state, delta) => {
@@ -75,7 +77,8 @@ function RegionMesh({
       const rw = region.width * vw;
       const rh = region.height * vh;
       
-      ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, 1024, 1024);
+      const quality = settings.textureQuality;
+      ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, quality, quality);
       textureRef.current.needsUpdate = true;
     }
 
