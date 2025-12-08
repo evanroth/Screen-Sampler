@@ -583,6 +583,23 @@ export function ControlPanel({
                   )}
                 </div>
 
+                <Separator className="bg-border" />
+
+                {/* Region Spacing */}
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label className="text-xs text-muted-foreground">Region Spacing</Label>
+                    <span className="text-xs text-foreground">{settings.regionSpacing3D.toFixed(1)}</span>
+                  </div>
+                  <Slider
+                    value={[settings.regionSpacing3D]}
+                    onValueChange={([v]) => onUpdateSetting('regionSpacing3D', v)}
+                    min={1}
+                    max={10}
+                    step={0.5}
+                  />
+                </div>
+
                 <p className="text-xs text-muted-foreground">
                   Tip: Click and drag to rotate view. Shift+drag shapes to reposition.
                 </p>

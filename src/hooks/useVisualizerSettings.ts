@@ -67,6 +67,7 @@ export interface VisualizerSettings {
   blackThreshold: number;
   autoRotateCamera: boolean;
   autoRotateCameraSpeed: number;
+  regionSpacing3D: number;
 }
 
 const defaultSettings: VisualizerSettings = {
@@ -90,6 +91,7 @@ const defaultSettings: VisualizerSettings = {
   blackThreshold: 30,
   autoRotateCamera: false,
   autoRotateCameraSpeed: 1,
+  regionSpacing3D: 3,
 };
 
 export function useVisualizerSettings() {
