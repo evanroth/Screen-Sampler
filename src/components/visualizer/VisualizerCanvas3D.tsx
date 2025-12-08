@@ -285,10 +285,36 @@ function Scene({ videoElement, regions, settings, audioLevel, defaultMode }: {
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
+  const meshGroupRef = useRef<THREE.Group>(null);
   
   useEffect(() => {
     camera.position.set(0, 0, 8);
   }, [camera]);
+
+  // Update OrbitControls target to center of all meshes
+  useFrame(() => {
+    if (!controlsRef.current || !meshGroupRef.current) return;
+    
+    const children = meshGroupRef.current.children;
+    if (children.length === 0) return;
+    
+    // Calculate center point of all meshes
+    let centerX = 0, centerY = 0, centerZ = 0;
+    children.forEach((child) => {
+      centerX += child.position.x;
+      centerY += child.position.y;
+      centerZ += child.position.z;
+    });
+    centerX /= children.length;
+    centerY /= children.length;
+    centerZ /= children.length;
+    
+    // Smoothly interpolate target to center
+    controlsRef.current.target.lerp(
+      new THREE.Vector3(centerX, centerY, centerZ),
+      0.05
+    );
+  });
 
   return (
     <>
@@ -296,19 +322,20 @@ function Scene({ videoElement, regions, settings, audioLevel, defaultMode }: {
       <pointLight position={[10, 10, 10]} intensity={1} />
       <pointLight position={[-10, -10, -10]} intensity={0.5} />
       
-      
-      {regions.map((region, index) => (
-        <RegionMesh
-          key={region.id}
-          videoElement={videoElement}
-          region={region}
-          index={index}
-          totalRegions={regions.length}
-          settings={settings}
-          audioLevel={audioLevel}
-          defaultMode={defaultMode}
-        />
-      ))}
+      <group ref={meshGroupRef}>
+        {regions.map((region, index) => (
+          <RegionMesh
+            key={region.id}
+            videoElement={videoElement}
+            region={region}
+            index={index}
+            totalRegions={regions.length}
+            settings={settings}
+            audioLevel={audioLevel}
+            defaultMode={defaultMode}
+          />
+        ))}
+      </group>
       
       <OrbitControls 
         ref={controlsRef}
