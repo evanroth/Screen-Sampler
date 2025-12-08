@@ -132,23 +132,23 @@ function RegionMesh({
 
     switch (mode) {
       case 'floating3D':
-        mesh.position.x = Math.sin(time * speed + angleOffset) * 3;
-        mesh.position.y = Math.cos(time * speed * 0.7 + phaseOffset) * 2;
-        mesh.position.z = Math.sin(time * speed * 0.5 + angleOffset) * 2;
+        mesh.position.x = Math.sin(time * speed + angleOffset) * settings.regionSpacing3D;
+        mesh.position.y = Math.cos(time * speed * 0.7 + phaseOffset) * (settings.regionSpacing3D * 0.66);
+        mesh.position.z = Math.sin(time * speed * 0.5 + angleOffset) * (settings.regionSpacing3D * 0.66);
         mesh.rotation.x = time * 0.2;
         mesh.rotation.y = time * 0.3;
         break;
         
       case 'orbit3D':
-        const orbitRadius = 3 + index * 0.5;
+        const orbitRadius = settings.regionSpacing3D + index * 0.5;
         mesh.position.x = Math.cos(time * speed + angleOffset) * orbitRadius;
-        mesh.position.y = Math.sin(time * speed * 0.3 + phaseOffset) * 1.5;
+        mesh.position.y = Math.sin(time * speed * 0.3 + phaseOffset) * (settings.regionSpacing3D * 0.5);
         mesh.position.z = Math.sin(time * speed + angleOffset) * orbitRadius;
         mesh.rotation.y = -time * speed - angleOffset;
         break;
         
       case 'carousel3D':
-        const carouselRadius = 4;
+        const carouselRadius = settings.regionSpacing3D * 1.33;
         const carouselAngle = time * speed * 0.5 + angleOffset;
         mesh.position.x = Math.cos(carouselAngle) * carouselRadius;
         mesh.position.y = 0;
@@ -157,17 +157,17 @@ function RegionMesh({
         break;
         
       case 'helix3D':
-        const helixRadius = 3;
+        const helixRadius = settings.regionSpacing3D;
         const helixAngle = time * speed + angleOffset;
         mesh.position.x = Math.cos(helixAngle) * helixRadius;
-        mesh.position.y = (Math.sin(helixAngle * 2) * 2);
+        mesh.position.y = (Math.sin(helixAngle * 2) * (settings.regionSpacing3D * 0.66));
         mesh.position.z = Math.sin(helixAngle) * helixRadius;
         mesh.rotation.y = -helixAngle;
         break;
         
       case 'explode3D':
         const explodePhase = (Math.sin(time * speed * 0.5) + 1) / 2;
-        const explodeRadius = 2 + explodePhase * 4;
+        const explodeRadius = (settings.regionSpacing3D * 0.66) + explodePhase * settings.regionSpacing3D * 1.33;
         const theta = (index / totalRegions) * Math.PI * 2;
         const phi = ((index % 3) / 3) * Math.PI;
         mesh.position.x = Math.sin(phi) * Math.cos(theta) * explodeRadius;
@@ -178,9 +178,9 @@ function RegionMesh({
         break;
         
       case 'wave3D':
-        mesh.position.x = (index - totalRegions / 2) * 2.5;
-        mesh.position.y = Math.sin(time * speed * 2 + index * 0.5) * 2;
-        mesh.position.z = Math.cos(time * speed + index * 0.3) * 1.5;
+        mesh.position.x = (index - totalRegions / 2) * (settings.regionSpacing3D * 0.83);
+        mesh.position.y = Math.sin(time * speed * 2 + index * 0.5) * (settings.regionSpacing3D * 0.66);
+        mesh.position.z = Math.cos(time * speed + index * 0.3) * (settings.regionSpacing3D * 0.5);
         mesh.rotation.z = Math.sin(time * speed + index) * 0.3;
         break;
 
@@ -189,8 +189,7 @@ function RegionMesh({
       case 'cylinder3D':
       case 'torus3D':
         // For shape modes, spread out by index
-        const shapeSpacing = 3;
-        mesh.position.x = (index - (totalRegions - 1) / 2) * shapeSpacing;
+        mesh.position.x = (index - (totalRegions - 1) / 2) * settings.regionSpacing3D;
         mesh.position.y = 0;
         mesh.position.z = 0;
         mesh.rotation.y = time * speed * 0.2;
