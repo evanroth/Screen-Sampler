@@ -69,8 +69,11 @@ export function ControlPanel({
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
-        <div className="p-6 pt-16 space-y-6">
-          <h2 className="text-lg font-semibold text-foreground">Controls</h2>
+        <div className="p-5 pt-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Settings</h2>
+            <span className="text-xs text-muted-foreground">Press S to close</span>
+          </div>
 
           {/* Status Indicators */}
           <div className="space-y-2">
@@ -172,7 +175,7 @@ export function ControlPanel({
 
           {/* Settings Sliders */}
           <div className="space-y-5">
-            <h3 className="text-sm font-medium text-foreground">Settings</h3>
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Parameters</h3>
 
             <div className="space-y-3">
               <div className="flex justify-between items-center">
@@ -692,8 +695,8 @@ export function ControlPanel({
 
           <Button
             onClick={onResetSettings}
-            variant="ghost"
-            className="w-full text-muted-foreground"
+            variant="outline"
+            className="w-full text-muted-foreground text-xs uppercase tracking-wider"
           >
             Reset to Defaults
           </Button>

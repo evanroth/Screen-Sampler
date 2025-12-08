@@ -1,5 +1,4 @@
 import React from 'react';
-import { Monitor, Mic, Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface OnboardingProps {
@@ -8,69 +7,61 @@ interface OnboardingProps {
 
 export function Onboarding({ onStartCapture }: OnboardingProps) {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-8">
-      <div className="max-w-2xl w-full space-y-12 text-center">
-        {/* Logo/Title */}
-        <div className="space-y-4">
-          <div className="flex justify-center">
-            <div className="p-4 rounded-2xl bg-primary/10 glow-primary">
-              <Sparkles className="w-12 h-12 text-primary" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold text-foreground tracking-tight">
-            DJ Visualizer
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
+      <div className="max-w-xl w-full flex flex-col items-center text-center space-y-12">
+        
+        {/* Title */}
+        <div className="space-y-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight uppercase">
+            Beats and Bobbins Screen Sampler v.1.0
           </h1>
-          <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Transform any part of your DJ software into a stunning fullscreen visualizer
+          <p className="text-sm text-muted-foreground uppercase tracking-widest">
+            VJ software for DJs
           </p>
         </div>
 
-        {/* Steps */}
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="p-6 rounded-xl glass-panel space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center mx-auto">
-              <Monitor className="w-5 h-5 text-primary" />
-            </div>
-            <h3 className="font-medium text-foreground">1. Capture Screen</h3>
-            <p className="text-sm text-muted-foreground">
-              Share your screen or the Djay Pro window
-            </p>
-          </div>
-
-          <div className="p-6 rounded-xl glass-panel space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center mx-auto">
-              <div className="w-5 h-5 border-2 border-primary rounded" />
-            </div>
-            <h3 className="font-medium text-foreground">2. Select Region</h3>
-            <p className="text-sm text-muted-foreground">
-              Choose the waveforms, artwork, or decks to visualize
-            </p>
-          </div>
-
-          <div className="p-6 rounded-xl glass-panel space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center mx-auto">
-              <Mic className="w-5 h-5 text-primary" />
-            </div>
-            <h3 className="font-medium text-foreground">3. Enable Audio</h3>
-            <p className="text-sm text-muted-foreground">
-              Let the visuals react to your music via microphone
-            </p>
-          </div>
+        {/* Instructions */}
+        <div className="space-y-3 text-sm text-muted-foreground font-medium">
+          <p>1. Share screen</p>
+          <p>2. Select regions</p>
+          <p>3. Enable microphone</p>
         </div>
 
-        {/* CTA */}
-        <div className="space-y-4">
-          <Button
-            onClick={onStartCapture}
-            size="lg"
-            className="px-8 py-6 text-lg glow-primary"
+        {/* Start Button */}
+        <Button
+          onClick={onStartCapture}
+          size="lg"
+          className="px-16 py-8 text-xl font-bold uppercase tracking-wider hardware-raised hover:glow-primary transition-all"
+        >
+          Start
+        </Button>
+
+        {/* Footer Links */}
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground pt-8">
+          <a 
+            href="https://github.com/evanroth/Screen-Sampler" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-colors underline underline-offset-2"
           >
-            Start Screen Capture
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            You'll be asked to share your screen or a specific window
-          </p>
+            Source code
+          </a>
+          <a 
+            href="https://evan-roth.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-colors underline underline-offset-2"
+          >
+            By Evan Roth
+          </a>
+          <a 
+            href="https://www.youtube.com/@evan-roth-com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-colors underline underline-offset-2"
+          >
+            Beats and Bobbins
+          </a>
         </div>
       </div>
     </div>
