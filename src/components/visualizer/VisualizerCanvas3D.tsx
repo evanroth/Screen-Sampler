@@ -390,74 +390,116 @@ export function VisualizerCanvas3D({
     return null;
   }
 
-  // Create blurred background for 3D mode
-  const blurredBgRef = useRef<HTMLCanvasElement>(null);
+  // Create background canvas for non-simple backgrounds
+  const bgCanvasRef = useRef<HTMLCanvasElement>(null);
   
   useEffect(() => {
-    if (settings.backgroundStyle !== 'blurred' || !videoElement || !blurredBgRef.current) return;
+    const needsCanvas = settings.backgroundStyle === 'blurred' || 
+                        settings.backgroundStyle === 'linearGradient' || 
+                        settings.backgroundStyle === 'radialGradient';
     
-    const canvas = blurredBgRef.current;
+    if (!needsCanvas || !bgCanvasRef.current) return;
+    
+    const canvas = bgCanvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
     let animationId: number;
     
     const updateBackground = () => {
-      if (videoElement.videoWidth === 0) {
-        animationId = requestAnimationFrame(updateBackground);
-        return;
-      }
-      
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      if (regions.length > 0) {
-        const region = regions[0];
-        const vw = videoElement.videoWidth;
-        const vh = videoElement.videoHeight;
-        const rx = region.x * vw;
-        const ry = region.y * vh;
-        const rw = region.width * vw;
-        const rh = region.height * vh;
-        
-        ctx.filter = 'blur(50px)';
-        ctx.globalAlpha = 0.5;
-        ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, canvas.width, canvas.height);
-        ctx.filter = 'none';
-        ctx.globalAlpha = 1;
-        
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      if (settings.backgroundStyle === 'linearGradient') {
+        const gradient = ctx.createLinearGradient(
+          canvas.width / 2, 0,
+          canvas.width / 2, canvas.height
+        );
+        gradient.addColorStop(0, settings.gradientSettings.color1);
+        gradient.addColorStop(1, settings.gradientSettings.color2);
+        ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (settings.backgroundStyle === 'radialGradient') {
+        const gradient = ctx.createRadialGradient(
+          canvas.width / 2, canvas.height / 2, 0,
+          canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) / 2
+        );
+        gradient.addColorStop(0, settings.gradientSettings.color1);
+        gradient.addColorStop(1, settings.gradientSettings.color2);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (settings.backgroundStyle === 'blurred' && videoElement) {
+        if (videoElement.videoWidth === 0) {
+          animationId = requestAnimationFrame(updateBackground);
+          return;
+        }
+        
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        if (regions.length > 0) {
+          const region = regions[0];
+          const vw = videoElement.videoWidth;
+          const vh = videoElement.videoHeight;
+          const rx = region.x * vw;
+          const ry = region.y * vh;
+          const rw = region.width * vw;
+          const rh = region.height * vh;
+          
+          ctx.filter = 'blur(50px)';
+          ctx.globalAlpha = 0.5;
+          ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, canvas.width, canvas.height);
+          ctx.filter = 'none';
+          ctx.globalAlpha = 1;
+          
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
       }
       
-      animationId = requestAnimationFrame(updateBackground);
+      if (settings.backgroundStyle === 'blurred') {
+        animationId = requestAnimationFrame(updateBackground);
+      }
     };
     
     updateBackground();
     return () => cancelAnimationFrame(animationId);
-  }, [settings.backgroundStyle, videoElement, regions]);
+  }, [settings.backgroundStyle, settings.gradientSettings, videoElement, regions]);
+
+  // Determine background color for Canvas
+  const getBackgroundColor = () => {
+    switch (settings.backgroundStyle) {
+      case 'white':
+        return '#ffffff';
+      case 'solid':
+        return settings.backgroundColor;
+      default:
+        return '#000000';
+    }
+  };
+
+  const needsCanvasBackground = settings.backgroundStyle === 'blurred' || 
+                                 settings.backgroundStyle === 'linearGradient' || 
+                                 settings.backgroundStyle === 'radialGradient';
 
   return (
-    <div className="fixed inset-0" style={{ zIndex: 0, background: '#000' }}>
-      {settings.backgroundStyle === 'blurred' && (
+    <div className="fixed inset-0" style={{ zIndex: 0, background: getBackgroundColor() }}>
+      {needsCanvasBackground && (
         <canvas 
-          ref={blurredBgRef} 
+          ref={bgCanvasRef} 
           className="absolute inset-0 w-full h-full"
           style={{ zIndex: 0 }}
         />
       )}
       <Canvas
         camera={{ fov: 60, near: 0.1, far: 100 }}
-        gl={{ antialias: true, alpha: settings.backgroundStyle === 'blurred' }}
+        gl={{ antialias: true, alpha: needsCanvasBackground }}
         style={{ position: 'relative', zIndex: 1 }}
       >
-        {settings.backgroundStyle !== 'blurred' && (
-          <color attach="background" args={['#000000']} />
+        {!needsCanvasBackground && (
+          <color attach="background" args={[getBackgroundColor()]} />
         )}
-        <fog attach="fog" args={['#000000', 10, 30]} />
+        <fog attach="fog" args={[getBackgroundColor(), 10, 30]} />
         <Scene 
           videoElement={videoElement}
           regions={regions}
