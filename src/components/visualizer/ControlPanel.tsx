@@ -477,6 +477,13 @@ export function ControlPanel({
                       <SelectItem value="cube3D">Cube Mapping</SelectItem>
                       <SelectItem value="cylinder3D">Cylinder Mapping</SelectItem>
                       <SelectItem value="torus3D">Torus Mapping</SelectItem>
+                      <SelectItem value="pyramid3D">Pyramid Mapping</SelectItem>
+                      <SelectItem value="cone3D">Cone Mapping</SelectItem>
+                      <SelectItem value="dodecahedron3D">Dodecahedron</SelectItem>
+                      <SelectItem value="icosahedron3D">Icosahedron</SelectItem>
+                      <SelectItem value="octahedron3D">Octahedron</SelectItem>
+                      <SelectItem value="tetrahedron3D">Tetrahedron</SelectItem>
+                      <SelectItem value="torusKnot3D">Torus Knot</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -533,6 +540,13 @@ export function ControlPanel({
                             <SelectItem value="cube3D">Cube</SelectItem>
                             <SelectItem value="cylinder3D">Cylinder</SelectItem>
                             <SelectItem value="torus3D">Torus</SelectItem>
+                            <SelectItem value="pyramid3D">Pyramid</SelectItem>
+                            <SelectItem value="cone3D">Cone</SelectItem>
+                            <SelectItem value="dodecahedron3D">Dodecahedron</SelectItem>
+                            <SelectItem value="icosahedron3D">Icosahedron</SelectItem>
+                            <SelectItem value="octahedron3D">Octahedron</SelectItem>
+                            <SelectItem value="tetrahedron3D">Tetrahedron</SelectItem>
+                            <SelectItem value="torusKnot3D">Torus Knot</SelectItem>
                           </SelectContent>
                         </Select>
                         {region.position3D && (

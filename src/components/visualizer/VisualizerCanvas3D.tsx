@@ -152,6 +152,13 @@ function RegionMesh({
       case 'cube3D':
       case 'cylinder3D':
       case 'torus3D':
+      case 'pyramid3D':
+      case 'cone3D':
+      case 'dodecahedron3D':
+      case 'icosahedron3D':
+      case 'octahedron3D':
+      case 'tetrahedron3D':
+      case 'torusKnot3D':
         // For shape modes, spread out by index
         mesh.position.x = (index - (totalRegions - 1) / 2) * settings.regionSpacing3D;
         mesh.position.y = 0;
@@ -175,6 +182,20 @@ function RegionMesh({
         return <cylinderGeometry args={[1.2, 1.2, 2, 32]} />;
       case 'torus3D':
         return <torusGeometry args={[1.5, 0.5, 16, 48]} />;
+      case 'pyramid3D':
+        return <coneGeometry args={[1.5, 2.5, 4]} />;
+      case 'cone3D':
+        return <coneGeometry args={[1.5, 2.5, 32]} />;
+      case 'dodecahedron3D':
+        return <dodecahedronGeometry args={[1.5, 0]} />;
+      case 'icosahedron3D':
+        return <icosahedronGeometry args={[1.5, 0]} />;
+      case 'octahedron3D':
+        return <octahedronGeometry args={[1.5, 0]} />;
+      case 'tetrahedron3D':
+        return <tetrahedronGeometry args={[1.5, 0]} />;
+      case 'torusKnot3D':
+        return <torusKnotGeometry args={[1, 0.4, 100, 16]} />;
       default:
         return <planeGeometry args={[2, 2]} />;
     }
