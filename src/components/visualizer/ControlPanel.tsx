@@ -935,55 +935,7 @@ export function ControlPanel({
                               </>
                             )}
                           </div>
-                          {/* Glow */}
-                          <div className="space-y-2 mt-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Glow</span>
-                              <Switch
-                                checked={!!region.glowEnabled}
-                                onCheckedChange={(checked) => {
-                                  if (onUpdateRegion) {
-                                    onUpdateRegion(region.id, { 
-                                      glowEnabled: checked,
-                                      glowColor: checked ? '#FFFFFF' : undefined,
-                                      glowAmount: checked ? 20 : undefined
-                                    });
-                                  }
-                                }}
-                              />
-                            </div>
-                            {region.glowEnabled && (
-                              <>
-                                <ColorPicker
-                                  value={region.glowColor ?? '#FFFFFF'}
-                                  onChange={(v) => {
-                                    if (onUpdateRegion) {
-                                      onUpdateRegion(region.id, { glowColor: v });
-                                    }
-                                  }}
-                                  label="Color"
-                                />
-                                <div className="space-y-1">
-                                  <div className="flex justify-between">
-                                    <span className="text-xs text-muted-foreground">Amount</span>
-                                    <span className="text-xs text-foreground">{region.glowAmount ?? 20}</span>
-                                  </div>
-                                  <Slider
-                                    value={[region.glowAmount ?? 20]}
-                                    onValueChange={([v]) => {
-                                      if (onUpdateRegion) {
-                                        onUpdateRegion(region.id, { glowAmount: v });
-                                      }
-                                    }}
-                                    min={5}
-                                    max={100}
-                                    step={5}
-                                  />
-                                </div>
-                              </>
-                            )}
-                          </div>
-                          {(region.position3D || region.scale3D !== undefined || region.transparentColor || region.glowEnabled) && (
+                          {(region.position3D || region.scale3D !== undefined || region.transparentColor) && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -994,10 +946,7 @@ export function ControlPanel({
                                     position3D: undefined, 
                                     scale3D: undefined,
                                     transparentColor: undefined,
-                                    transparentThreshold: undefined,
-                                    glowEnabled: undefined,
-                                    glowColor: undefined,
-                                    glowAmount: undefined
+                                    transparentThreshold: undefined
                                   });
                                 }
                               }}
