@@ -24,12 +24,20 @@ export function RegionSelector({
 }: RegionSelectorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragType, setDragType] = useState<DragType | null>(null);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [initialRegion, setInitialRegion] = useState(region);
+  const [localRegion, setLocalRegion] = useState(region);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const initialRegionRef = useRef(region);
   const containerRectRef = useRef<DOMRect | null>(null);
+  const isDraggingRef = useRef(false);
+
+  // Sync local region with prop when not dragging
+  useEffect(() => {
+    if (!isDraggingRef.current) {
+      setLocalRegion(region);
+    }
+  }, [region]);
 
   const getRelativePosition = useCallback((clientX: number, clientY: number) => {
-    // Use cached rect during drag for better performance
     const rect = containerRectRef.current || containerRef.current?.getBoundingClientRect();
     if (!rect) return { x: 0, y: 0 };
     return {
@@ -42,73 +50,76 @@ export function RegionSelector({
     e.preventDefault();
     e.stopPropagation();
     
-    // Cache the container rect at drag start for consistent calculations
     if (containerRef.current) {
       containerRectRef.current = containerRef.current.getBoundingClientRect();
     }
     
-    // Select this region if not already active
     if (!isActive) {
       onClick();
     }
     
     const startPos = getRelativePosition(e.clientX, e.clientY);
-    setDragStart(startPos);
-    setInitialRegion(region);
+    dragStartRef.current = startPos;
+    initialRegionRef.current = localRegion;
+    isDraggingRef.current = true;
     setDragType(type);
-  }, [getRelativePosition, region, onClick, isActive]);
+  }, [getRelativePosition, localRegion, onClick, isActive]);
 
   useEffect(() => {
     if (!dragType) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const current = getRelativePosition(e.clientX, e.clientY);
-      const dx = current.x - dragStart.x;
-      const dy = current.y - dragStart.y;
+      const dx = current.x - dragStartRef.current.x;
+      const dy = current.y - dragStartRef.current.y;
+      const initial = initialRegionRef.current;
 
-      let newRegion = { ...initialRegion };
+      let newRegion = { ...initial };
 
       if (dragType === 'move') {
-        newRegion.x = Math.max(0, Math.min(1 - initialRegion.width, initialRegion.x + dx));
-        newRegion.y = Math.max(0, Math.min(1 - initialRegion.height, initialRegion.y + dy));
+        newRegion.x = Math.max(0, Math.min(1 - initial.width, initial.x + dx));
+        newRegion.y = Math.max(0, Math.min(1 - initial.height, initial.y + dy));
       } else {
-        // Handle resize
         if (dragType.includes('w')) {
-          const newX = initialRegion.x + dx;
-          const newWidth = initialRegion.width - dx;
+          const newX = initial.x + dx;
+          const newWidth = initial.width - dx;
           if (newX >= 0 && newWidth >= 0.05) {
             newRegion.x = newX;
             newRegion.width = newWidth;
           }
         }
         if (dragType.includes('e')) {
-          const newWidth = initialRegion.width + dx;
-          if (initialRegion.x + newWidth <= 1 && newWidth >= 0.05) {
+          const newWidth = initial.width + dx;
+          if (initial.x + newWidth <= 1 && newWidth >= 0.05) {
             newRegion.width = newWidth;
           }
         }
         if (dragType.includes('n')) {
-          const newY = initialRegion.y + dy;
-          const newHeight = initialRegion.height - dy;
+          const newY = initial.y + dy;
+          const newHeight = initial.height - dy;
           if (newY >= 0 && newHeight >= 0.05) {
             newRegion.y = newY;
             newRegion.height = newHeight;
           }
         }
         if (dragType.includes('s')) {
-          const newHeight = initialRegion.height + dy;
-          if (initialRegion.y + newHeight <= 1 && newHeight >= 0.05) {
+          const newHeight = initial.height + dy;
+          if (initial.y + newHeight <= 1 && newHeight >= 0.05) {
             newRegion.height = newHeight;
           }
         }
       }
 
-      onRegionChange(newRegion);
+      // Update local state only during drag (no parent re-render)
+      setLocalRegion(newRegion);
     };
 
     const handleMouseUp = () => {
+      // Sync to parent only on drag end
+      onRegionChange(localRegion);
+      isDraggingRef.current = false;
       setDragType(null);
-      containerRectRef.current = null; // Clear cached rect
+      containerRectRef.current = null;
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -118,7 +129,7 @@ export function RegionSelector({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragType, dragStart, initialRegion, getRelativePosition, onRegionChange]);
+  }, [dragType, getRelativePosition, onRegionChange, localRegion]);
 
   const handleStyle = "absolute w-5 h-5 bg-background rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform shadow-lg";
 
@@ -130,12 +141,13 @@ export function RegionSelector({
     >
       {/* Region Box */}
       <div
-        className={`absolute border-2 ${colorClass} ${isActive ? 'ring-2 ring-white/30' : 'opacity-70'} transition-all cursor-move`}
+        className={`absolute border-2 ${colorClass} ${isActive ? 'ring-2 ring-white/30' : 'opacity-70'} cursor-move`}
         style={{
-          left: `${region.x * 100}%`,
-          top: `${region.y * 100}%`,
-          width: `${region.width * 100}%`,
-          height: `${region.height * 100}%`,
+          left: `${localRegion.x * 100}%`,
+          top: `${localRegion.y * 100}%`,
+          width: `${localRegion.width * 100}%`,
+          height: `${localRegion.height * 100}%`,
+          willChange: dragType ? 'left, top, width, height' : 'auto',
         }}
         onMouseDown={(e) => handleMouseDown(e, 'move')}
       >
