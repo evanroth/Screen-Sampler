@@ -49,8 +49,9 @@ function RegionMesh({
     canvasRef.current.width = 512;
     canvasRef.current.height = 512;
     textureRef.current = new THREE.CanvasTexture(canvasRef.current);
-    textureRef.current.minFilter = THREE.LinearFilter;
-    textureRef.current.magFilter = THREE.LinearFilter;
+    // Use NearestFilter to maintain hard pixel edges (no interpolation)
+    textureRef.current.minFilter = THREE.NearestFilter;
+    textureRef.current.magFilter = THREE.NearestFilter;
     
     return () => {
       textureRef.current?.dispose();
