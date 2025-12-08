@@ -59,17 +59,6 @@ export function ControlPanel({
 }: ControlPanelProps) {
   return (
     <>
-      {/* Toggle Button */}
-      <button
-        onClick={onToggle}
-        className={cn(
-          "fixed top-4 right-4 z-50 p-3 rounded-full glass-panel",
-          "hover:bg-secondary transition-all duration-200",
-          isOpen && "bg-secondary"
-        )}
-      >
-        <Settings className="w-5 h-5 text-foreground" />
-      </button>
 
       {/* Panel */}
       <div
@@ -693,7 +682,7 @@ export function ControlPanel({
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  Tip: Click and drag to rotate view. Shift+drag shapes to reposition.
+                  Tip: Click and drag to rotate view.
                 </p>
               </>
             )}
