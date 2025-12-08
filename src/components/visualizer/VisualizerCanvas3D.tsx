@@ -79,6 +79,40 @@ function RegionMesh({
       
       const quality = settings.textureQuality;
       ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, quality, quality);
+      
+      // Per-region transparent color processing
+      if (region.transparentColor) {
+        const imageData = ctx.getImageData(0, 0, quality, quality);
+        const data = imageData.data;
+        const threshold = region.transparentThreshold ?? 30;
+        
+        // Parse the hex color
+        const hex = region.transparentColor.replace('#', '');
+        const targetR = parseInt(hex.substring(0, 2), 16);
+        const targetG = parseInt(hex.substring(2, 4), 16);
+        const targetB = parseInt(hex.substring(4, 6), 16);
+        
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // Calculate color distance from target
+          const distance = Math.sqrt(
+            Math.pow(r - targetR, 2) + 
+            Math.pow(g - targetG, 2) + 
+            Math.pow(b - targetB, 2)
+          );
+          
+          if (distance < threshold) {
+            const closeness = 1 - distance / threshold;
+            data[i + 3] = Math.round(data[i + 3] * (1 - closeness));
+          }
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+      }
+      
       textureRef.current.needsUpdate = true;
     }
 

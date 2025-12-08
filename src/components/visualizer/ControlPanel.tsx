@@ -608,14 +608,66 @@ export function ControlPanel({
                               step={0.1}
                             />
                           </div>
-                          {(region.position2D || region.scale2D !== undefined) && (
+                          {/* Transparent Color */}
+                          <div className="space-y-2 mt-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Transparent Color</span>
+                              <Switch
+                                checked={!!region.transparentColor}
+                                onCheckedChange={(checked) => {
+                                  if (onUpdateRegion) {
+                                    onUpdateRegion(region.id, { 
+                                      transparentColor: checked ? '#000000' : undefined,
+                                      transparentThreshold: checked ? 30 : undefined
+                                    });
+                                  }
+                                }}
+                              />
+                            </div>
+                            {region.transparentColor && (
+                              <>
+                                <ColorPicker
+                                  value={region.transparentColor}
+                                  onChange={(v) => {
+                                    if (onUpdateRegion) {
+                                      onUpdateRegion(region.id, { transparentColor: v });
+                                    }
+                                  }}
+                                  label="Color"
+                                />
+                                <div className="space-y-1">
+                                  <div className="flex justify-between">
+                                    <span className="text-xs text-muted-foreground">Threshold</span>
+                                    <span className="text-xs text-foreground">{region.transparentThreshold ?? 30}</span>
+                                  </div>
+                                  <Slider
+                                    value={[region.transparentThreshold ?? 30]}
+                                    onValueChange={([v]) => {
+                                      if (onUpdateRegion) {
+                                        onUpdateRegion(region.id, { transparentThreshold: v });
+                                      }
+                                    }}
+                                    min={5}
+                                    max={128}
+                                    step={1}
+                                  />
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          {(region.position2D || region.scale2D !== undefined || region.transparentColor) && (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="text-xs h-7 mt-2"
                               onClick={() => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { position2D: undefined, scale2D: undefined });
+                                  onUpdateRegion(region.id, { 
+                                    position2D: undefined, 
+                                    scale2D: undefined,
+                                    transparentColor: undefined,
+                                    transparentThreshold: undefined
+                                  });
                                 }
                               }}
                             >
@@ -834,14 +886,66 @@ export function ControlPanel({
                               step={0.1}
                             />
                           </div>
-                          {(region.position3D || region.scale3D !== undefined) && (
+                          {/* Transparent Color */}
+                          <div className="space-y-2 mt-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Transparent Color</span>
+                              <Switch
+                                checked={!!region.transparentColor}
+                                onCheckedChange={(checked) => {
+                                  if (onUpdateRegion) {
+                                    onUpdateRegion(region.id, { 
+                                      transparentColor: checked ? '#000000' : undefined,
+                                      transparentThreshold: checked ? 30 : undefined
+                                    });
+                                  }
+                                }}
+                              />
+                            </div>
+                            {region.transparentColor && (
+                              <>
+                                <ColorPicker
+                                  value={region.transparentColor}
+                                  onChange={(v) => {
+                                    if (onUpdateRegion) {
+                                      onUpdateRegion(region.id, { transparentColor: v });
+                                    }
+                                  }}
+                                  label="Color"
+                                />
+                                <div className="space-y-1">
+                                  <div className="flex justify-between">
+                                    <span className="text-xs text-muted-foreground">Threshold</span>
+                                    <span className="text-xs text-foreground">{region.transparentThreshold ?? 30}</span>
+                                  </div>
+                                  <Slider
+                                    value={[region.transparentThreshold ?? 30]}
+                                    onValueChange={([v]) => {
+                                      if (onUpdateRegion) {
+                                        onUpdateRegion(region.id, { transparentThreshold: v });
+                                      }
+                                    }}
+                                    min={5}
+                                    max={128}
+                                    step={1}
+                                  />
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          {(region.position3D || region.scale3D !== undefined || region.transparentColor) && (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="text-xs h-7 mt-2"
                               onClick={() => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { position3D: undefined, scale3D: undefined });
+                                  onUpdateRegion(region.id, { 
+                                    position3D: undefined, 
+                                    scale3D: undefined,
+                                    transparentColor: undefined,
+                                    transparentThreshold: undefined
+                                  });
                                 }
                               }}
                             >

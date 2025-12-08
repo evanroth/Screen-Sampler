@@ -12,6 +12,8 @@ export interface CaptureRegion {
   scale3D?: number;
   position2D?: { x: number; y: number; z: number };
   scale2D?: number;
+  transparentColor?: string;
+  transparentThreshold?: number;
 }
 
 export function useScreenCapture() {
