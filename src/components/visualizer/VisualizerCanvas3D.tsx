@@ -508,9 +508,6 @@ export function VisualizerCanvas3D({
           defaultMode={currentDefaultMode}
         />
       </Canvas>
-      <div className="fixed bottom-4 left-4 text-xs text-muted-foreground bg-background/80 px-3 py-2 rounded-lg">
-        Shift + Drag to pan camera
-      </div>
     </div>
   );
 }
