@@ -46,8 +46,8 @@ function RegionMesh({
   // Create offscreen canvas for region capture
   useEffect(() => {
     canvasRef.current = document.createElement('canvas');
-    canvasRef.current.width = 512;
-    canvasRef.current.height = 512;
+    canvasRef.current.width = 1024;
+    canvasRef.current.height = 1024;
     textureRef.current = new THREE.CanvasTexture(canvasRef.current);
     // Use NearestFilter to maintain hard pixel edges (no interpolation)
     textureRef.current.minFilter = THREE.NearestFilter;
@@ -75,7 +75,7 @@ function RegionMesh({
       const rw = region.width * vw;
       const rh = region.height * vh;
       
-      ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, 512, 512);
+      ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, 1024, 1024);
       textureRef.current.needsUpdate = true;
     }
 
