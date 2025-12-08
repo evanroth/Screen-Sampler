@@ -63,6 +63,8 @@ export const ANIMATION_MODES_3D: AnimationMode3D[] = [
 
 export type VisualizerMode = '2d' | '3d';
 
+export type TextureQuality = 512 | 1024 | 2048;
+
 export interface VisualizerSettings {
   visualizerMode: VisualizerMode;
   panelScaleX: number;
@@ -85,6 +87,8 @@ export interface VisualizerSettings {
   autoRotateCamera: boolean;
   autoRotateCameraSpeed: number;
   regionSpacing3D: number;
+  textureQuality: TextureQuality;
+  textureSmoothing: boolean;
 }
 
 const defaultSettings: VisualizerSettings = {
@@ -109,6 +113,8 @@ const defaultSettings: VisualizerSettings = {
   autoRotateCamera: false,
   autoRotateCameraSpeed: 1,
   regionSpacing3D: 3,
+  textureQuality: 1024,
+  textureSmoothing: false,
 };
 
 export function useVisualizerSettings() {

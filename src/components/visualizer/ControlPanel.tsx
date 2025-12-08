@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode, AnimationMode3D, VisualizerMode } from '@/hooks/useVisualizerSettings';
+import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode, AnimationMode3D, VisualizerMode, TextureQuality } from '@/hooks/useVisualizerSettings';
 import { CaptureRegion } from '@/hooks/useScreenCapture';
 import { cn } from '@/lib/utils';
 
@@ -609,6 +609,43 @@ export function ControlPanel({
                       />
                     </div>
                   )}
+                </div>
+
+                <Separator className="bg-border" />
+
+                {/* Texture Settings */}
+                <div className="space-y-4">
+                  <Label className="text-muted-foreground font-medium">Texture Settings</Label>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Texture Quality</Label>
+                    <Select
+                      value={String(settings.textureQuality)}
+                      onValueChange={(v) => onUpdateSetting('textureQuality', Number(v) as TextureQuality)}
+                    >
+                      <SelectTrigger className="bg-secondary border-border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="512">512px (Fast)</SelectItem>
+                        <SelectItem value="1024">1024px (Balanced)</SelectItem>
+                        <SelectItem value="2048">2048px (High Quality)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label className="text-muted-foreground">Texture Smoothing</Label>
+                    <Switch
+                      checked={settings.textureSmoothing}
+                      onCheckedChange={(v) => onUpdateSetting('textureSmoothing', v)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {settings.textureSmoothing 
+                      ? "Smooth scaling (bilinear filtering)" 
+                      : "Crisp pixels (nearest neighbor)"}
+                  </p>
                 </div>
 
                 <Separator className="bg-border" />
