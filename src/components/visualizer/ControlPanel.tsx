@@ -473,17 +473,24 @@ export function ControlPanel({
                       <SelectItem value="helix3D">Helix</SelectItem>
                       <SelectItem value="explode3D">Explode</SelectItem>
                       <SelectItem value="wave3D">Wave</SelectItem>
-                      <SelectItem value="sphere3D">Sphere Mapping</SelectItem>
-                      <SelectItem value="cube3D">Cube Mapping</SelectItem>
-                      <SelectItem value="cylinder3D">Cylinder Mapping</SelectItem>
-                      <SelectItem value="torus3D">Torus Mapping</SelectItem>
-                      <SelectItem value="pyramid3D">Pyramid Mapping</SelectItem>
-                      <SelectItem value="cone3D">Cone Mapping</SelectItem>
+                      <SelectItem value="sphere3D">Sphere</SelectItem>
+                      <SelectItem value="cube3D">Cube</SelectItem>
+                      <SelectItem value="cylinder3D">Cylinder</SelectItem>
+                      <SelectItem value="torus3D">Torus</SelectItem>
+                      <SelectItem value="pyramid3D">Pyramid</SelectItem>
+                      <SelectItem value="cone3D">Cone</SelectItem>
                       <SelectItem value="dodecahedron3D">Dodecahedron</SelectItem>
                       <SelectItem value="icosahedron3D">Icosahedron</SelectItem>
                       <SelectItem value="octahedron3D">Octahedron</SelectItem>
                       <SelectItem value="tetrahedron3D">Tetrahedron</SelectItem>
                       <SelectItem value="torusKnot3D">Torus Knot</SelectItem>
+                      <SelectItem value="trefoil3D">Trefoil Knot</SelectItem>
+                      <SelectItem value="cinquefoil3D">Cinquefoil Knot</SelectItem>
+                      <SelectItem value="star3D">Star</SelectItem>
+                      <SelectItem value="heart3D">Heart</SelectItem>
+                      <SelectItem value="capsule3D">Capsule</SelectItem>
+                      <SelectItem value="ring3D">Ring</SelectItem>
+                      <SelectItem value="mobius3D">Möbius</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -547,6 +554,13 @@ export function ControlPanel({
                             <SelectItem value="octahedron3D">Octahedron</SelectItem>
                             <SelectItem value="tetrahedron3D">Tetrahedron</SelectItem>
                             <SelectItem value="torusKnot3D">Torus Knot</SelectItem>
+                            <SelectItem value="trefoil3D">Trefoil Knot</SelectItem>
+                            <SelectItem value="cinquefoil3D">Cinquefoil Knot</SelectItem>
+                            <SelectItem value="star3D">Star</SelectItem>
+                            <SelectItem value="heart3D">Heart</SelectItem>
+                            <SelectItem value="capsule3D">Capsule</SelectItem>
+                            <SelectItem value="ring3D">Ring</SelectItem>
+                            <SelectItem value="mobius3D">Möbius</SelectItem>
                           </SelectContent>
                         </Select>
                         {region.position3D && (

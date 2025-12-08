@@ -39,6 +39,13 @@ export type AnimationMode3D =
   | 'octahedron3D'
   | 'tetrahedron3D'
   | 'torusKnot3D'
+  | 'trefoil3D'
+  | 'cinquefoil3D'
+  | 'star3D'
+  | 'heart3D'
+  | 'capsule3D'
+  | 'ring3D'
+  | 'mobius3D'
   | 'random3D';
 
 export const ANIMATION_MODES: AnimationMode[] = [
@@ -49,7 +56,9 @@ export const ANIMATION_MODES: AnimationMode[] = [
 export const ANIMATION_MODES_3D: AnimationMode3D[] = [
   'floating3D', 'orbit3D', 'carousel3D', 'helix3D', 'explode3D', 'wave3D',
   'sphere3D', 'cube3D', 'cylinder3D', 'torus3D', 'pyramid3D', 'cone3D',
-  'dodecahedron3D', 'icosahedron3D', 'octahedron3D', 'tetrahedron3D', 'torusKnot3D'
+  'dodecahedron3D', 'icosahedron3D', 'octahedron3D', 'tetrahedron3D', 
+  'torusKnot3D', 'trefoil3D', 'cinquefoil3D', 'star3D', 'heart3D', 
+  'capsule3D', 'ring3D', 'mobius3D'
 ];
 
 export type VisualizerMode = '2d' | '3d';

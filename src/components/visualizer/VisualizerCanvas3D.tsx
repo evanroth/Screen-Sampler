@@ -159,6 +159,13 @@ function RegionMesh({
       case 'octahedron3D':
       case 'tetrahedron3D':
       case 'torusKnot3D':
+      case 'trefoil3D':
+      case 'cinquefoil3D':
+      case 'star3D':
+      case 'heart3D':
+      case 'capsule3D':
+      case 'ring3D':
+      case 'mobius3D':
         // For shape modes, spread out by index
         mesh.position.x = (index - (totalRegions - 1) / 2) * settings.regionSpacing3D;
         mesh.position.y = 0;
@@ -170,6 +177,47 @@ function RegionMesh({
 
     mesh.scale.setScalar(baseScale * audioScale);
   });
+
+  // Create star shape
+  const starShape = useMemo(() => {
+    const shape = new THREE.Shape();
+    const outerRadius = 1.5;
+    const innerRadius = 0.6;
+    const spikes = 5;
+    
+    for (let i = 0; i < spikes * 2; i++) {
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const angle = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      if (i === 0) shape.moveTo(x, y);
+      else shape.lineTo(x, y);
+    }
+    shape.closePath();
+    return shape;
+  }, []);
+
+  // Create heart shape
+  const heartShape = useMemo(() => {
+    const shape = new THREE.Shape();
+    const x = 0, y = 0;
+    shape.moveTo(x, y + 0.5);
+    shape.bezierCurveTo(x, y + 0.5, x - 0.5, y, x - 1, y);
+    shape.bezierCurveTo(x - 1.5, y, x - 1.5, y + 0.75, x - 1.5, y + 0.75);
+    shape.bezierCurveTo(x - 1.5, y + 1.25, x - 1.25, y + 1.75, x, y + 2.25);
+    shape.bezierCurveTo(x + 1.25, y + 1.75, x + 1.5, y + 1.25, x + 1.5, y + 0.75);
+    shape.bezierCurveTo(x + 1.5, y + 0.75, x + 1.5, y, x + 1, y);
+    shape.bezierCurveTo(x + 0.5, y, x, y + 0.5, x, y + 0.5);
+    return shape;
+  }, []);
+
+  // Create mobius geometry using TubeGeometry with a custom curve
+  const mobiusGeometry = useMemo(() => {
+    // Create a custom Möbius-like torus knot as alternative
+    // TorusKnotGeometry with p=2, q=1 creates a figure-8 like shape
+    const geometry = new THREE.TorusKnotGeometry(1.2, 0.25, 100, 16, 2, 1);
+    return geometry;
+  }, []);
 
   // Determine geometry based on mode
   const geometry = useMemo(() => {
@@ -196,10 +244,24 @@ function RegionMesh({
         return <tetrahedronGeometry args={[1.5, 0]} />;
       case 'torusKnot3D':
         return <torusKnotGeometry args={[1, 0.4, 100, 16]} />;
+      case 'trefoil3D':
+        return <torusKnotGeometry args={[1, 0.35, 100, 16, 2, 3]} />;
+      case 'cinquefoil3D':
+        return <torusKnotGeometry args={[1, 0.3, 100, 16, 2, 5]} />;
+      case 'star3D':
+        return <extrudeGeometry args={[starShape, { depth: 0.5, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.1, bevelSegments: 3 }]} />;
+      case 'heart3D':
+        return <extrudeGeometry args={[heartShape, { depth: 0.5, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.1, bevelSegments: 3 }]} />;
+      case 'capsule3D':
+        return <capsuleGeometry args={[0.8, 2, 16, 32]} />;
+      case 'ring3D':
+        return <torusGeometry args={[1.5, 0.15, 8, 48]} />;
+      case 'mobius3D':
+        return <primitive object={mobiusGeometry} attach="geometry" />;
       default:
         return <planeGeometry args={[2, 2]} />;
     }
-  }, [mode]);
+  }, [mode, starShape, heartShape, mobiusGeometry]);
 
   return (
     <mesh ref={meshRef}>
