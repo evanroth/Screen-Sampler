@@ -1,7 +1,12 @@
 import { useState, useCallback } from 'react';
 
-export type BackgroundStyle = 'black' | 'blurred' | 'gradient';
+export type BackgroundStyle = 'black' | 'white' | 'solid' | 'blurred' | 'linearGradient' | 'radialGradient';
 export type TileEffect = 'none' | 'glow' | 'opacity' | 'blur' | 'all';
+
+export interface GradientSettings {
+  color1: string;
+  color2: string;
+}
 
 // 2D Animation modes
 export type AnimationMode = 
@@ -75,6 +80,8 @@ export interface VisualizerSettings {
   opacityVariation: number;
   blurIntensity: number;
   backgroundStyle: BackgroundStyle;
+  backgroundColor: string;
+  gradientSettings: GradientSettings;
   tileEffect: TileEffect;
   enableRotation: boolean;
   trailAmount: number;
@@ -101,6 +108,11 @@ const defaultSettings: VisualizerSettings = {
   opacityVariation: 0.7,
   blurIntensity: 1.0,
   backgroundStyle: 'black',
+  backgroundColor: '#000000',
+  gradientSettings: {
+    color1: '#1a0033',
+    color2: '#000000',
+  },
   tileEffect: 'none',
   enableRotation: true,
   trailAmount: 0.85,

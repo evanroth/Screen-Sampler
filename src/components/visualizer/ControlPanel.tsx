@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode, AnimationMode3D, VisualizerMode, TextureQuality } from '@/hooks/useVisualizerSettings';
+import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode, AnimationMode3D, VisualizerMode, TextureQuality, GradientSettings } from '@/hooks/useVisualizerSettings';
 import { CaptureRegion } from '@/hooks/useScreenCapture';
 import { cn } from '@/lib/utils';
+import { ColorPicker } from '@/components/ui/color-picker';
 
 interface ControlPanelProps {
   isOpen: boolean;
@@ -352,7 +353,7 @@ export function ControlPanel({
 
           {/* Dropdowns */}
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label className="text-muted-foreground">Background</Label>
               <Select
                 value={settings.backgroundStyle}
@@ -363,10 +364,36 @@ export function ControlPanel({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="black">Pure Black</SelectItem>
+                  <SelectItem value="white">Pure White</SelectItem>
+                  <SelectItem value="solid">Solid Color</SelectItem>
                   <SelectItem value="blurred">Blurred Region</SelectItem>
-                  <SelectItem value="gradient">Gradient</SelectItem>
+                  <SelectItem value="linearGradient">Linear Gradient</SelectItem>
+                  <SelectItem value="radialGradient">Radial Gradient</SelectItem>
                 </SelectContent>
               </Select>
+
+              {settings.backgroundStyle === 'solid' && (
+                <ColorPicker
+                  value={settings.backgroundColor}
+                  onChange={(v) => onUpdateSetting('backgroundColor', v)}
+                  label="Color"
+                />
+              )}
+
+              {(settings.backgroundStyle === 'linearGradient' || settings.backgroundStyle === 'radialGradient') && (
+                <div className="space-y-2">
+                  <ColorPicker
+                    value={settings.gradientSettings.color1}
+                    onChange={(v) => onUpdateSetting('gradientSettings', { ...settings.gradientSettings, color1: v })}
+                    label="Start"
+                  />
+                  <ColorPicker
+                    value={settings.gradientSettings.color2}
+                    onChange={(v) => onUpdateSetting('gradientSettings', { ...settings.gradientSettings, color2: v })}
+                    label="End"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

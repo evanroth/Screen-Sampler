@@ -107,13 +107,28 @@ export function VisualizerCanvas({
       if (settings.backgroundStyle === 'black') {
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-      } else if (settings.backgroundStyle === 'gradient') {
+      } else if (settings.backgroundStyle === 'white') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (settings.backgroundStyle === 'solid') {
+        ctx.fillStyle = settings.backgroundColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (settings.backgroundStyle === 'linearGradient') {
+        const gradient = ctx.createLinearGradient(
+          canvas.width / 2, 0,
+          canvas.width / 2, canvas.height
+        );
+        gradient.addColorStop(0, settings.gradientSettings.color1);
+        gradient.addColorStop(1, settings.gradientSettings.color2);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (settings.backgroundStyle === 'radialGradient') {
         const gradient = ctx.createRadialGradient(
           canvas.width / 2, canvas.height / 2, 0,
-          canvas.width / 2, canvas.height / 2, canvas.width / 2
+          canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) / 2
         );
-        gradient.addColorStop(0, 'hsl(265, 80%, 10%)');
-        gradient.addColorStop(1, '#000000');
+        gradient.addColorStop(0, settings.gradientSettings.color1);
+        gradient.addColorStop(1, settings.gradientSettings.color2);
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       } else if (settings.backgroundStyle === 'blurred') {
