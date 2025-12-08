@@ -117,6 +117,10 @@ export function VisualizerCanvas({
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       } else if (settings.backgroundStyle === 'blurred') {
+        // First fill with black
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
         // For blurred, use first region if available
         if (regions.length > 0) {
           const region = regions[0];
@@ -125,14 +129,16 @@ export function VisualizerCanvas({
           const regionW = region.width * videoWidth;
           const regionH = region.height * videoHeight;
           
-          ctx.filter = 'blur(30px)';
-          ctx.globalAlpha = 0.3;
+          ctx.filter = 'blur(50px)';
+          ctx.globalAlpha = 0.6;
           ctx.drawImage(videoElement, regionX, regionY, regionW, regionH, 0, 0, canvas.width, canvas.height);
           ctx.filter = 'none';
           ctx.globalAlpha = 1;
+          
+          // Light darkening overlay
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
     } else {
       // Trail effect - fade instead of clear (no transparency processing on trails)
