@@ -296,9 +296,10 @@ export function VisualizerCanvas({
         ctx.filter = `blur(${updated.blurAmount}px)`;
       }
       
-      if (settings.tileEffect === 'all' || settings.tileEffect === 'glow') {
-        ctx.shadowColor = 'hsl(265, 80%, 60%)';
-        ctx.shadowBlur = 20 + audioLevel * 30;
+      // Per-region glow
+      if (region.glowEnabled && region.glowColor) {
+        ctx.shadowColor = region.glowColor;
+        ctx.shadowBlur = (region.glowAmount ?? 20) + audioLevel * 30;
       }
 
       // Draw the panel

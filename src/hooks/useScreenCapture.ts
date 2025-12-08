@@ -14,6 +14,9 @@ export interface CaptureRegion {
   scale2D?: number;
   transparentColor?: string;
   transparentThreshold?: number;
+  glowEnabled?: boolean;
+  glowColor?: string;
+  glowAmount?: number;
 }
 
 export function useScreenCapture() {

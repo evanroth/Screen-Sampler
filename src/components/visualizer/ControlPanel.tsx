@@ -409,27 +409,6 @@ export function ControlPanel({
               )}
             </div>
 
-            {/* 2D-only: Panel Effects */}
-            {settings.visualizerMode === '2d' && (
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Panel Effects</Label>
-                <Select
-                  value={settings.tileEffect}
-                  onValueChange={(v) => onUpdateSetting('tileEffect', v as TileEffect)}
-                >
-                  <SelectTrigger className="bg-secondary border-border">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None (Clean)</SelectItem>
-                    <SelectItem value="glow">Glow</SelectItem>
-                    <SelectItem value="opacity">Varied Opacity</SelectItem>
-                    <SelectItem value="blur">Blur Depth</SelectItem>
-                    <SelectItem value="all">All Effects</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
 
 
             {/* 2D Animation Mode */}
@@ -627,7 +606,55 @@ export function ControlPanel({
                               </>
                             )}
                           </div>
-                          {(region.position2D || region.scale2D !== undefined || region.transparentColor) && (
+                          {/* Glow */}
+                          <div className="space-y-2 mt-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Glow</span>
+                              <Switch
+                                checked={!!region.glowEnabled}
+                                onCheckedChange={(checked) => {
+                                  if (onUpdateRegion) {
+                                    onUpdateRegion(region.id, { 
+                                      glowEnabled: checked,
+                                      glowColor: checked ? '#FFFFFF' : undefined,
+                                      glowAmount: checked ? 20 : undefined
+                                    });
+                                  }
+                                }}
+                              />
+                            </div>
+                            {region.glowEnabled && (
+                              <>
+                                <ColorPicker
+                                  value={region.glowColor ?? '#FFFFFF'}
+                                  onChange={(v) => {
+                                    if (onUpdateRegion) {
+                                      onUpdateRegion(region.id, { glowColor: v });
+                                    }
+                                  }}
+                                  label="Color"
+                                />
+                                <div className="space-y-1">
+                                  <div className="flex justify-between">
+                                    <span className="text-xs text-muted-foreground">Amount</span>
+                                    <span className="text-xs text-foreground">{region.glowAmount ?? 20}</span>
+                                  </div>
+                                  <Slider
+                                    value={[region.glowAmount ?? 20]}
+                                    onValueChange={([v]) => {
+                                      if (onUpdateRegion) {
+                                        onUpdateRegion(region.id, { glowAmount: v });
+                                      }
+                                    }}
+                                    min={5}
+                                    max={100}
+                                    step={5}
+                                  />
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          {(region.position2D || region.scale2D !== undefined || region.transparentColor || region.glowEnabled) && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -638,7 +665,10 @@ export function ControlPanel({
                                     position2D: undefined, 
                                     scale2D: undefined,
                                     transparentColor: undefined,
-                                    transparentThreshold: undefined
+                                    transparentThreshold: undefined,
+                                    glowEnabled: undefined,
+                                    glowColor: undefined,
+                                    glowAmount: undefined
                                   });
                                 }
                               }}
@@ -905,7 +935,55 @@ export function ControlPanel({
                               </>
                             )}
                           </div>
-                          {(region.position3D || region.scale3D !== undefined || region.transparentColor) && (
+                          {/* Glow */}
+                          <div className="space-y-2 mt-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Glow</span>
+                              <Switch
+                                checked={!!region.glowEnabled}
+                                onCheckedChange={(checked) => {
+                                  if (onUpdateRegion) {
+                                    onUpdateRegion(region.id, { 
+                                      glowEnabled: checked,
+                                      glowColor: checked ? '#FFFFFF' : undefined,
+                                      glowAmount: checked ? 20 : undefined
+                                    });
+                                  }
+                                }}
+                              />
+                            </div>
+                            {region.glowEnabled && (
+                              <>
+                                <ColorPicker
+                                  value={region.glowColor ?? '#FFFFFF'}
+                                  onChange={(v) => {
+                                    if (onUpdateRegion) {
+                                      onUpdateRegion(region.id, { glowColor: v });
+                                    }
+                                  }}
+                                  label="Color"
+                                />
+                                <div className="space-y-1">
+                                  <div className="flex justify-between">
+                                    <span className="text-xs text-muted-foreground">Amount</span>
+                                    <span className="text-xs text-foreground">{region.glowAmount ?? 20}</span>
+                                  </div>
+                                  <Slider
+                                    value={[region.glowAmount ?? 20]}
+                                    onValueChange={([v]) => {
+                                      if (onUpdateRegion) {
+                                        onUpdateRegion(region.id, { glowAmount: v });
+                                      }
+                                    }}
+                                    min={5}
+                                    max={100}
+                                    step={5}
+                                  />
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          {(region.position3D || region.scale3D !== undefined || region.transparentColor || region.glowEnabled) && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -916,7 +994,10 @@ export function ControlPanel({
                                     position3D: undefined, 
                                     scale3D: undefined,
                                     transparentColor: undefined,
-                                    transparentThreshold: undefined
+                                    transparentThreshold: undefined,
+                                    glowEnabled: undefined,
+                                    glowColor: undefined,
+                                    glowAmount: undefined
                                   });
                                 }
                               }}
