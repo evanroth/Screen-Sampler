@@ -91,8 +91,6 @@ export interface VisualizerSettings {
   animationMode: AnimationMode;
   animationMode3D: AnimationMode3D;
   randomModeInterval: number;
-  blackAsTransparent: boolean;
-  blackThreshold: number;
   autoRotateCamera: boolean;
   autoRotateCameraSpeed: number;
   regionSpacing3D: number;
@@ -122,8 +120,6 @@ const defaultSettings: VisualizerSettings = {
   animationMode: 'bounce',
   animationMode3D: 'mobius3D',
   randomModeInterval: 10,
-  blackAsTransparent: false,
-  blackThreshold: 30,
   autoRotateCamera: false,
   autoRotateCameraSpeed: 1,
   regionSpacing3D: 3,
