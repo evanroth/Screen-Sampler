@@ -276,13 +276,73 @@ export function VisualizerCanvas3D({
     return null;
   }
 
+  // Create blurred background for 3D mode
+  const blurredBgRef = useRef<HTMLCanvasElement>(null);
+  
+  useEffect(() => {
+    if (settings.backgroundStyle !== 'blurred' || !videoElement || !blurredBgRef.current) return;
+    
+    const canvas = blurredBgRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    let animationId: number;
+    
+    const updateBackground = () => {
+      if (videoElement.videoWidth === 0) {
+        animationId = requestAnimationFrame(updateBackground);
+        return;
+      }
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      if (regions.length > 0) {
+        const region = regions[0];
+        const vw = videoElement.videoWidth;
+        const vh = videoElement.videoHeight;
+        const rx = region.x * vw;
+        const ry = region.y * vh;
+        const rw = region.width * vw;
+        const rh = region.height * vh;
+        
+        ctx.filter = 'blur(50px)';
+        ctx.globalAlpha = 0.5;
+        ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, canvas.width, canvas.height);
+        ctx.filter = 'none';
+        ctx.globalAlpha = 1;
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      
+      animationId = requestAnimationFrame(updateBackground);
+    };
+    
+    updateBackground();
+    return () => cancelAnimationFrame(animationId);
+  }, [settings.backgroundStyle, videoElement, regions]);
+
   return (
     <div className="fixed inset-0" style={{ zIndex: 0, background: '#000' }}>
+      {settings.backgroundStyle === 'blurred' && (
+        <canvas 
+          ref={blurredBgRef} 
+          className="absolute inset-0 w-full h-full"
+          style={{ zIndex: 0 }}
+        />
+      )}
       <Canvas
         camera={{ fov: 60, near: 0.1, far: 100 }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: settings.backgroundStyle === 'blurred' }}
+        style={{ position: 'relative', zIndex: 1 }}
       >
-        <color attach="background" args={['#000000']} />
+        {settings.backgroundStyle !== 'blurred' && (
+          <color attach="background" args={['#000000']} />
+        )}
         <fog attach="fog" args={['#000000', 10, 30]} />
         <Scene 
           videoElement={videoElement}
