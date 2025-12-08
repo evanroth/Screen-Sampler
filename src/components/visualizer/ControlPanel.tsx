@@ -173,75 +173,105 @@ export function ControlPanel({
 
           <Separator className="bg-border" />
 
+          {/* Visualizer Mode - Moved to top */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Visualizer Mode</h3>
+            <Tabs 
+              value={settings.visualizerMode} 
+              onValueChange={(v) => onUpdateSetting('visualizerMode', v as VisualizerMode)}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="2d" className="gap-2">
+                  <Layers className="w-4 h-4" />
+                  2D
+                </TabsTrigger>
+                <TabsTrigger value="3d" className="gap-2">
+                  <Box className="w-4 h-4" />
+                  3D
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <Separator className="bg-border" />
+
           {/* Settings Sliders */}
           <div className="space-y-5">
             <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Parameters</h3>
 
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <Label className="text-muted-foreground">Panel Scale</Label>
-                <button
-                  onClick={() => onUpdateSetting('panelScaleLinked', !settings.panelScaleLinked)}
-                  className={`p-1 rounded transition-colors ${settings.panelScaleLinked ? 'text-primary' : 'text-muted-foreground'}`}
-                  title={settings.panelScaleLinked ? 'Linked (click to unlink)' : 'Unlinked (click to link)'}
-                >
-                  {settings.panelScaleLinked ? <Link className="w-4 h-4" /> : <Unlink className="w-4 h-4" />}
-                </button>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-xs text-muted-foreground">Width</span>
-                  <span className="text-xs text-foreground">{(settings.panelScaleX * 100).toFixed(0)}%</span>
+            {/* 2D-only: Panel Scale */}
+            {settings.visualizerMode === '2d' && (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <Label className="text-muted-foreground">Panel Scale</Label>
+                  <button
+                    onClick={() => onUpdateSetting('panelScaleLinked', !settings.panelScaleLinked)}
+                    className={`p-1 rounded transition-colors ${settings.panelScaleLinked ? 'text-primary' : 'text-muted-foreground'}`}
+                    title={settings.panelScaleLinked ? 'Linked (click to unlink)' : 'Unlinked (click to link)'}
+                  >
+                    {settings.panelScaleLinked ? <Link className="w-4 h-4" /> : <Unlink className="w-4 h-4" />}
+                  </button>
                 </div>
-                <Slider
-                  value={[settings.panelScaleX]}
-                  onValueChange={([v]) => {
-                    onUpdateSetting('panelScaleX', v);
-                    if (settings.panelScaleLinked) {
-                      onUpdateSetting('panelScaleY', v);
-                    }
-                  }}
-                  min={0.1}
-                  max={2}
-                  step={0.05}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-xs text-muted-foreground">Height</span>
-                  <span className="text-xs text-foreground">{(settings.panelScaleY * 100).toFixed(0)}%</span>
-                </div>
-                <Slider
-                  value={[settings.panelScaleY]}
-                  onValueChange={([v]) => {
-                    onUpdateSetting('panelScaleY', v);
-                    if (settings.panelScaleLinked) {
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-xs text-muted-foreground">Width</span>
+                    <span className="text-xs text-foreground">{(settings.panelScaleX * 100).toFixed(0)}%</span>
+                  </div>
+                  <Slider
+                    value={[settings.panelScaleX]}
+                    onValueChange={([v]) => {
                       onUpdateSetting('panelScaleX', v);
-                    }
-                  }}
-                  min={0.1}
+                      if (settings.panelScaleLinked) {
+                        onUpdateSetting('panelScaleY', v);
+                      }
+                    }}
+                    min={0.1}
+                    max={2}
+                    step={0.05}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-xs text-muted-foreground">Height</span>
+                    <span className="text-xs text-foreground">{(settings.panelScaleY * 100).toFixed(0)}%</span>
+                  </div>
+                  <Slider
+                    value={[settings.panelScaleY]}
+                    onValueChange={([v]) => {
+                      onUpdateSetting('panelScaleY', v);
+                      if (settings.panelScaleLinked) {
+                        onUpdateSetting('panelScaleX', v);
+                      }
+                    }}
+                    min={0.1}
+                    max={2}
+                    step={0.05}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* 2D-only: Speed */}
+            {settings.visualizerMode === '2d' && (
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <Label className="text-muted-foreground">Speed</Label>
+                  <span className="text-sm text-foreground">{settings.movementSpeed.toFixed(1)}</span>
+                </div>
+                <Slider
+                  value={[settings.movementSpeed]}
+                  onValueChange={([v]) => onUpdateSetting('movementSpeed', v)}
+                  min={0}
                   max={2}
-                  step={0.05}
+                  step={0.1}
                 />
               </div>
-            </div>
+            )}
 
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <Label className="text-muted-foreground">Speed</Label>
-                <span className="text-sm text-foreground">{settings.movementSpeed.toFixed(1)}</span>
-              </div>
-              <Slider
-                value={[settings.movementSpeed]}
-                onValueChange={([v]) => onUpdateSetting('movementSpeed', v)}
-                min={0}
-                max={2}
-                step={0.1}
-              />
-            </div>
-
+            {/* Shared: Bounce */}
             <div className="space-y-3">
               <div className="flex justify-between">
                 <Label className="text-muted-foreground">Bounce</Label>
@@ -256,23 +286,62 @@ export function ControlPanel({
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label className="text-muted-foreground">Enable Trails</Label>
-              <Switch
-                checked={settings.enableTrails}
-                onCheckedChange={(v) => onUpdateSetting('enableTrails', v)}
-              />
-            </div>
+            {/* 2D-only: Trails */}
+            {settings.visualizerMode === '2d' && (
+              <>
+                <div className="flex items-center justify-between">
+                  <Label className="text-muted-foreground">Enable Trails</Label>
+                  <Switch
+                    checked={settings.enableTrails}
+                    onCheckedChange={(v) => onUpdateSetting('enableTrails', v)}
+                  />
+                </div>
 
-            {settings.enableTrails && (
+                {settings.enableTrails && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <Label className="text-muted-foreground">Trail Amount</Label>
+                      <span className="text-sm text-foreground">{(settings.trailAmount * 100).toFixed(0)}%</span>
+                    </div>
+                    <Slider
+                      value={[settings.trailAmount]}
+                      onValueChange={([v]) => onUpdateSetting('trailAmount', v)}
+                      min={0}
+                      max={1}
+                      step={0.05}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* 2D-only: Opacity Variation */}
+            {settings.visualizerMode === '2d' && (
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <Label className="text-muted-foreground">Trail Amount</Label>
-                  <span className="text-sm text-foreground">{(settings.trailAmount * 100).toFixed(0)}%</span>
+                  <Label className="text-muted-foreground">Opacity Variation</Label>
+                  <span className="text-sm text-foreground">{(settings.opacityVariation * 100).toFixed(0)}%</span>
                 </div>
                 <Slider
-                  value={[settings.trailAmount]}
-                  onValueChange={([v]) => onUpdateSetting('trailAmount', v)}
+                  value={[settings.opacityVariation]}
+                  onValueChange={([v]) => onUpdateSetting('opacityVariation', v)}
+                  min={0}
+                  max={0.7}
+                  step={0.05}
+                />
+              </div>
+            )}
+
+            {/* 2D-only: Blur Intensity */}
+            {settings.visualizerMode === '2d' && (
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <Label className="text-muted-foreground">Blur Intensity</Label>
+                  <span className="text-sm text-foreground">{(settings.blurIntensity * 100).toFixed(0)}%</span>
+                </div>
+                <Slider
+                  value={[settings.blurIntensity]}
+                  onValueChange={([v]) => onUpdateSetting('blurIntensity', v)}
                   min={0}
                   max={1}
                   step={0.05}
@@ -280,64 +349,44 @@ export function ControlPanel({
               </div>
             )}
 
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <Label className="text-muted-foreground">Opacity Variation</Label>
-                <span className="text-sm text-foreground">{(settings.opacityVariation * 100).toFixed(0)}%</span>
-              </div>
-              <Slider
-                value={[settings.opacityVariation]}
-                onValueChange={([v]) => onUpdateSetting('opacityVariation', v)}
-                min={0}
-                max={0.7}
-                step={0.05}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <Label className="text-muted-foreground">Blur Intensity</Label>
-                <span className="text-sm text-foreground">{(settings.blurIntensity * 100).toFixed(0)}%</span>
-              </div>
-              <Slider
-                value={[settings.blurIntensity]}
-                onValueChange={([v]) => onUpdateSetting('blurIntensity', v)}
-                min={0}
-                max={1}
-                step={0.05}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label className="text-muted-foreground">Enable Rotation</Label>
-              <Switch
-                checked={settings.enableRotation}
-                onCheckedChange={(v) => onUpdateSetting('enableRotation', v)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label className="text-muted-foreground">Black as Transparent</Label>
-              <Switch
-                checked={settings.blackAsTransparent}
-                onCheckedChange={(v) => onUpdateSetting('blackAsTransparent', v)}
-              />
-            </div>
-
-            {settings.blackAsTransparent && (
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <Label className="text-muted-foreground">Black Threshold</Label>
-                  <span className="text-sm text-foreground">{settings.blackThreshold}</span>
-                </div>
-                <Slider
-                  value={[settings.blackThreshold]}
-                  onValueChange={([v]) => onUpdateSetting('blackThreshold', v)}
-                  min={5}
-                  max={128}
-                  step={1}
+            {/* 2D-only: Rotation */}
+            {settings.visualizerMode === '2d' && (
+              <div className="flex items-center justify-between">
+                <Label className="text-muted-foreground">Enable Rotation</Label>
+                <Switch
+                  checked={settings.enableRotation}
+                  onCheckedChange={(v) => onUpdateSetting('enableRotation', v)}
                 />
               </div>
+            )}
+
+            {/* 2D-only: Black as Transparent */}
+            {settings.visualizerMode === '2d' && (
+              <>
+                <div className="flex items-center justify-between">
+                  <Label className="text-muted-foreground">Black as Transparent</Label>
+                  <Switch
+                    checked={settings.blackAsTransparent}
+                    onCheckedChange={(v) => onUpdateSetting('blackAsTransparent', v)}
+                  />
+                </div>
+
+                {settings.blackAsTransparent && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <Label className="text-muted-foreground">Black Threshold</Label>
+                      <span className="text-sm text-foreground">{settings.blackThreshold}</span>
+                    </div>
+                    <Slider
+                      value={[settings.blackThreshold]}
+                      onValueChange={([v]) => onUpdateSetting('blackThreshold', v)}
+                      min={5}
+                      max={128}
+                      step={1}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -388,46 +437,31 @@ export function ControlPanel({
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">Panel Effects</Label>
-              <Select
-                value={settings.tileEffect}
-                onValueChange={(v) => onUpdateSetting('tileEffect', v as TileEffect)}
-              >
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None (Clean)</SelectItem>
-                  <SelectItem value="glow">Glow</SelectItem>
-                  <SelectItem value="opacity">Varied Opacity</SelectItem>
-                  <SelectItem value="blur">Blur Depth</SelectItem>
-                  <SelectItem value="all">All Effects</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* 2D-only: Panel Effects */}
+            {settings.visualizerMode === '2d' && (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Panel Effects</Label>
+                <Select
+                  value={settings.tileEffect}
+                  onValueChange={(v) => onUpdateSetting('tileEffect', v as TileEffect)}
+                >
+                  <SelectTrigger className="bg-secondary border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None (Clean)</SelectItem>
+                    <SelectItem value="glow">Glow</SelectItem>
+                    <SelectItem value="opacity">Varied Opacity</SelectItem>
+                    <SelectItem value="blur">Blur Depth</SelectItem>
+                    <SelectItem value="all">All Effects</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">Visualizer Mode</Label>
-              <Tabs 
-                value={settings.visualizerMode} 
-                onValueChange={(v) => onUpdateSetting('visualizerMode', v as VisualizerMode)}
-                className="w-full"
-              >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="2d" className="gap-2">
-                    <Layers className="w-4 h-4" />
-                    2D
-                  </TabsTrigger>
-                  <TabsTrigger value="3d" className="gap-2">
-                    <Box className="w-4 h-4" />
-                    3D
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
 
-            {settings.visualizerMode === '2d' ? (
+            {/* 2D Animation Mode */}
+            {settings.visualizerMode === '2d' && (
               <>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Animation Mode</Label>
@@ -473,7 +507,10 @@ export function ControlPanel({
                   </div>
                 )}
               </>
-            ) : (
+            )}
+
+            {/* 3D Animation Mode */}
+            {settings.visualizerMode === '3d' && (
               <>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Default 3D Animation</Label>
