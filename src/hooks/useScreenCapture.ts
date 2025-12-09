@@ -17,6 +17,7 @@ export interface CaptureRegion {
   glowEnabled?: boolean;
   glowColor?: string;
   glowAmount?: number;
+  fullscreenBackground?: boolean;
 }
 
 export function useScreenCapture() {

@@ -163,12 +163,16 @@ export function VisualizerCanvas({
     }
 
     // Create region lookup and sort by z-index for proper layering
+    // Fullscreen background regions render first (behind everything)
     const regionMap = new Map(regions.map(r => [r.id, r]));
     const sortedPanels = [...panelsRef.current].sort((a, b) => {
       const regionA = regionMap.get(a.regionId);
       const regionB = regionMap.get(b.regionId);
-      const zA = regionA?.position2D?.z ?? 0;
-      const zB = regionB?.position2D?.z ?? 0;
+      // Fullscreen backgrounds sort first (lowest)
+      const bgA = regionA?.fullscreenBackground ? -1000 : 0;
+      const bgB = regionB?.fullscreenBackground ? -1000 : 0;
+      const zA = (regionA?.position2D?.z ?? 0) + bgA;
+      const zB = (regionB?.position2D?.z ?? 0) + bgB;
       return zA - zB;
     });
 
@@ -236,6 +240,21 @@ export function VisualizerCanvas({
         }
         
         offCtx.putImageData(imageData, 0, 0);
+      }
+
+      // Handle fullscreen background mode
+      if (region.fullscreenBackground) {
+        ctx.save();
+        
+        // Apply transparent color processing but draw fullscreen
+        if (region.glowEnabled && region.glowColor) {
+          ctx.shadowColor = region.glowColor;
+          ctx.shadowBlur = (region.glowAmount ?? 20) + audioLevel * 30;
+        }
+        
+        ctx.drawImage(offscreen, 0, 0, canvas.width, canvas.height);
+        ctx.restore();
+        return panel;
       }
 
       // Calculate scaled size with per-region scale override

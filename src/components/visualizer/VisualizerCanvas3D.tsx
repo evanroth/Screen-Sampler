@@ -295,6 +295,108 @@ function RegionMesh({
   );
 }
 
+// Fullscreen background plane that renders behind everything
+function FullscreenBackgroundMesh({ 
+  videoElement, 
+  region,
+  settings
+}: {
+  videoElement: HTMLVideoElement;
+  region: CaptureRegion;
+  settings: VisualizerSettings;
+}) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const textureRef = useRef<THREE.CanvasTexture | null>(null);
+  const { viewport } = useThree();
+
+  useEffect(() => {
+    const quality = settings.textureQuality;
+    canvasRef.current = document.createElement('canvas');
+    canvasRef.current.width = quality;
+    canvasRef.current.height = quality;
+    textureRef.current = new THREE.CanvasTexture(canvasRef.current);
+    const filter = settings.textureSmoothing ? THREE.LinearFilter : THREE.NearestFilter;
+    textureRef.current.minFilter = filter;
+    textureRef.current.magFilter = filter;
+    
+    return () => {
+      textureRef.current?.dispose();
+    };
+  }, [settings.textureQuality, settings.textureSmoothing]);
+
+  useFrame(() => {
+    if (!meshRef.current || !canvasRef.current || !textureRef.current || !videoElement) return;
+    
+    const ctx = canvasRef.current.getContext('2d');
+    if (ctx && videoElement.videoWidth > 0) {
+      const vw = videoElement.videoWidth;
+      const vh = videoElement.videoHeight;
+      const rx = region.x * vw;
+      const ry = region.y * vh;
+      const rw = region.width * vw;
+      const rh = region.height * vh;
+      
+      const quality = settings.textureQuality;
+      ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, quality, quality);
+      
+      // Apply transparent color processing
+      if (region.transparentColor) {
+        const imageData = ctx.getImageData(0, 0, quality, quality);
+        const data = imageData.data;
+        const threshold = region.transparentThreshold ?? 30;
+        
+        const hex = region.transparentColor.replace('#', '');
+        const targetR = parseInt(hex.substring(0, 2), 16);
+        const targetG = parseInt(hex.substring(2, 4), 16);
+        const targetB = parseInt(hex.substring(4, 6), 16);
+        
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          const distance = Math.sqrt(
+            Math.pow(r - targetR, 2) + 
+            Math.pow(g - targetG, 2) + 
+            Math.pow(b - targetB, 2)
+          );
+          
+          if (distance < threshold) {
+            const closeness = 1 - distance / threshold;
+            data[i + 3] = Math.round(data[i + 3] * (1 - closeness));
+          }
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+      }
+      
+      textureRef.current.needsUpdate = true;
+    }
+
+    if (materialRef.current) {
+      materialRef.current.map = textureRef.current;
+    }
+
+    // Scale to fill viewport
+    const mesh = meshRef.current;
+    mesh.scale.set(viewport.width, viewport.height, 1);
+  });
+
+  return (
+    <mesh ref={meshRef} position={[0, 0, -20]} renderOrder={-1}>
+      <planeGeometry args={[1, 1]} />
+      <meshBasicMaterial 
+        ref={materialRef} 
+        side={THREE.FrontSide}
+        transparent
+        depthWrite={false}
+      />
+    </mesh>
+  );
+}
+
 function Scene({ videoElement, regions, settings, audioLevel, defaultMode }: {
   videoElement: HTMLVideoElement;
   regions: CaptureRegion[];
@@ -305,6 +407,10 @@ function Scene({ videoElement, regions, settings, audioLevel, defaultMode }: {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
   const meshGroupRef = useRef<THREE.Group>(null);
+  
+  // Separate fullscreen background regions from normal regions
+  const backgroundRegions = regions.filter(r => r.fullscreenBackground);
+  const normalRegions = regions.filter(r => !r.fullscreenBackground);
   
   useEffect(() => {
     camera.position.set(0, 0, 8);
@@ -341,14 +447,24 @@ function Scene({ videoElement, regions, settings, audioLevel, defaultMode }: {
       <pointLight position={[10, 10, 10]} intensity={1} />
       <pointLight position={[-10, -10, -10]} intensity={0.5} />
       
+      {/* Render fullscreen backgrounds behind everything */}
+      {backgroundRegions.map((region) => (
+        <FullscreenBackgroundMesh
+          key={`bg-${region.id}`}
+          videoElement={videoElement}
+          region={region}
+          settings={settings}
+        />
+      ))}
+      
       <group ref={meshGroupRef}>
-        {regions.map((region, index) => (
+        {normalRegions.map((region, index) => (
           <RegionMesh
             key={region.id}
             videoElement={videoElement}
             region={region}
             index={index}
-            totalRegions={regions.length}
+            totalRegions={normalRegions.length}
             settings={settings}
             audioLevel={audioLevel}
             defaultMode={defaultMode}
