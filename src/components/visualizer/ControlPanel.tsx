@@ -599,7 +599,7 @@ export function ControlPanel({
                                       }
                                     }}
                                     min={5}
-                                    max={128}
+                                    max={255}
                                     step={1}
                                   />
                                 </div>
@@ -928,7 +928,7 @@ export function ControlPanel({
                                       }
                                     }}
                                     min={5}
-                                    max={128}
+                                    max={255}
                                     step={1}
                                   />
                                 </div>
