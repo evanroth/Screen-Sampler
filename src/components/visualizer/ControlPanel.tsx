@@ -559,6 +559,20 @@ export function ControlPanel({
                               step={0.1}
                             />
                           </div>
+                          {/* Fullscreen Background */}
+                          <div className="space-y-2 mt-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Fullscreen Background</span>
+                              <Switch
+                                checked={!!region.fullscreenBackground}
+                                onCheckedChange={(checked) => {
+                                  if (onUpdateRegion) {
+                                    onUpdateRegion(region.id, { fullscreenBackground: checked });
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
                           {/* Transparent Color */}
                           <div className="space-y-2 mt-3">
                             <div className="flex items-center justify-between">
@@ -654,7 +668,7 @@ export function ControlPanel({
                               </>
                             )}
                           </div>
-                          {(region.position2D || region.scale2D !== undefined || region.transparentColor || region.glowEnabled) && (
+                          {(region.position2D || region.scale2D !== undefined || region.transparentColor || region.glowEnabled || region.fullscreenBackground) && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -668,7 +682,8 @@ export function ControlPanel({
                                     transparentThreshold: undefined,
                                     glowEnabled: undefined,
                                     glowColor: undefined,
-                                    glowAmount: undefined
+                                    glowAmount: undefined,
+                                    fullscreenBackground: undefined
                                   });
                                 }
                               }}
@@ -888,6 +903,20 @@ export function ControlPanel({
                               step={0.1}
                             />
                           </div>
+                          {/* Fullscreen Background */}
+                          <div className="space-y-2 mt-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Fullscreen Background</span>
+                              <Switch
+                                checked={!!region.fullscreenBackground}
+                                onCheckedChange={(checked) => {
+                                  if (onUpdateRegion) {
+                                    onUpdateRegion(region.id, { fullscreenBackground: checked });
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
                           {/* Transparent Color */}
                           <div className="space-y-2 mt-3">
                             <div className="flex items-center justify-between">
@@ -935,7 +964,7 @@ export function ControlPanel({
                               </>
                             )}
                           </div>
-                          {(region.position3D || region.scale3D !== undefined || region.transparentColor) && (
+                          {(region.position3D || region.scale3D !== undefined || region.transparentColor || region.fullscreenBackground) && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -946,7 +975,8 @@ export function ControlPanel({
                                     position3D: undefined, 
                                     scale3D: undefined,
                                     transparentColor: undefined,
-                                    transparentThreshold: undefined
+                                    transparentThreshold: undefined,
+                                    fullscreenBackground: undefined
                                   });
                                 }
                               }}
