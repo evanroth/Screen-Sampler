@@ -1,8 +1,16 @@
 import { useState, useRef, useCallback } from 'react';
 import { AnimationMode3D } from './useVisualizerSettings';
 
+export interface CaptureSource {
+  id: string;
+  stream: MediaStream;
+  videoElement: HTMLVideoElement;
+  name: string;
+}
+
 export interface CaptureRegion {
   id: string;
+  sourceId: string; // Which capture source this region belongs to
   x: number;
   y: number;
   width: number;
@@ -21,12 +29,11 @@ export interface CaptureRegion {
 }
 
 export function useScreenCapture() {
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [sources, setSources] = useState<CaptureSource[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const sourceCounterRef = useRef(0);
 
-  const startCapture = useCallback(async () => {
+  const addSource = useCallback(async () => {
     try {
       setError(null);
       const mediaStream = await navigator.mediaDevices.getDisplayMedia({
@@ -34,46 +41,75 @@ export function useScreenCapture() {
         audio: false,
       });
 
-      setStream(mediaStream);
-      setIsCapturing(true);
+      const sourceId = crypto.randomUUID();
+      sourceCounterRef.current += 1;
+      
+      // Create video element for this source
+      const video = document.createElement('video');
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = true;
+      video.srcObject = mediaStream;
+      await video.play();
+
+      const trackSettings = mediaStream.getVideoTracks()[0]?.getSettings();
+      const displayName = `Source ${sourceCounterRef.current}`;
+
+      const newSource: CaptureSource = {
+        id: sourceId,
+        stream: mediaStream,
+        videoElement: video,
+        name: displayName,
+      };
 
       // Handle stream ending (user clicks "Stop sharing")
       mediaStream.getVideoTracks()[0].onended = () => {
-        setIsCapturing(false);
-        setStream(null);
+        setSources(prev => prev.filter(s => s.id !== sourceId));
       };
 
-      return mediaStream;
+      setSources(prev => [...prev, newSource]);
+      return newSource;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start screen capture';
       setError(message);
-      setIsCapturing(false);
       return null;
     }
   }, []);
 
-  const stopCapture = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-    setIsCapturing(false);
-  }, [stream]);
+  const removeSource = useCallback((sourceId: string) => {
+    setSources(prev => {
+      const source = prev.find(s => s.id === sourceId);
+      if (source) {
+        source.stream.getTracks().forEach(track => track.stop());
+      }
+      return prev.filter(s => s.id !== sourceId);
+    });
+  }, []);
 
-  const attachToVideo = useCallback((video: HTMLVideoElement) => {
-    videoRef.current = video;
-    if (stream && video) {
-      video.srcObject = stream;
-    }
-  }, [stream]);
+  const stopAllCaptures = useCallback(() => {
+    sources.forEach(source => {
+      source.stream.getTracks().forEach(track => track.stop());
+    });
+    setSources([]);
+    sourceCounterRef.current = 0;
+  }, [sources]);
+
+  const getVideoElement = useCallback((sourceId: string) => {
+    return sources.find(s => s.id === sourceId)?.videoElement ?? null;
+  }, [sources]);
+
+  // Legacy compatibility - check if any source is capturing
+  const isCapturing = sources.length > 0;
+  const stream = sources[0]?.stream ?? null;
 
   return {
+    sources,
     isCapturing,
-    stream,
+    stream, // Legacy: first stream for backward compatibility
     error,
-    startCapture,
-    stopCapture,
-    attachToVideo,
-    videoRef,
+    addSource,
+    removeSource,
+    stopAllCaptures,
+    getVideoElement,
   };
 }
