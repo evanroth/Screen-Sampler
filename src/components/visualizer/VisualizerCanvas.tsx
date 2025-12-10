@@ -157,10 +157,11 @@ export function VisualizerCanvas({
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Create region lookup and sort by z-index for proper layering
+    // Filter out invisible regions, create lookup and sort by z-index for proper layering
     // Fullscreen background regions render first (behind everything)
-    const regionMap = new Map(regions.map(r => [r.id, r]));
-    const sortedPanels = [...panelsRef.current].sort((a, b) => {
+    const visibleRegions = regions.filter(r => r.visible !== false);
+    const regionMap = new Map(visibleRegions.map(r => [r.id, r]));
+    const sortedPanels = [...panelsRef.current].filter(p => regionMap.has(p.regionId)).sort((a, b) => {
       const regionA = regionMap.get(a.regionId);
       const regionB = regionMap.get(b.regionId);
       // Fullscreen backgrounds sort first (lowest)

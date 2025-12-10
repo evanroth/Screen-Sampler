@@ -456,9 +456,10 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
   const controlsRef = useRef<any>(null);
   const meshGroupRef = useRef<THREE.Group>(null);
   
-  // Separate fullscreen background regions from normal regions
-  const backgroundRegions = regions.filter(r => r.fullscreenBackground);
-  const normalRegions = regions.filter(r => !r.fullscreenBackground);
+  // Filter visible regions, then separate fullscreen background from normal
+  const visibleRegions = regions.filter(r => r.visible !== false);
+  const backgroundRegions = visibleRegions.filter(r => r.fullscreenBackground);
+  const normalRegions = visibleRegions.filter(r => !r.fullscreenBackground);
   
   useEffect(() => {
     camera.position.set(0, 0, 8);
