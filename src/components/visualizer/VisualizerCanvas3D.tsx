@@ -322,10 +322,24 @@ function FullscreenBackgroundMesh({
     textureRef.current.minFilter = filter;
     textureRef.current.magFilter = filter;
     
+    // Assign texture to material immediately
+    if (materialRef.current) {
+      materialRef.current.map = textureRef.current;
+      materialRef.current.needsUpdate = true;
+    }
+    
     return () => {
       textureRef.current?.dispose();
     };
   }, [settings.textureQuality, settings.textureSmoothing]);
+
+  // Ensure texture is assigned when material mounts
+  useEffect(() => {
+    if (materialRef.current && textureRef.current) {
+      materialRef.current.map = textureRef.current;
+      materialRef.current.needsUpdate = true;
+    }
+  }, []);
 
   useFrame(() => {
     const videoElement = getVideoElement(region.sourceId);
