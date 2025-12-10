@@ -6,32 +6,32 @@ import { CaptureRegion } from '@/hooks/useScreenCapture';
 import { VisualizerSettings, AnimationMode3D, ANIMATION_MODES_3D } from '@/hooks/useVisualizerSettings';
 
 interface VisualizerCanvas3DProps {
-  videoElement: HTMLVideoElement | null;
   regions: CaptureRegion[];
   settings: VisualizerSettings;
   audioLevel: number;
   isActive: boolean;
   onUpdateRegion?: (regionId: string, updates: Partial<CaptureRegion>) => void;
+  getVideoElement: (sourceId: string) => HTMLVideoElement | null;
 }
 
 interface RegionTextureProps {
-  videoElement: HTMLVideoElement;
   region: CaptureRegion;
   index: number;
   totalRegions: number;
   settings: VisualizerSettings;
   audioLevel: number;
   defaultMode: AnimationMode3D;
+  getVideoElement: (sourceId: string) => HTMLVideoElement | null;
 }
 
 function RegionMesh({ 
-  videoElement, 
   region, 
   index, 
   totalRegions, 
   settings, 
   audioLevel, 
-  defaultMode
+  defaultMode,
+  getVideoElement
 }: RegionTextureProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
@@ -62,6 +62,7 @@ function RegionMesh({
 
 
   useFrame((state, delta) => {
+    const videoElement = getVideoElement(region.sourceId);
     if (!meshRef.current || !canvasRef.current || !textureRef.current || !videoElement) return;
     
     timeRef.current += delta;
@@ -297,13 +298,13 @@ function RegionMesh({
 
 // Fullscreen background plane that renders behind everything
 function FullscreenBackgroundMesh({ 
-  videoElement, 
   region,
-  settings
+  settings,
+  getVideoElement
 }: {
-  videoElement: HTMLVideoElement;
   region: CaptureRegion;
   settings: VisualizerSettings;
+  getVideoElement: (sourceId: string) => HTMLVideoElement | null;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
@@ -327,6 +328,7 @@ function FullscreenBackgroundMesh({
   }, [settings.textureQuality, settings.textureSmoothing]);
 
   useFrame(() => {
+    const videoElement = getVideoElement(region.sourceId);
     if (!meshRef.current || !canvasRef.current || !textureRef.current || !videoElement) return;
     
     const ctx = canvasRef.current.getContext('2d');
@@ -397,12 +399,12 @@ function FullscreenBackgroundMesh({
   );
 }
 
-function Scene({ videoElement, regions, settings, audioLevel, defaultMode }: {
-  videoElement: HTMLVideoElement;
+function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: {
   regions: CaptureRegion[];
   settings: VisualizerSettings;
   audioLevel: number;
   defaultMode: AnimationMode3D;
+  getVideoElement: (sourceId: string) => HTMLVideoElement | null;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -451,9 +453,9 @@ function Scene({ videoElement, regions, settings, audioLevel, defaultMode }: {
       {backgroundRegions.map((region) => (
         <FullscreenBackgroundMesh
           key={`bg-${region.id}`}
-          videoElement={videoElement}
           region={region}
           settings={settings}
+          getVideoElement={getVideoElement}
         />
       ))}
       
@@ -461,13 +463,13 @@ function Scene({ videoElement, regions, settings, audioLevel, defaultMode }: {
         {normalRegions.map((region, index) => (
           <RegionMesh
             key={region.id}
-            videoElement={videoElement}
             region={region}
             index={index}
             totalRegions={normalRegions.length}
             settings={settings}
             audioLevel={audioLevel}
             defaultMode={defaultMode}
+            getVideoElement={getVideoElement}
           />
         ))}
       </group>
@@ -488,12 +490,12 @@ function Scene({ videoElement, regions, settings, audioLevel, defaultMode }: {
 }
 
 export function VisualizerCanvas3D({
-  videoElement,
   regions,
   settings,
   audioLevel,
   isActive,
   onUpdateRegion,
+  getVideoElement,
 }: VisualizerCanvas3DProps) {
   const [currentDefaultMode, setCurrentDefaultMode] = useState<AnimationMode3D>(
     settings.animationMode3D === 'random3D' 
@@ -501,6 +503,7 @@ export function VisualizerCanvas3D({
       : settings.animationMode3D
   );
   const lastModeChangeRef = useRef<number>(Date.now());
+  const bgCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Handle random mode switching for default mode
   useEffect(() => {
@@ -517,12 +520,12 @@ export function VisualizerCanvas3D({
     return () => clearInterval(interval);
   }, [settings.animationMode3D, settings.randomModeInterval]);
 
-  if (!isActive || !videoElement) {
+  // Check if we have any valid video element
+  const hasValidSource = regions.some(r => getVideoElement(r.sourceId) !== null);
+
+  if (!isActive || !hasValidSource) {
     return null;
   }
-
-  // Create background canvas for non-simple backgrounds
-  const bgCanvasRef = useRef<HTMLCanvasElement>(null);
   
   useEffect(() => {
     const needsCanvas = settings.backgroundStyle === 'blurred' || 
@@ -559,8 +562,12 @@ export function VisualizerCanvas3D({
         gradient.addColorStop(1, settings.gradientSettings.color2);
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-      } else if (settings.backgroundStyle === 'blurred' && videoElement) {
-        if (videoElement.videoWidth === 0) {
+      } else if (settings.backgroundStyle === 'blurred') {
+        // Get first available video element for blurred background
+        const firstRegion = regions[0];
+        const videoElement = firstRegion ? getVideoElement(firstRegion.sourceId) : null;
+        
+        if (videoElement && videoElement.videoWidth === 0) {
           animationId = requestAnimationFrame(updateBackground);
           return;
         }
@@ -568,7 +575,7 @@ export function VisualizerCanvas3D({
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        if (regions.length > 0) {
+        if (regions.length > 0 && videoElement) {
           const region = regions[0];
           const vw = videoElement.videoWidth;
           const vh = videoElement.videoHeight;
@@ -595,7 +602,7 @@ export function VisualizerCanvas3D({
     
     updateBackground();
     return () => cancelAnimationFrame(animationId);
-  }, [settings.backgroundStyle, settings.gradientSettings, videoElement, regions]);
+  }, [settings.backgroundStyle, settings.gradientSettings, getVideoElement, regions]);
 
   // Determine background color for Canvas
   const getBackgroundColor = () => {
@@ -632,11 +639,11 @@ export function VisualizerCanvas3D({
         )}
         <fog attach="fog" args={[getBackgroundColor(), 10, 30]} />
         <Scene 
-          videoElement={videoElement}
           regions={regions}
           settings={settings}
           audioLevel={audioLevel}
           defaultMode={currentDefaultMode}
+          getVideoElement={getVideoElement}
         />
       </Canvas>
     </div>

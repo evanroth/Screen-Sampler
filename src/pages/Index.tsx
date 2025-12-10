@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useScreenCapture, CaptureRegion } from '@/hooks/useScreenCapture';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useVisualizerSettings } from '@/hooks/useVisualizerSettings';
@@ -17,34 +17,46 @@ export default function Index() {
   const [isRegionConfirmed, setIsRegionConfirmed] = useState(false);
   const [isControlPanelOpen, setIsControlPanelOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const { toast } = useToast();
   const screenCapture = useScreenCapture();
   const audioAnalyzer = useAudioAnalyzer();
   const { settings, updateSetting, resetSettings } = useVisualizerSettings();
 
-  useEffect(() => {
-    if (screenCapture.stream) {
-      const video = document.createElement('video');
-      video.autoplay = true;
-      video.playsInline = true;
-      video.muted = true;
-      video.srcObject = screenCapture.stream;
-      video.play().catch(console.error);
-      videoRef.current = video;
-    } else {
-      videoRef.current = null;
-    }
-  }, [screenCapture.stream]);
-
   const handleStartCapture = useCallback(async () => {
-    const stream = await screenCapture.startCapture();
-    if (stream) { setAppState('selecting'); toast({ title: "Screen capture started" }); }
-    else if (screenCapture.error) toast({ title: "Capture failed", description: screenCapture.error, variant: "destructive" });
+    const source = await screenCapture.addSource();
+    if (source) { 
+      setAppState('selecting'); 
+      toast({ title: "Screen capture started" }); 
+    }
+    else if (screenCapture.error) {
+      toast({ title: "Capture failed", description: screenCapture.error, variant: "destructive" });
+    }
   }, [screenCapture, toast]);
 
+  const handleAddSource = useCallback(async () => {
+    const source = await screenCapture.addSource();
+    if (source) {
+      toast({ title: `Added ${source.name}` });
+    } else if (screenCapture.error) {
+      toast({ title: "Capture failed", description: screenCapture.error, variant: "destructive" });
+    }
+  }, [screenCapture, toast]);
+
+  const handleRemoveSource = useCallback((sourceId: string) => {
+    screenCapture.removeSource(sourceId);
+    // Remove regions associated with this source
+    setRegions(prev => prev.filter(r => r.sourceId !== sourceId));
+    
+    // If no sources left, go back to onboarding
+    if (screenCapture.sources.length <= 1) {
+      setAppState('onboarding');
+      setRegions([]);
+      setIsRegionConfirmed(false);
+    }
+  }, [screenCapture]);
+
   const handleStopCapture = useCallback(() => { 
-    screenCapture.stopCapture(); 
+    screenCapture.stopAllCaptures(); 
     setAppState('onboarding'); 
     setRegions([]); 
     setIsRegionConfirmed(false); 
@@ -54,7 +66,13 @@ export default function Index() {
   const handleUpdateRegion = useCallback((regionId: string, updates: Partial<CaptureRegion>) => {
     setRegions(prev => prev.map(r => r.id === regionId ? { ...r, ...updates } : r));
   }, []);
-  const handleConfirmRegions = useCallback(() => { if (regions.length > 0) { setIsRegionConfirmed(true); setAppState('ready'); setIsControlPanelOpen(true); } }, [regions]);
+  const handleConfirmRegions = useCallback(() => { 
+    if (regions.length > 0) { 
+      setIsRegionConfirmed(true); 
+      setAppState('ready'); 
+      setIsControlPanelOpen(true); 
+    } 
+  }, [regions]);
   const handleResetRegions = useCallback(() => { setIsRegionConfirmed(false); setAppState('selecting'); }, []);
   const handleToggleMic = useCallback(async () => { if (audioAnalyzer.isActive) audioAnalyzer.stopAudio(); else await audioAnalyzer.startAudio(); }, [audioAnalyzer]);
   const handleStartVisualizer = useCallback(() => { setAppState('visualizing'); setIsControlPanelOpen(false); }, []);
@@ -66,7 +84,6 @@ export default function Index() {
     const h = (e: KeyboardEvent) => { 
       if (e.key === 'Escape' && appState === 'visualizing') setIsControlPanelOpen(true);
       if (e.key === 's' || e.key === 'S') {
-        // Don't toggle if user is typing in an input
         if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
         setIsControlPanelOpen(prev => !prev);
       }
@@ -78,33 +95,35 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       {appState === 'onboarding' && <Onboarding onStartCapture={handleStartCapture} />}
-      {(appState === 'selecting' || appState === 'ready') && screenCapture.stream && (
+      {(appState === 'selecting' || appState === 'ready') && screenCapture.sources.length > 0 && (
         <ScreenPreview 
-          stream={screenCapture.stream} 
+          sources={screenCapture.sources}
           regions={regions} 
           onRegionsChange={handleRegionsChange} 
           onConfirmRegions={handleConfirmRegions} 
-          onResetRegions={handleResetRegions} 
+          onResetRegions={handleResetRegions}
+          onAddSource={handleAddSource}
+          onRemoveSource={handleRemoveSource}
           isRegionConfirmed={isRegionConfirmed} 
         />
       )}
       {appState === 'visualizing' && regions.length > 0 && (
         settings.visualizerMode === '3d' ? (
           <VisualizerCanvas3D 
-            videoElement={videoRef.current} 
             regions={regions} 
             settings={settings} 
             audioLevel={audioAnalyzer.audioLevel} 
             isActive={true}
             onUpdateRegion={handleUpdateRegion}
+            getVideoElement={screenCapture.getVideoElement}
           />
         ) : (
           <VisualizerCanvas 
-            videoElement={videoRef.current} 
             regions={regions} 
             settings={settings} 
             audioLevel={audioAnalyzer.audioLevel} 
-            isActive={true} 
+            isActive={true}
+            getVideoElement={screenCapture.getVideoElement}
           />
         )
       )}

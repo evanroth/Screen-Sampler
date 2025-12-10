@@ -4,19 +4,19 @@ import { VisualizerSettings, AnimationMode, ANIMATION_MODES } from '@/hooks/useV
 import { PanelState, createPanel, updatePanel } from './Panel';
 
 interface VisualizerCanvasProps {
-  videoElement: HTMLVideoElement | null;
   regions: CaptureRegion[];
   settings: VisualizerSettings;
   audioLevel: number;
   isActive: boolean;
+  getVideoElement: (sourceId: string) => HTMLVideoElement | null;
 }
 
 export function VisualizerCanvas({
-  videoElement,
   regions,
   settings,
   audioLevel,
   isActive,
+  getVideoElement,
 }: VisualizerCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenCanvasesRef = useRef<Map<string, HTMLCanvasElement>>(new Map());
@@ -82,7 +82,7 @@ export function VisualizerCanvas({
   }, [regions, settings.opacityVariation, settings.blurIntensity, settings.enableRotation]);
 
   const render = useCallback((timestamp: number) => {
-    if (!canvasRef.current || !videoElement || !isActive) return;
+    if (!canvasRef.current || !isActive) return;
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -90,14 +90,6 @@ export function VisualizerCanvas({
 
     const deltaTime = timestamp - lastTimeRef.current;
     lastTimeRef.current = timestamp;
-
-    const videoWidth = videoElement.videoWidth;
-    const videoHeight = videoElement.videoHeight;
-    
-    if (videoWidth === 0 || videoHeight === 0) {
-      animationRef.current = requestAnimationFrame(render);
-      return;
-    }
 
     // Determine if we should use trails
     const useTrails = settings.enableTrails && settings.trailAmount > 0;
@@ -139,20 +131,23 @@ export function VisualizerCanvas({
         // For blurred, use first region if available
         if (regions.length > 0) {
           const region = regions[0];
-          const regionX = region.x * videoWidth;
-          const regionY = region.y * videoHeight;
-          const regionW = region.width * videoWidth;
-          const regionH = region.height * videoHeight;
-          
-          ctx.filter = 'blur(50px)';
-          ctx.globalAlpha = 0.6;
-          ctx.drawImage(videoElement, regionX, regionY, regionW, regionH, 0, 0, canvas.width, canvas.height);
-          ctx.filter = 'none';
-          ctx.globalAlpha = 1;
-          
-          // Light darkening overlay
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const videoElement = getVideoElement(region.sourceId);
+          if (videoElement && videoElement.videoWidth > 0) {
+            const regionX = region.x * videoElement.videoWidth;
+            const regionY = region.y * videoElement.videoHeight;
+            const regionW = region.width * videoElement.videoWidth;
+            const regionH = region.height * videoElement.videoHeight;
+            
+            ctx.filter = 'blur(50px)';
+            ctx.globalAlpha = 0.6;
+            ctx.drawImage(videoElement, regionX, regionY, regionW, regionH, 0, 0, canvas.width, canvas.height);
+            ctx.filter = 'none';
+            ctx.globalAlpha = 1;
+            
+            // Light darkening overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
         }
       }
     } else {
@@ -181,6 +176,14 @@ export function VisualizerCanvas({
       const region = regionMap.get(panel.regionId);
       if (!region) return panel;
 
+      const videoElement = getVideoElement(region.sourceId);
+      if (!videoElement) return panel;
+
+      const videoWidth = videoElement.videoWidth;
+      const videoHeight = videoElement.videoHeight;
+      
+      if (videoWidth === 0 || videoHeight === 0) return panel;
+
       // Calculate region in pixels
       const regionX = region.x * videoWidth;
       const regionY = region.y * videoHeight;
@@ -206,7 +209,6 @@ export function VisualizerCanvas({
         regionX, regionY, regionW, regionH,
         0, 0, regionW, regionH
       );
-
 
       // Per-region transparent color
       if (region.transparentColor) {
@@ -336,7 +338,7 @@ export function VisualizerCanvas({
     });
 
     animationRef.current = requestAnimationFrame(render);
-  }, [videoElement, regions, settings, audioLevel, isActive]);
+  }, [regions, settings, audioLevel, isActive, getVideoElement]);
 
   useEffect(() => {
     if (isActive) {
