@@ -87,10 +87,22 @@ export default function Index() {
         if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
         setIsControlPanelOpen(prev => !prev);
       }
+      // Number keys 1-9 toggle region visibility
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const num = parseInt(e.key, 10);
+      if (num >= 1 && num <= 9 && regions.length >= num) {
+        const regionIndex = num - 1;
+        const region = regions[regionIndex];
+        if (region) {
+          setRegions(prev => prev.map((r, i) => 
+            i === regionIndex ? { ...r, visible: !(r.visible ?? true) } : r
+          ));
+        }
+      }
     }; 
     window.addEventListener('keydown', h); 
     return () => window.removeEventListener('keydown', h); 
-  }, [appState]);
+  }, [appState, regions]);
 
   return (
     <div className="min-h-screen bg-background">

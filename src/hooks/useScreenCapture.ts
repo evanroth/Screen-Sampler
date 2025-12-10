@@ -15,6 +15,7 @@ export interface CaptureRegion {
   y: number;
   width: number;
   height: number;
+  visible?: boolean; // Whether the region is visible (default true)
   animationMode3D?: AnimationMode3D;
   position3D?: { x: number; y: number; z: number };
   scale3D?: number;

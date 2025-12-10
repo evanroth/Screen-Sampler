@@ -468,7 +468,21 @@ export function ControlPanel({
                     </p>
                     {regions.map((region, index) => (
                       <div key={region.id} className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Region {index + 1}</Label>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">Region {index + 1}</Label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Visible</span>
+                            <Switch
+                              checked={region.visible !== false}
+                              onCheckedChange={(checked) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { visible: checked });
+                                }
+                              }}
+                            />
+                            <span className="text-xs text-muted-foreground opacity-50">({index + 1})</span>
+                          </div>
+                        </div>
                         
                         {/* Position X/Y/Z Controls */}
                         <div className="mt-2 space-y-2 pl-2 border-l-2 border-border">
@@ -769,7 +783,21 @@ export function ControlPanel({
                     </p>
                     {regions.map((region, index) => (
                       <div key={region.id} className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Region {index + 1}</Label>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">Region {index + 1}</Label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Visible</span>
+                            <Switch
+                              checked={region.visible !== false}
+                              onCheckedChange={(checked) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { visible: checked });
+                                }
+                              }}
+                            />
+                            <span className="text-xs text-muted-foreground opacity-50">({index + 1})</span>
+                          </div>
+                        </div>
                         <Select
                           value={region.animationMode3D || 'default'}
                           onValueChange={(v) => {
