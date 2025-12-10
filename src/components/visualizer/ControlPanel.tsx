@@ -898,9 +898,9 @@ export function ControlPanel({
                                   onUpdateRegion(region.id, { scale3D: v });
                                 }
                               }}
-                              min={0.1}
+                              min={0.01}
                               max={3}
-                              step={0.1}
+                              step={0.01}
                             />
                           </div>
                           {/* Fullscreen Background */}
