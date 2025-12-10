@@ -50,6 +50,8 @@ function RegionMesh({
     canvasRef.current.width = quality;
     canvasRef.current.height = quality;
     textureRef.current = new THREE.CanvasTexture(canvasRef.current);
+    // Set correct color space to prevent washed out colors
+    textureRef.current.colorSpace = THREE.SRGBColorSpace;
     // Use NearestFilter for crisp pixels, LinearFilter for smooth
     const filter = settings.textureSmoothing ? THREE.LinearFilter : THREE.NearestFilter;
     textureRef.current.minFilter = filter;
@@ -675,7 +677,7 @@ export function VisualizerCanvas3D({
       )}
       <Canvas
         camera={{ fov: 60, near: 0.1, far: 500 }}
-        gl={{ antialias: true, alpha: needsCanvasBackground }}
+        gl={{ antialias: true, alpha: needsCanvasBackground, toneMapping: THREE.NoToneMapping }}
         style={{ position: 'relative', zIndex: 1 }}
       >
         {!needsCanvasBackground && (
