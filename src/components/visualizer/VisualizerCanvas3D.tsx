@@ -296,7 +296,7 @@ function RegionMesh({
   );
 }
 
-// Fullscreen background plane that renders behind everything
+// Fullscreen background plane that renders behind everything - uses screen space
 function FullscreenBackgroundMesh({ 
   region,
   settings,
@@ -310,7 +310,7 @@ function FullscreenBackgroundMesh({
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
-  const { viewport } = useThree();
+  const { camera, size } = useThree();
 
   useEffect(() => {
     const quality = settings.textureQuality;
@@ -381,18 +381,32 @@ function FullscreenBackgroundMesh({
       materialRef.current.map = textureRef.current;
     }
 
-    // Scale to fill viewport
+    // Position the mesh to always fill the screen, staying in front of camera
     const mesh = meshRef.current;
-    mesh.scale.set(viewport.width, viewport.height, 1);
+    
+    // Calculate distance from camera and size needed to fill viewport
+    const distance = 50; // Place far back but within frustum
+    const fov = (camera as THREE.PerspectiveCamera).fov * (Math.PI / 180);
+    const height = 2 * Math.tan(fov / 2) * distance;
+    const width = height * (size.width / size.height);
+    
+    // Position mesh behind camera's view, centered
+    const cameraDirection = new THREE.Vector3(0, 0, -1);
+    cameraDirection.applyQuaternion(camera.quaternion);
+    
+    mesh.position.copy(camera.position).add(cameraDirection.multiplyScalar(distance));
+    mesh.quaternion.copy(camera.quaternion);
+    mesh.scale.set(width, height, 1);
   });
 
   return (
-    <mesh ref={meshRef} position={[0, 0, -20]} renderOrder={-1}>
+    <mesh ref={meshRef} renderOrder={-1000}>
       <planeGeometry args={[1, 1]} />
       <meshBasicMaterial 
         ref={materialRef} 
         side={THREE.FrontSide}
         transparent
+        depthTest={false}
         depthWrite={false}
       />
     </mesh>
