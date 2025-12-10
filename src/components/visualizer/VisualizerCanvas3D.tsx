@@ -399,7 +399,8 @@ function FullscreenBackgroundMesh({
     const mesh = meshRef.current;
     
     // Calculate distance from camera and size needed to fill viewport
-    const distance = 50; // Place far back but within frustum
+    // Use a distance within the fog range but behind other objects
+    const distance = 25; // Place within fog range but behind scene objects
     const fov = (camera as THREE.PerspectiveCamera).fov * (Math.PI / 180);
     const height = 2 * Math.tan(fov / 2) * distance;
     const width = height * (size.width / size.height);
@@ -413,15 +414,30 @@ function FullscreenBackgroundMesh({
     mesh.scale.set(width, height, 1);
   });
 
+  // Create a default white texture to ensure the material is visible before video loads
+  const defaultTexture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2;
+    canvas.height = 2;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#808080';
+      ctx.fillRect(0, 0, 2, 2);
+    }
+    return new THREE.CanvasTexture(canvas);
+  }, []);
+
   return (
     <mesh ref={meshRef} renderOrder={-1000}>
       <planeGeometry args={[1, 1]} />
       <meshBasicMaterial 
         ref={materialRef} 
+        map={textureRef.current || defaultTexture}
         side={THREE.FrontSide}
         transparent
         depthTest={false}
         depthWrite={false}
+        toneMapped={false}
       />
     </mesh>
   );
@@ -658,14 +674,14 @@ export function VisualizerCanvas3D({
         />
       )}
       <Canvas
-        camera={{ fov: 60, near: 0.1, far: 100 }}
+        camera={{ fov: 60, near: 0.1, far: 500 }}
         gl={{ antialias: true, alpha: needsCanvasBackground }}
         style={{ position: 'relative', zIndex: 1 }}
       >
         {!needsCanvasBackground && (
           <color attach="background" args={[getBackgroundColor()]} />
         )}
-        <fog attach="fog" args={[getBackgroundColor(), 10, 30]} />
+        <fog attach="fog" args={[getBackgroundColor(), 20, 80]} />
         <Scene 
           regions={regions}
           settings={settings}
