@@ -283,8 +283,11 @@ function RegionMesh({
           mesh.position.y = 0;
           mesh.position.z = 0;
         }
-        mesh.rotation.y = time * speed * 0.2;
-        mesh.rotation.x = Math.sin(time * speed * 0.1) * 0.1;
+        // Only rotate shape if autoRotateCamera is enabled
+        if (settings.autoRotateCamera) {
+          mesh.rotation.y = time * speed * 0.2;
+          mesh.rotation.x = Math.sin(time * speed * 0.1) * 0.1;
+        }
         break;
     }
 
