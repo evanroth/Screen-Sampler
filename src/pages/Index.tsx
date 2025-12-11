@@ -96,6 +96,26 @@ export default function Index() {
         if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
         setIsControlPanelOpen(prev => !prev);
       }
+      // 'f' key to test fade out on first region
+      if ((e.key === 'f' || e.key === 'F') && regions.length > 0) {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+        const region = regions[0];
+        // Animate fade out over 500ms
+        const startTime = performance.now();
+        const duration = 500;
+        const animate = (currentTime: number) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const opacity = 1 - progress; // Fade from 1 to 0
+          setRegions(prev => prev.map((r, i) => 
+            i === 0 ? { ...r, fadeOpacity: opacity } : r
+          ));
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          }
+        };
+        requestAnimationFrame(animate);
+      }
       // Number keys 1-9 toggle region visibility
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       const num = parseInt(e.key, 10);
