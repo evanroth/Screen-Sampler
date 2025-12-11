@@ -284,10 +284,14 @@ export function VisualizerCanvas({
         activeMode = currentRandomModeRef.current;
       }
 
-      // Check if region is in a transition - if so, freeze position updates
-      const isInTransition = region.morphProgress !== undefined || (region.fadeOpacity !== undefined && region.fadeOpacity < 1);
+      // Check if region is in a transition - if so, freeze position updates completely
+      // fadeOpacity < 1 means fade is active (it goes 1 -> 0 -> 1)
+      // morphProgress !== undefined means zoom is active
+      const isFadeActive = region.fadeOpacity !== undefined;
+      const isZoomActive = region.morphProgress !== undefined;
+      const isInTransition = isFadeActive || isZoomActive;
 
-      // Update panel position only if NOT in a transition
+      // Update panel position only if NOT in a transition - keep panel completely frozen during transition
       const updated = isInTransition ? panel : updatePanel(
         panel,
         finalWidth,
