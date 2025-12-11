@@ -9,8 +9,8 @@ interface UseRegionRandomizerProps {
   isVisualizerActive: boolean;
 }
 
-const FADE_DURATION = 500;
-const ZOOM_DURATION = 600;
+const FADE_DURATION = 2000;
+const ZOOM_DURATION = 2000;
 
 export function useRegionRandomizer({
   regions,
@@ -237,6 +237,48 @@ export function useRegionRandomizer({
     animationRefs.current.set(regionId, animId);
   }, [getRandomMode2D, onUpdateRegion, cancelAnimation]);
 
+  // Simple 2D zoom transition - just animates scale via morphProgress
+  const trigger2DZoomTransition = useCallback((regionId: string) => {
+    const region = regionsRef.current.find(r => r.id === regionId);
+    if (!region || !region.randomizeEnabled) return;
+
+    cancelAnimation(regionId);
+
+    // Get the new mode upfront
+    const newMode2D = getRandomMode2D(region.animationMode2D);
+
+    // Start zoom transition
+    onUpdateRegion(regionId, { morphProgress: 0, transitionType: 'zoom' });
+
+    const startTime = performance.now();
+    let modeChanged = false;
+    
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / ZOOM_DURATION, 1);
+      
+      // At the midpoint (scale = 0), switch the mode
+      if (progress >= 0.5 && !modeChanged) {
+        modeChanged = true;
+        onUpdateRegion(regionId, { animationMode2D: newMode2D, morphProgress: progress });
+      } else {
+        onUpdateRegion(regionId, { morphProgress: progress });
+      }
+      
+      if (progress < 1) {
+        const animId = requestAnimationFrame(animate);
+        animationRefs.current.set(regionId, animId);
+      } else {
+        // Reset when done
+        onUpdateRegion(regionId, { morphProgress: undefined, transitionType: undefined });
+        animationRefs.current.delete(regionId);
+      }
+    };
+    
+    const animId = requestAnimationFrame(animate);
+    animationRefs.current.set(regionId, animId);
+  }, [getRandomMode2D, onUpdateRegion, cancelAnimation]);
+
   const triggerRandomChange = useCallback((regionId: string) => {
     const region = regionsRef.current.find(r => r.id === regionId);
     if (!region || !region.randomizeEnabled) return;
@@ -249,6 +291,8 @@ export function useRegionRandomizer({
       const transitionType = region.transitionType || 'none';
       if (transitionType === 'fade') {
         trigger2DFadeTransition(regionId);
+      } else if (transitionType === 'zoom') {
+        trigger2DZoomTransition(regionId);
       } else {
         // No transition - instant change
         const newMode2D = getRandomMode2D(region.animationMode2D);
@@ -265,7 +309,7 @@ export function useRegionRandomizer({
     } else {
       triggerFadeTransition(regionId);
     }
-  }, [triggerFadeTransition, triggerZoomTransition, trigger2DFadeTransition, getRandomMode2D, onUpdateRegion]);
+  }, [triggerFadeTransition, triggerZoomTransition, trigger2DFadeTransition, trigger2DZoomTransition, getRandomMode2D, onUpdateRegion]);
 
   // Track current interval settings to detect changes
   const intervalSettingsRef = useRef<Map<string, { interval: number; enabled: boolean }>>(new Map());
