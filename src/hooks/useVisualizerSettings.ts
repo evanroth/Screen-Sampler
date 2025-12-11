@@ -135,8 +135,8 @@ const defaultSettings: VisualizerSettings = {
   panelScaleLinked: true,
   movementSpeed: 0.8,
   bounceStrength: 0.11,
-  opacityVariation: 0.7,
-  blurIntensity: 1.0,
+  opacityVariation: 0,
+  blurIntensity: 0,
   backgroundStyle: 'linearGradient',
   backgroundColor: '#000000',
   gradientSettings: {
