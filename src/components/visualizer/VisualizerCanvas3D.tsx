@@ -119,14 +119,28 @@ function RegionMesh({
       textureRef.current.needsUpdate = true;
     }
 
-    // Apply material texture and fade opacity
+    // Apply material texture and fade/morph opacity
     if (materialRef.current) {
       materialRef.current.map = textureRef.current;
-      // Smoothly interpolate opacity for fade transitions
-      const targetOpacity = (region.fadeOpacity ?? 1) * 0.95;
+      
+      // Handle opacity based on transition type
+      let targetOpacity = (region.fadeOpacity ?? 1) * 0.95;
+      
+      // For morph transitions, don't change opacity
+      if (region.morphProgress !== undefined) {
+        targetOpacity = 0.95;
+      }
+      
       const currentOpacity = materialRef.current.opacity;
-      // Use faster interpolation and ensure we don't go below a minimum visible threshold during active display
       materialRef.current.opacity = currentOpacity + (targetOpacity - currentOpacity) * 0.15;
+    }
+
+    // Calculate morph scale modifier (shrinks at midpoint, grows back)
+    let morphScale = 1;
+    if (region.morphProgress !== undefined) {
+      // At progress 0.5, scale is at minimum (0.1), at 0 and 1 it's at maximum (1)
+      const distFromMid = Math.abs(region.morphProgress - 0.5) * 2; // 0 at midpoint, 1 at ends
+      morphScale = 0.1 + distFromMid * 0.9;
     }
 
     // Audio-reactive scale
@@ -230,9 +244,9 @@ function RegionMesh({
         break;
     }
 
-    // Apply scale with optional per-region override
+    // Apply scale with optional per-region override and morph effect
     const regionScale = region.scale3D ?? 1;
-    mesh.scale.setScalar(baseScale * audioScale * regionScale);
+    mesh.scale.setScalar(baseScale * audioScale * regionScale * morphScale);
   });
 
   // Create mobius geometry using TubeGeometry with a custom curve

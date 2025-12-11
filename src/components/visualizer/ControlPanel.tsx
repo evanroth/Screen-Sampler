@@ -860,23 +860,44 @@ export function ControlPanel({
                             />
                           </div>
                           {region.randomizeEnabled && (
-                            <div className="space-y-1">
-                              <div className="flex justify-between">
-                                <span className="text-xs text-muted-foreground">Interval</span>
-                                <span className="text-xs text-foreground">{region.randomizeInterval || 30}s</span>
+                            <>
+                              <div className="space-y-1">
+                                <div className="flex justify-between">
+                                  <span className="text-xs text-muted-foreground">Interval</span>
+                                  <span className="text-xs text-foreground">{region.randomizeInterval || 30}s</span>
+                                </div>
+                                <Slider
+                                  value={[region.randomizeInterval || 30]}
+                                  onValueChange={([v]) => {
+                                    if (onUpdateRegion) {
+                                      onUpdateRegion(region.id, { randomizeInterval: v });
+                                    }
+                                  }}
+                                  min={1}
+                                  max={300}
+                                  step={1}
+                                />
                               </div>
-                              <Slider
-                                value={[region.randomizeInterval || 30]}
-                                onValueChange={([v]) => {
-                                  if (onUpdateRegion) {
-                                    onUpdateRegion(region.id, { randomizeInterval: v });
-                                  }
-                                }}
-                                min={1}
-                                max={300}
-                                step={1}
-                              />
-                            </div>
+                              <div className="space-y-1">
+                                <span className="text-xs text-muted-foreground">Transition</span>
+                                <Select
+                                  value={region.transitionType || 'fade'}
+                                  onValueChange={(v) => {
+                                    if (onUpdateRegion) {
+                                      onUpdateRegion(region.id, { transitionType: v as 'fade' | 'morph' });
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger className="bg-secondary border-border h-8">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="fade">Fade</SelectItem>
+                                    <SelectItem value="morph">Morph</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </>
                           )}
                         </div>
                         
