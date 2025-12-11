@@ -72,6 +72,14 @@ export type VisualizerMode = '2d' | '3d';
 
 export type TextureQuality = 512 | 1024 | 2048;
 
+export type PlayModeTransition = 'none' | 'fade' | 'zoom';
+
+export interface PlayModeSettings {
+  enabled: boolean;
+  interval: number;
+  transition: PlayModeTransition;
+}
+
 export interface VisualizerSettings {
   visualizerMode: VisualizerMode;
   panelScaleX: number;
@@ -96,6 +104,7 @@ export interface VisualizerSettings {
   regionSpacing3D: number;
   textureQuality: TextureQuality;
   textureSmoothing: boolean;
+  playMode: PlayModeSettings;
 }
 
 const defaultSettings: VisualizerSettings = {
@@ -125,6 +134,11 @@ const defaultSettings: VisualizerSettings = {
   regionSpacing3D: 3,
   textureQuality: 2048,
   textureSmoothing: false,
+  playMode: {
+    enabled: false,
+    interval: 10,
+    transition: 'fade',
+  },
 };
 
 export function useVisualizerSettings() {

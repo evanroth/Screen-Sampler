@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers } from 'lucide-react';
+import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers, ListOrdered } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode, AnimationMode3D, VisualizerMode, TextureQuality, GradientSettings } from '@/hooks/useVisualizerSettings';
+import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode, AnimationMode3D, VisualizerMode, TextureQuality, GradientSettings, PlayModeTransition } from '@/hooks/useVisualizerSettings';
 import { CaptureRegion } from '@/hooks/useScreenCapture';
 import { cn } from '@/lib/utils';
 import { ColorPicker } from '@/components/ui/color-picker';
@@ -195,6 +195,73 @@ export function ControlPanel({
           </div>
 
           <Separator className="bg-border" />
+
+          {/* Play Mode */}
+          {regionCount >= 2 && (
+            <>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ListOrdered className="w-4 h-4 text-muted-foreground" />
+                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Play Mode</h3>
+                  </div>
+                  <Switch
+                    checked={settings.playMode.enabled}
+                    onCheckedChange={(checked) => 
+                      onUpdateSetting('playMode', { ...settings.playMode, enabled: checked })
+                    }
+                  />
+                </div>
+                
+                {regionCount < 2 && settings.playMode.enabled && (
+                  <p className="text-xs text-muted-foreground">
+                    Requires at least 2 regions to function.
+                  </p>
+                )}
+                
+                {settings.playMode.enabled && regionCount >= 2 && (
+                  <div className="space-y-3 pl-2 border-l-2 border-border">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <Label className="text-muted-foreground text-xs">Interval</Label>
+                        <span className="text-xs text-foreground">{settings.playMode.interval}s</span>
+                      </div>
+                      <Slider
+                        value={[settings.playMode.interval]}
+                        onValueChange={([v]) => 
+                          onUpdateSetting('playMode', { ...settings.playMode, interval: v })
+                        }
+                        min={1}
+                        max={120}
+                        step={1}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-xs">Transition</Label>
+                      <Select
+                        value={settings.playMode.transition}
+                        onValueChange={(v) => 
+                          onUpdateSetting('playMode', { ...settings.playMode, transition: v as PlayModeTransition })
+                        }
+                      >
+                        <SelectTrigger className="bg-secondary border-border h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="fade">Fade</SelectItem>
+                          <SelectItem value="zoom">Zoom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <Separator className="bg-border" />
+            </>
+          )}
+
 
           {/* Settings Sliders */}
           <div className="space-y-5">
