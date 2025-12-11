@@ -33,6 +33,7 @@ export interface CaptureRegion {
   transitionType?: 'fade' | 'zoom'; // Transition style between modes
   morphProgress?: number; // For zoom transitions (0-1)
   animationMode2D?: AnimationMode; // Per-region 2D animation mode
+  transitionFrozen?: boolean; // True when position should be frozen during transition
 }
 
 export function useScreenCapture() {

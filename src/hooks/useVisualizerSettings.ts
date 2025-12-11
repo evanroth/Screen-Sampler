@@ -100,8 +100,8 @@ export interface VisualizerSettings {
 
 const defaultSettings: VisualizerSettings = {
   visualizerMode: '3d',
-  panelScaleX: 1.6,
-  panelScaleY: 1.6,
+  panelScaleX: 0.4,
+  panelScaleY: 0.4,
   panelScaleLinked: true,
   movementSpeed: 0.8,
   bounceStrength: 0.11,

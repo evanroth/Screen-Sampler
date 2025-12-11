@@ -11,6 +11,15 @@ interface VisualizerCanvasProps {
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
 }
 
+// Store frozen panel state during transitions
+interface FrozenState {
+  x: number;
+  y: number;
+  rotation: number;
+  width: number;
+  height: number;
+}
+
 export function VisualizerCanvas({
   regions,
   settings,
@@ -21,6 +30,7 @@ export function VisualizerCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenCanvasesRef = useRef<Map<string, HTMLCanvasElement>>(new Map());
   const panelsRef = useRef<PanelState[]>([]);
+  const frozenStatesRef = useRef<Map<string, FrozenState>>(new Map());
   const lastTimeRef = useRef<number>(0);
   const animationRef = useRef<number | null>(null);
   const initializedRef = useRef(false);
@@ -50,10 +60,11 @@ export function VisualizerCanvas({
       }
     }
     
-    // Clean up offscreen canvases for removed regions
+    // Clean up offscreen canvases and frozen states for removed regions
     offscreenCanvasesRef.current.forEach((_, id) => {
       if (!newRegionIds.has(id)) {
         offscreenCanvasesRef.current.delete(id);
+        frozenStatesRef.current.delete(id);
       }
     });
   }, [regions, settings.opacityVariation, settings.blurIntensity, settings.enableRotation]);
@@ -124,11 +135,9 @@ export function VisualizerCanvas({
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       } else if (settings.backgroundStyle === 'blurred') {
-        // First fill with black
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // For blurred, use first region if available
         if (regions.length > 0) {
           const region = regions[0];
           const videoElement = getVideoElement(region.sourceId);
@@ -144,27 +153,23 @@ export function VisualizerCanvas({
             ctx.filter = 'none';
             ctx.globalAlpha = 1;
             
-            // Light darkening overlay
             ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
           }
         }
       }
     } else {
-      // Trail effect - fade instead of clear (no transparency processing on trails)
       const trailAlpha = 1 - settings.trailAmount;
       ctx.fillStyle = `rgba(0, 0, 0, ${trailAlpha * 0.15})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Filter out invisible regions, create lookup and sort by z-index for proper layering
-    // Fullscreen background regions render first (behind everything)
+    // Filter out invisible regions, create lookup and sort by z-index
     const visibleRegions = regions.filter(r => r.visible !== false);
     const regionMap = new Map(visibleRegions.map(r => [r.id, r]));
     const sortedPanels = [...panelsRef.current].filter(p => regionMap.has(p.regionId)).sort((a, b) => {
       const regionA = regionMap.get(a.regionId);
       const regionB = regionMap.get(b.regionId);
-      // Fullscreen backgrounds sort first (lowest)
       const bgA = regionA?.fullscreenBackground ? -1000 : 0;
       const bgB = regionB?.fullscreenBackground ? -1000 : 0;
       const zA = (regionA?.position2D?.z ?? 0) + bgA;
@@ -185,13 +190,11 @@ export function VisualizerCanvas({
       
       if (videoWidth === 0 || videoHeight === 0) return panel;
 
-      // Calculate region in pixels
       const regionX = region.x * videoWidth;
       const regionY = region.y * videoHeight;
       const regionW = region.width * videoWidth;
       const regionH = region.height * videoHeight;
 
-      // Get or create offscreen canvas for this region
       let offscreen = offscreenCanvasesRef.current.get(region.id);
       if (!offscreen) {
         offscreen = document.createElement('canvas');
@@ -204,7 +207,6 @@ export function VisualizerCanvas({
       const offCtx = offscreen.getContext('2d');
       if (!offCtx) return panel;
 
-      // Draw the region to offscreen canvas
       offCtx.drawImage(
         videoElement,
         regionX, regionY, regionW, regionH,
@@ -217,7 +219,6 @@ export function VisualizerCanvas({
         const data = imageData.data;
         const threshold = region.transparentThreshold ?? 30;
         
-        // Parse the hex color
         const hex = region.transparentColor.replace('#', '');
         const targetR = parseInt(hex.substring(0, 2), 16);
         const targetG = parseInt(hex.substring(2, 4), 16);
@@ -228,7 +229,6 @@ export function VisualizerCanvas({
           const g = data[i + 1];
           const b = data[i + 2];
           
-          // Calculate color distance from target
           const distance = Math.sqrt(
             Math.pow(r - targetR, 2) + 
             Math.pow(g - targetG, 2) + 
@@ -236,7 +236,6 @@ export function VisualizerCanvas({
           );
           
           if (distance < threshold) {
-            // Calculate how close to target (0-1, where 1 is exact match)
             const closeness = 1 - distance / threshold;
             data[i + 3] = Math.round(data[i + 3] * (1 - closeness));
           }
@@ -249,7 +248,6 @@ export function VisualizerCanvas({
       if (region.fullscreenBackground) {
         ctx.save();
         
-        // Apply transparent color processing but draw fullscreen
         if (region.glowEnabled && region.glowColor) {
           ctx.shadowColor = region.glowColor;
           ctx.shadowBlur = (region.glowAmount ?? 20) + audioLevel * 30;
@@ -260,19 +258,18 @@ export function VisualizerCanvas({
         return panel;
       }
 
-      // Calculate scaled size with per-region scale override
+      // Calculate scaled size
       const regionScale = region.scale2D ?? 1;
       const baseWidth = canvas.width * settings.panelScaleX * regionScale;
       const aspectRatio = regionH / regionW;
       const baseHeight = canvas.width * settings.panelScaleY * aspectRatio * regionScale;
 
-      // Calculate audio-reactive scale
       const phaseOffset = Math.sin(panel.phase + timestamp * 0.001) * 0.5 + 0.5;
       const audioScale = 1 + audioLevel * settings.bounceStrength * (0.8 + phaseOffset * 0.4);
       const finalWidth = baseWidth * audioScale;
       const finalHeight = baseHeight * audioScale;
 
-      // Determine actual animation mode (handle per-region override and global random)
+      // Determine actual animation mode
       let activeMode: AnimationMode = region.animationMode2D || settings.animationMode;
       if (activeMode === 'random' || (!region.animationMode2D && settings.animationMode === 'random')) {
         const intervalMs = settings.randomModeInterval * 1000;
@@ -284,29 +281,58 @@ export function VisualizerCanvas({
         activeMode = currentRandomModeRef.current;
       }
 
-      // Check if region is in a transition - if so, freeze position updates completely
-      // fadeOpacity < 1 means fade is active (it goes 1 -> 0 -> 1)
-      // morphProgress !== undefined means zoom is active
-      const isFadeActive = region.fadeOpacity !== undefined;
-      const isZoomActive = region.morphProgress !== undefined;
-      const isInTransition = isFadeActive || isZoomActive;
+      // Check if region is in a transition
+      const isInTransition = region.transitionFrozen === true;
 
-      // Update panel position only if NOT in a transition - keep panel completely frozen during transition
-      const updated = isInTransition ? panel : updatePanel(
-        panel,
-        finalWidth,
-        finalHeight,
-        canvas.width,
-        canvas.height,
-        settings.movementSpeed,
-        deltaTime,
-        activeMode,
-        timestamp
-      );
+      let drawX: number;
+      let drawY: number;
+      let drawRotation: number;
+      let updated: PanelState;
+
+      if (isInTransition) {
+        // Get or create frozen state
+        let frozen = frozenStatesRef.current.get(region.id);
+        if (!frozen) {
+          // Freeze the current position
+          frozen = {
+            x: panel.x,
+            y: panel.y,
+            rotation: panel.rotation,
+            width: finalWidth,
+            height: finalHeight
+          };
+          frozenStatesRef.current.set(region.id, frozen);
+        }
+        
+        drawX = frozen.x;
+        drawY = frozen.y;
+        drawRotation = frozen.rotation;
+        updated = panel; // Don't update the panel during transition
+      } else {
+        // Clear frozen state when transition ends
+        frozenStatesRef.current.delete(region.id);
+        
+        // Update panel normally
+        updated = updatePanel(
+          panel,
+          finalWidth,
+          finalHeight,
+          canvas.width,
+          canvas.height,
+          settings.movementSpeed,
+          deltaTime,
+          activeMode,
+          timestamp
+        );
+        
+        drawX = updated.x;
+        drawY = updated.y;
+        drawRotation = updated.rotation;
+      }
 
       ctx.save();
       
-      // Apply fade/zoom transition opacity
+      // Calculate transition effects
       let transitionOpacity = 1;
       let transitionScale = 1;
       
@@ -315,7 +341,7 @@ export function VisualizerCanvas({
       }
       
       if (region.morphProgress !== undefined && region.transitionType === 'zoom') {
-        // At progress 0.5, scale is at minimum (0.1), at 0 and 1 it's at maximum (1)
+        // Scale goes from 1 -> 0.1 -> 1
         const distFromMid = Math.abs(region.morphProgress - 0.5) * 2;
         transitionScale = 0.1 + distFromMid * 0.9;
       }
@@ -323,19 +349,19 @@ export function VisualizerCanvas({
       // Position at panel center with per-region offset
       const offsetX = region.position2D?.x ?? 0;
       const offsetY = region.position2D?.y ?? 0;
-      ctx.translate(updated.x + finalWidth / 2 + offsetX, updated.y + finalHeight / 2 + offsetY);
+      ctx.translate(drawX + finalWidth / 2 + offsetX, drawY + finalHeight / 2 + offsetY);
       
-      // Apply transition scale (without rotation - zoom should scale only)
+      // Apply transition scale
       if (transitionScale !== 1) {
         ctx.scale(transitionScale, transitionScale);
       }
       
-      // Apply rotation only if NOT in any transition (zoom or fade)
+      // Apply rotation only when NOT in transition
       if (settings.enableRotation && !isInTransition) {
-        ctx.rotate((updated.rotation * Math.PI) / 180);
+        ctx.rotate((drawRotation * Math.PI) / 180);
       }
       
-      // Apply effects based on settings
+      // Apply effects
       const baseOpacity = (settings.tileEffect === 'all' || settings.tileEffect === 'opacity') 
         ? updated.opacity 
         : 1;
@@ -345,13 +371,11 @@ export function VisualizerCanvas({
         ctx.filter = `blur(${updated.blurAmount}px)`;
       }
       
-      // Per-region glow
       if (region.glowEnabled && region.glowColor) {
         ctx.shadowColor = region.glowColor;
         ctx.shadowBlur = (region.glowAmount ?? 20) + audioLevel * 30;
       }
 
-      // Draw the panel
       ctx.drawImage(
         offscreen,
         -finalWidth / 2,
