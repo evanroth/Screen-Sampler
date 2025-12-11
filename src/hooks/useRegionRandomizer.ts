@@ -209,53 +209,61 @@ export function useRegionRandomizer({
     }
   }, [triggerFadeTransition, triggerZoomTransition, getRandomMode2D, onUpdateRegion]);
 
-  // Setup intervals - use stable serialized key to avoid re-running on unrelated changes
+  // Track current interval settings to detect changes
+  const intervalSettingsRef = useRef<Map<string, { interval: number }>>(new Map());
+
+  // Setup intervals - recreate when interval value changes
   useEffect(() => {
     if (!isVisualizerActive) {
       intervalRefs.current.forEach((interval) => clearInterval(interval));
       intervalRefs.current.clear();
       animationRefs.current.forEach((animId) => cancelAnimationFrame(animId));
       animationRefs.current.clear();
+      intervalSettingsRef.current.clear();
       return;
     }
 
-    // Create stable interval settings map
-    const intervalSettings = new Map<string, { enabled: boolean; interval: number; visible: boolean }>();
-    regions.forEach(r => {
-      intervalSettings.set(r.id, {
-        enabled: r.randomizeEnabled ?? false,
-        interval: r.randomizeInterval ?? 30,
-        visible: r.visible !== false
-      });
-    });
-
-    // Update intervals only for regions whose settings actually changed
-    intervalSettings.forEach((setting, regionId) => {
+    regions.forEach(region => {
+      const { id: regionId, randomizeEnabled, randomizeInterval = 30, visible } = region;
       const existingInterval = intervalRefs.current.get(regionId);
+      const storedSettings = intervalSettingsRef.current.get(regionId);
       
-      if (setting.enabled && setting.visible) {
-        const intervalMs = setting.interval * 1000;
-        
-        // Only recreate if interval doesn't exist (not on every render)
-        if (!existingInterval) {
+      const shouldBeActive = randomizeEnabled && visible !== false;
+      const intervalMs = randomizeInterval * 1000;
+      const intervalChanged = storedSettings?.interval !== randomizeInterval;
+      
+      if (shouldBeActive) {
+        // Create or recreate interval if it doesn't exist or interval value changed
+        if (!existingInterval || intervalChanged) {
+          // Clear existing if present
+          if (existingInterval) {
+            clearInterval(existingInterval);
+          }
+          
           const newInterval = setInterval(() => {
             triggerRandomChange(regionId);
           }, intervalMs);
+          
           intervalRefs.current.set(regionId, newInterval);
+          intervalSettingsRef.current.set(regionId, { interval: randomizeInterval });
         }
       } else {
+        // Clear interval if it shouldn't be active
         if (existingInterval) {
           clearInterval(existingInterval);
           intervalRefs.current.delete(regionId);
+          intervalSettingsRef.current.delete(regionId);
         }
       }
     });
 
     // Cleanup intervals for removed regions
+    const currentRegionIds = new Set(regions.map(r => r.id));
     intervalRefs.current.forEach((interval, regionId) => {
-      if (!intervalSettings.has(regionId)) {
+      if (!currentRegionIds.has(regionId)) {
         clearInterval(interval);
         intervalRefs.current.delete(regionId);
+        intervalSettingsRef.current.delete(regionId);
         cancelAnimation(regionId);
       }
     });
@@ -267,13 +275,7 @@ export function useRegionRandomizer({
     isVisualizerActive,
     triggerRandomChange,
     cancelAnimation,
-    // Only depend on the actual interval config, not transition state
-    JSON.stringify(regions.map(r => ({ 
-      id: r.id, 
-      randomizeEnabled: r.randomizeEnabled, 
-      randomizeInterval: r.randomizeInterval,
-      visible: r.visible 
-    })))
+    regions
   ]);
 
   // Cleanup on unmount
