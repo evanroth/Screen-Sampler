@@ -459,6 +459,7 @@ export function ControlPanel({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="random">Random</SelectItem>
+                      <SelectItem value="still">Still</SelectItem>
                       <SelectItem value="bounce">Bounce</SelectItem>
                       <SelectItem value="verticalDrop">Vertical Drop</SelectItem>
                       <SelectItem value="horizontalSweep">Horizontal Sweep</SelectItem>
