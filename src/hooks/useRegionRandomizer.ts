@@ -185,6 +185,58 @@ export function useRegionRandomizer({
     animationRefs.current.set(regionId, animId);
   }, [getRandomMode3D, getRandomMode2D, onUpdateRegion, cancelAnimation]);
 
+  // Simple 2D fade transition - just animates fadeOpacity
+  const trigger2DFadeTransition = useCallback((regionId: string) => {
+    const region = regionsRef.current.find(r => r.id === regionId);
+    if (!region || !region.randomizeEnabled) return;
+
+    cancelAnimation(regionId);
+
+    // Get the new mode upfront
+    const newMode2D = getRandomMode2D(region.animationMode2D);
+
+    // Start with full opacity
+    onUpdateRegion(regionId, { fadeOpacity: 1 });
+
+    const startTime = performance.now();
+    let modeChanged = false;
+    
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / FADE_DURATION, 1);
+      
+      // Simple linear fade: 0->0.5 = fade out, 0.5->1 = fade in
+      let opacity: number;
+      if (progress < 0.5) {
+        // Fade out: 1 -> 0
+        opacity = 1 - (progress * 2);
+      } else {
+        // Fade in: 0 -> 1
+        opacity = (progress - 0.5) * 2;
+      }
+      
+      // At the midpoint (opacity = 0), switch the mode
+      if (progress >= 0.5 && !modeChanged) {
+        modeChanged = true;
+        onUpdateRegion(regionId, { animationMode2D: newMode2D, fadeOpacity: opacity });
+      } else {
+        onUpdateRegion(regionId, { fadeOpacity: opacity });
+      }
+      
+      if (progress < 1) {
+        const animId = requestAnimationFrame(animate);
+        animationRefs.current.set(regionId, animId);
+      } else {
+        // Reset when done
+        onUpdateRegion(regionId, { fadeOpacity: undefined });
+        animationRefs.current.delete(regionId);
+      }
+    };
+    
+    const animId = requestAnimationFrame(animate);
+    animationRefs.current.set(regionId, animId);
+  }, [getRandomMode2D, onUpdateRegion, cancelAnimation]);
+
   const triggerRandomChange = useCallback((regionId: string) => {
     const region = regionsRef.current.find(r => r.id === regionId);
     if (!region || !region.randomizeEnabled) return;
@@ -192,10 +244,16 @@ export function useRegionRandomizer({
     // Don't trigger if already in a transition
     if (region.transitionFrozen) return;
 
-    // In 2D mode, just instantly change the mode (no transition)
+    // In 2D mode
     if (visualizerModeRef.current === '2d') {
-      const newMode2D = getRandomMode2D(region.animationMode2D);
-      onUpdateRegion(regionId, { animationMode2D: newMode2D });
+      const transitionType = region.transitionType || 'none';
+      if (transitionType === 'fade') {
+        trigger2DFadeTransition(regionId);
+      } else {
+        // No transition - instant change
+        const newMode2D = getRandomMode2D(region.animationMode2D);
+        onUpdateRegion(regionId, { animationMode2D: newMode2D });
+      }
       return;
     }
 
@@ -207,7 +265,7 @@ export function useRegionRandomizer({
     } else {
       triggerFadeTransition(regionId);
     }
-  }, [triggerFadeTransition, triggerZoomTransition, getRandomMode2D, onUpdateRegion]);
+  }, [triggerFadeTransition, triggerZoomTransition, trigger2DFadeTransition, getRandomMode2D, onUpdateRegion]);
 
   // Track current interval settings to detect changes
   const intervalSettingsRef = useRef<Map<string, { interval: number; enabled: boolean }>>(new Map());
