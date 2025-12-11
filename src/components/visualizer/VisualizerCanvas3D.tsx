@@ -127,7 +127,7 @@ function RegionMesh({
     if (materialRef.current) {
       materialRef.current.map = textureRef.current;
       
-      // Use override opacity if provided (for morph ghost meshes)
+      // Use override opacity if provided (for ghost meshes)
       let targetOpacity: number;
       if (overrideOpacity !== undefined) {
         targetOpacity = overrideOpacity * 0.95;
@@ -135,13 +135,9 @@ function RegionMesh({
         // Handle opacity based on transition type
         targetOpacity = (region.fadeOpacity ?? 1) * 0.95;
         
-        // For zoom transitions (morphProgress without previousAnimationMode3D), don't change opacity
-        if (region.morphProgress !== undefined && !region.previousAnimationMode3D) {
+        // For zoom transitions, don't change opacity
+        if (region.morphProgress !== undefined && region.transitionType === 'zoom') {
           targetOpacity = 0.95;
-        }
-        // For true morph transitions, the main mesh fades in
-        if (region.morphProgress !== undefined && region.previousAnimationMode3D) {
-          targetOpacity = region.morphProgress * 0.95;
         }
       }
       
@@ -151,7 +147,7 @@ function RegionMesh({
 
     // Calculate zoom scale modifier (shrinks at midpoint, grows back) - only for zoom transitions
     let morphScale = 1;
-    if (region.morphProgress !== undefined && !region.previousAnimationMode3D && region.transitionType === 'zoom') {
+    if (region.morphProgress !== undefined && region.transitionType === 'zoom') {
       // At progress 0.5, scale is at minimum (0.1), at 0 and 1 it's at maximum (1)
       const distFromMid = Math.abs(region.morphProgress - 0.5) * 2; // 0 at midpoint, 1 at ends
       morphScale = 0.1 + distFromMid * 0.9;
@@ -541,32 +537,16 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
       
       <group ref={meshGroupRef}>
         {normalRegions.map((region, index) => (
-          <React.Fragment key={region.id}>
-            {/* Ghost mesh for morph transition - shows previous shape fading out */}
-            {region.previousAnimationMode3D && region.morphProgress !== undefined && (
-              <RegionMesh
-                region={region}
-                index={index}
-                totalRegions={normalRegions.length}
-                settings={settings}
-                audioLevel={audioLevel}
-                defaultMode={defaultMode}
-                getVideoElement={getVideoElement}
-                overrideMode={region.previousAnimationMode3D}
-                overrideOpacity={1 - region.morphProgress}
-              />
-            )}
-            {/* Main mesh */}
-            <RegionMesh
-              region={region}
-              index={index}
-              totalRegions={normalRegions.length}
-              settings={settings}
-              audioLevel={audioLevel}
-              defaultMode={defaultMode}
-              getVideoElement={getVideoElement}
-            />
-          </React.Fragment>
+          <RegionMesh
+            key={region.id}
+            region={region}
+            index={index}
+            totalRegions={normalRegions.length}
+            settings={settings}
+            audioLevel={audioLevel}
+            defaultMode={defaultMode}
+            getVideoElement={getVideoElement}
+          />
         ))}
       </group>
       

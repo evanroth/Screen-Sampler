@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { CaptureRegion } from './useScreenCapture';
-import { AnimationMode3D, ANIMATION_MODES_3D, VisualizerMode } from './useVisualizerSettings';
+import { AnimationMode, AnimationMode3D, ANIMATION_MODES, ANIMATION_MODES_3D, VisualizerMode } from './useVisualizerSettings';
 
 interface UseRegionRandomizerProps {
   regions: CaptureRegion[];
@@ -11,7 +11,6 @@ interface UseRegionRandomizerProps {
 
 const FADE_DURATION = 400;
 const ZOOM_DURATION = 800;
-const MORPH_DURATION = 1000;
 
 export function useRegionRandomizer({
   regions,
@@ -33,6 +32,11 @@ export function useRegionRandomizer({
 
   const getRandomMode3D = useCallback((excludeMode?: AnimationMode3D): AnimationMode3D => {
     const availableModes = ANIMATION_MODES_3D.filter(m => m !== excludeMode);
+    return availableModes[Math.floor(Math.random() * availableModes.length)];
+  }, []);
+
+  const getRandomMode2D = useCallback((excludeMode?: AnimationMode): AnimationMode => {
+    const availableModes = ANIMATION_MODES.filter(m => m !== excludeMode && m !== 'random');
     return availableModes[Math.floor(Math.random() * availableModes.length)];
   }, []);
 
@@ -65,6 +69,11 @@ export function useRegionRandomizer({
         const currentMode = currentRegion?.animationMode3D;
         const newMode = getRandomMode3D(currentMode);
         onUpdateRegion(regionId, { animationMode3D: newMode });
+      } else {
+        const currentRegion = regionsRef.current.find(r => r.id === regionId);
+        const currentMode = currentRegion?.animationMode2D;
+        const newMode = getRandomMode2D(currentMode);
+        onUpdateRegion(regionId, { animationMode2D: newMode });
       }
 
       // Fade in after a brief delay
@@ -75,7 +84,7 @@ export function useRegionRandomizer({
     }, FADE_DURATION);
 
     transitionRefs.current.set(regionId, timeout);
-  }, [getRandomMode3D, onUpdateRegion, clearTransitionTimeouts]);
+  }, [getRandomMode3D, getRandomMode2D, onUpdateRegion, clearTransitionTimeouts]);
 
   const triggerZoomTransition = useCallback((regionId: string) => {
     const region = regionsRef.current.find(r => r.id === regionId);
@@ -84,10 +93,15 @@ export function useRegionRandomizer({
     clearTransitionTimeouts(regionId);
 
     // Get the new mode upfront
-    let newMode: AnimationMode3D | undefined;
+    let newMode3D: AnimationMode3D | undefined;
+    let newMode2D: AnimationMode | undefined;
+    
     if (visualizerModeRef.current === '3d') {
       const currentMode = region.animationMode3D;
-      newMode = getRandomMode3D(currentMode);
+      newMode3D = getRandomMode3D(currentMode);
+    } else {
+      const currentMode = region.animationMode2D;
+      newMode2D = getRandomMode2D(currentMode);
     }
 
     const startTime = performance.now();
@@ -104,10 +118,16 @@ export function useRegionRandomizer({
       onUpdateRegion(regionId, { morphProgress: easedProgress });
       
       // At the midpoint, switch the mode
-      if (progress >= 0.5 && newMode) {
+      if (progress >= 0.5) {
         const currentRegion = regionsRef.current.find(r => r.id === regionId);
-        if (currentRegion?.animationMode3D !== newMode) {
-          onUpdateRegion(regionId, { animationMode3D: newMode });
+        if (visualizerModeRef.current === '3d' && newMode3D) {
+          if (currentRegion?.animationMode3D !== newMode3D) {
+            onUpdateRegion(regionId, { animationMode3D: newMode3D });
+          }
+        } else if (newMode2D) {
+          if (currentRegion?.animationMode2D !== newMode2D) {
+            onUpdateRegion(regionId, { animationMode2D: newMode2D });
+          }
         }
       }
       
@@ -123,57 +143,7 @@ export function useRegionRandomizer({
     
     const animId = requestAnimationFrame(animate);
     animationRefs.current.set(regionId, animId);
-  }, [getRandomMode3D, onUpdateRegion, clearTransitionTimeouts]);
-
-  const triggerMorphTransition = useCallback((regionId: string) => {
-    const region = regionsRef.current.find(r => r.id === regionId);
-    if (!region || !region.randomizeEnabled) return;
-
-    clearTransitionTimeouts(regionId);
-
-    // Store the current mode as previous before getting new mode
-    const currentMode = region.animationMode3D;
-    let newMode: AnimationMode3D | undefined;
-    
-    if (visualizerModeRef.current === '3d') {
-      newMode = getRandomMode3D(currentMode);
-      // Set up the transition: store previous mode, set new mode, start morph
-      onUpdateRegion(regionId, { 
-        previousAnimationMode3D: currentMode,
-        animationMode3D: newMode,
-        morphProgress: 0 
-      });
-    }
-
-    const startTime = performance.now();
-    
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / MORPH_DURATION, 1);
-      
-      // Smooth easing
-      const easedProgress = progress < 0.5 
-        ? 4 * progress * progress * progress 
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-      
-      onUpdateRegion(regionId, { morphProgress: easedProgress });
-      
-      if (progress < 1) {
-        const animId = requestAnimationFrame(animate);
-        animationRefs.current.set(regionId, animId);
-      } else {
-        // Clear transition state when done
-        onUpdateRegion(regionId, { 
-          morphProgress: undefined,
-          previousAnimationMode3D: undefined 
-        });
-        animationRefs.current.delete(regionId);
-      }
-    };
-    
-    const animId = requestAnimationFrame(animate);
-    animationRefs.current.set(regionId, animId);
-  }, [getRandomMode3D, onUpdateRegion, clearTransitionTimeouts]);
+  }, [getRandomMode3D, getRandomMode2D, onUpdateRegion, clearTransitionTimeouts]);
 
   const triggerRandomChange = useCallback((regionId: string) => {
     const region = regionsRef.current.find(r => r.id === regionId);
@@ -181,14 +151,12 @@ export function useRegionRandomizer({
 
     const transitionType = region.transitionType || 'fade';
     
-    if (transitionType === 'morph') {
-      triggerMorphTransition(regionId);
-    } else if (transitionType === 'zoom') {
+    if (transitionType === 'zoom') {
       triggerZoomTransition(regionId);
     } else {
       triggerFadeTransition(regionId);
     }
-  }, [triggerFadeTransition, triggerZoomTransition, triggerMorphTransition]);
+  }, [triggerFadeTransition, triggerZoomTransition]);
 
   // Setup intervals - only re-run when specific properties change
   useEffect(() => {
