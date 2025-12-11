@@ -272,9 +272,9 @@ export function VisualizerCanvas({
       const finalWidth = baseWidth * audioScale;
       const finalHeight = baseHeight * audioScale;
 
-      // Determine actual animation mode (handle random)
-      let activeMode: AnimationMode = settings.animationMode;
-      if (settings.animationMode === 'random') {
+      // Determine actual animation mode (handle per-region override and global random)
+      let activeMode: AnimationMode = region.animationMode2D || settings.animationMode;
+      if (activeMode === 'random' || (!region.animationMode2D && settings.animationMode === 'random')) {
         const intervalMs = settings.randomModeInterval * 1000;
         if (timestamp - lastModeChangeRef.current >= intervalMs) {
           const randomIndex = Math.floor(Math.random() * ANIMATION_MODES.length);
@@ -299,10 +299,29 @@ export function VisualizerCanvas({
 
       ctx.save();
       
+      // Apply fade/zoom transition opacity
+      let transitionOpacity = 1;
+      let transitionScale = 1;
+      
+      if (region.fadeOpacity !== undefined) {
+        transitionOpacity = region.fadeOpacity;
+      }
+      
+      if (region.morphProgress !== undefined && region.transitionType === 'zoom') {
+        // At progress 0.5, scale is at minimum (0.1), at 0 and 1 it's at maximum (1)
+        const distFromMid = Math.abs(region.morphProgress - 0.5) * 2;
+        transitionScale = 0.1 + distFromMid * 0.9;
+      }
+      
       // Position at panel center with per-region offset
       const offsetX = region.position2D?.x ?? 0;
       const offsetY = region.position2D?.y ?? 0;
       ctx.translate(updated.x + finalWidth / 2 + offsetX, updated.y + finalHeight / 2 + offsetY);
+      
+      // Apply transition scale
+      if (transitionScale !== 1) {
+        ctx.scale(transitionScale, transitionScale);
+      }
       
       // Apply rotation
       if (settings.enableRotation) {
@@ -310,9 +329,10 @@ export function VisualizerCanvas({
       }
       
       // Apply effects based on settings
-      if (settings.tileEffect === 'all' || settings.tileEffect === 'opacity') {
-        ctx.globalAlpha = updated.opacity;
-      }
+      const baseOpacity = (settings.tileEffect === 'all' || settings.tileEffect === 'opacity') 
+        ? updated.opacity 
+        : 1;
+      ctx.globalAlpha = baseOpacity * transitionOpacity;
       
       if ((settings.tileEffect === 'all' || settings.tileEffect === 'blur') && updated.blurAmount > 0) {
         ctx.filter = `blur(${updated.blurAmount}px)`;

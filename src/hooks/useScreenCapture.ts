@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { AnimationMode3D } from './useVisualizerSettings';
+import { AnimationMode, AnimationMode3D } from './useVisualizerSettings';
 
 export interface CaptureSource {
   id: string;
@@ -30,9 +30,9 @@ export interface CaptureRegion {
   randomizeEnabled?: boolean; // Enable random mode cycling
   randomizeInterval?: number; // Interval in seconds (1-300)
   fadeOpacity?: number; // For fade transitions (0-1)
-  transitionType?: 'fade' | 'zoom' | 'morph'; // Transition style between modes
-  morphProgress?: number; // For zoom/morph transitions (0-1)
-  previousAnimationMode3D?: AnimationMode3D; // For morph transitions - the mode we're transitioning from
+  transitionType?: 'fade' | 'zoom'; // Transition style between modes
+  morphProgress?: number; // For zoom transitions (0-1)
+  animationMode2D?: AnimationMode; // Per-region 2D animation mode
 }
 
 export function useScreenCapture() {
