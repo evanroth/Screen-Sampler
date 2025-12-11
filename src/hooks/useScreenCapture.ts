@@ -30,7 +30,7 @@ export interface CaptureRegion {
   randomizeEnabled?: boolean; // Enable random mode cycling
   randomizeInterval?: number; // Interval in seconds (1-300)
   fadeOpacity?: number; // For fade transitions (0-1)
-  transitionType?: 'fade' | 'zoom'; // Transition style between modes
+  transitionType?: 'none' | 'fade' | 'zoom'; // Transition style between modes
   morphProgress?: number; // For zoom transitions (0-1)
   animationMode2D?: AnimationMode; // Per-region 2D animation mode
   transitionFrozen?: boolean; // True when position should be frozen during transition
