@@ -10,6 +10,7 @@ export interface GradientSettings {
 
 // 2D Animation modes
 export type AnimationMode = 
+  | 'still'
   | 'bounce'
   | 'verticalDrop'
   | 'horizontalSweep'
@@ -72,7 +73,7 @@ export type AnimationMode3D =
   | 'random3D';
 
 export const ANIMATION_MODES: AnimationMode[] = [
-  'bounce', 'verticalDrop', 'horizontalSweep', 'clockwise', 'counterClockwise',
+  'still', 'bounce', 'verticalDrop', 'horizontalSweep', 'clockwise', 'counterClockwise',
   'clockHand', 'pendulum', 'waterfall', 'spiral', 'orbit', 'zigzag', 'wave', 'float'
 ];
 
