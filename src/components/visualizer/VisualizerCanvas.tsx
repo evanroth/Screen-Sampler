@@ -11,15 +11,6 @@ interface VisualizerCanvasProps {
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
 }
 
-// Store frozen panel state during transitions
-interface FrozenState {
-  x: number;
-  y: number;
-  rotation: number;
-  width: number;
-  height: number;
-}
-
 export function VisualizerCanvas({
   regions,
   settings,
@@ -30,7 +21,6 @@ export function VisualizerCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenCanvasesRef = useRef<Map<string, HTMLCanvasElement>>(new Map());
   const panelsRef = useRef<PanelState[]>([]);
-  const frozenStatesRef = useRef<Map<string, FrozenState>>(new Map());
   const lastTimeRef = useRef<number>(0);
   const animationRef = useRef<number | null>(null);
   const initializedRef = useRef(false);
@@ -60,11 +50,10 @@ export function VisualizerCanvas({
       }
     }
     
-    // Clean up offscreen canvases and frozen states for removed regions
+    // Clean up offscreen canvases for removed regions
     offscreenCanvasesRef.current.forEach((_, id) => {
       if (!newRegionIds.has(id)) {
         offscreenCanvasesRef.current.delete(id);
-        frozenStatesRef.current.delete(id);
       }
     });
   }, [regions, settings.opacityVariation, settings.blurIntensity, settings.enableRotation]);
@@ -281,54 +270,22 @@ export function VisualizerCanvas({
         activeMode = currentRandomModeRef.current;
       }
 
-      // Check if region is in a transition
-      const isInTransition = region.transitionFrozen === true;
-
-      let drawX: number;
-      let drawY: number;
-      let drawRotation: number;
-      let updated: PanelState;
-
-      if (isInTransition) {
-        // Get or create frozen state
-        let frozen = frozenStatesRef.current.get(region.id);
-        if (!frozen) {
-          // Freeze the current position
-          frozen = {
-            x: panel.x,
-            y: panel.y,
-            rotation: panel.rotation,
-            width: finalWidth,
-            height: finalHeight
-          };
-          frozenStatesRef.current.set(region.id, frozen);
-        }
-        
-        drawX = frozen.x;
-        drawY = frozen.y;
-        drawRotation = frozen.rotation;
-        updated = panel; // Don't update the panel during transition
-      } else {
-        // Clear frozen state when transition ends
-        frozenStatesRef.current.delete(region.id);
-        
-        // Update panel normally
-        updated = updatePanel(
-          panel,
-          finalWidth,
-          finalHeight,
-          canvas.width,
-          canvas.height,
-          settings.movementSpeed,
-          deltaTime,
-          activeMode,
-          timestamp
-        );
-        
-        drawX = updated.x;
-        drawY = updated.y;
-        drawRotation = updated.rotation;
-      }
+      // Always update panel - continue smooth movement during transitions
+      const updated = updatePanel(
+        panel,
+        finalWidth,
+        finalHeight,
+        canvas.width,
+        canvas.height,
+        settings.movementSpeed,
+        deltaTime,
+        activeMode,
+        timestamp
+      );
+      
+      const drawX = updated.x;
+      const drawY = updated.y;
+      const drawRotation = updated.rotation;
 
       ctx.save();
       
@@ -356,8 +313,8 @@ export function VisualizerCanvas({
         ctx.scale(transitionScale, transitionScale);
       }
       
-      // Apply rotation only when NOT in transition
-      if (settings.enableRotation && !isInTransition) {
+      // Apply rotation normally during transitions
+      if (settings.enableRotation) {
         ctx.rotate((drawRotation * Math.PI) / 180);
       }
       
