@@ -3,6 +3,7 @@ import { useScreenCapture, CaptureRegion } from '@/hooks/useScreenCapture';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useVisualizerSettings } from '@/hooks/useVisualizerSettings';
 import { useRegionRandomizer } from '@/hooks/useRegionRandomizer';
+import { usePlayMode } from '@/hooks/usePlayMode';
 import { Onboarding } from '@/components/visualizer/Onboarding';
 import { ScreenPreview } from '@/components/visualizer/ScreenPreview';
 import { VisualizerCanvas } from '@/components/visualizer/VisualizerCanvas';
@@ -86,6 +87,14 @@ export default function Index() {
     onUpdateRegion: handleUpdateRegion,
     visualizerMode: settings.visualizerMode,
     isVisualizerActive: appState === 'visualizing',
+  });
+
+  // Play mode hook for cycling through regions
+  usePlayMode({
+    regions,
+    onUpdateRegion: handleUpdateRegion,
+    isVisualizerActive: appState === 'visualizing',
+    settings: settings.playMode,
   });
 
   useEffect(() => { const h = () => setIsFullscreen(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => document.removeEventListener('fullscreenchange', h); }, []);
