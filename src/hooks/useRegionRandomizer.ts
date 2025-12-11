@@ -9,6 +9,9 @@ interface UseRegionRandomizerProps {
   isVisualizerActive: boolean;
 }
 
+const FADE_DURATION = 400;
+const MORPH_DURATION = 800;
+
 export function useRegionRandomizer({
   regions,
   onUpdateRegion,
@@ -16,8 +19,8 @@ export function useRegionRandomizer({
   isVisualizerActive,
 }: UseRegionRandomizerProps) {
   const intervalRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
-  const fadeTimeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
-  const fadeInTimeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const transitionRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const morphAnimationRefs = useRef<Map<string, number>>(new Map());
   
   // Store regions in a ref so interval callbacks can access latest state
   const regionsRef = useRef(regions);
@@ -32,25 +35,30 @@ export function useRegionRandomizer({
     return availableModes[Math.floor(Math.random() * availableModes.length)];
   }, []);
 
-  const triggerRandomChange = useCallback((regionId: string) => {
+  const clearTransitionTimeouts = useCallback((regionId: string) => {
+    const existingTimeout = transitionRefs.current.get(regionId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+      transitionRefs.current.delete(regionId);
+    }
+    const existingAnimation = morphAnimationRefs.current.get(regionId);
+    if (existingAnimation) {
+      cancelAnimationFrame(existingAnimation);
+      morphAnimationRefs.current.delete(regionId);
+    }
+  }, []);
+
+  const triggerFadeTransition = useCallback((regionId: string) => {
     const region = regionsRef.current.find(r => r.id === regionId);
     if (!region || !region.randomizeEnabled) return;
+
+    clearTransitionTimeouts(regionId);
 
     // Start fade out
     onUpdateRegion(regionId, { fadeOpacity: 0 });
 
-    // Clear any existing fade timeouts for this region
-    const existingFadeTimeout = fadeTimeoutRefs.current.get(regionId);
-    if (existingFadeTimeout) {
-      clearTimeout(existingFadeTimeout);
-    }
-    const existingFadeInTimeout = fadeInTimeoutRefs.current.get(regionId);
-    if (existingFadeInTimeout) {
-      clearTimeout(existingFadeInTimeout);
-    }
-
-    // After fade out, change mode
-    const fadeTimeout = setTimeout(() => {
+    // After fade out, change mode and fade in
+    const timeout = setTimeout(() => {
       if (visualizerModeRef.current === '3d') {
         const currentRegion = regionsRef.current.find(r => r.id === regionId);
         const currentMode = currentRegion?.animationMode3D;
@@ -58,41 +66,89 @@ export function useRegionRandomizer({
         onUpdateRegion(regionId, { animationMode3D: newMode });
       }
 
-      // Start fade in after mode change
-      const fadeInTimeout = setTimeout(() => {
+      // Fade in after a brief delay
+      setTimeout(() => {
         onUpdateRegion(regionId, { fadeOpacity: 1 });
-        fadeInTimeoutRefs.current.delete(regionId);
+        transitionRefs.current.delete(regionId);
       }, 100);
-      
-      fadeInTimeoutRefs.current.set(regionId, fadeInTimeout);
-      fadeTimeoutRefs.current.delete(regionId);
-    }, 400);
+    }, FADE_DURATION);
 
-    fadeTimeoutRefs.current.set(regionId, fadeTimeout);
-  }, [getRandomMode3D, onUpdateRegion]);
+    transitionRefs.current.set(regionId, timeout);
+  }, [getRandomMode3D, onUpdateRegion, clearTransitionTimeouts]);
+
+  const triggerMorphTransition = useCallback((regionId: string) => {
+    const region = regionsRef.current.find(r => r.id === regionId);
+    if (!region || !region.randomizeEnabled) return;
+
+    clearTransitionTimeouts(regionId);
+
+    // Get the new mode upfront
+    let newMode: AnimationMode3D | undefined;
+    if (visualizerModeRef.current === '3d') {
+      const currentMode = region.animationMode3D;
+      newMode = getRandomMode3D(currentMode);
+    }
+
+    const startTime = performance.now();
+    
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / MORPH_DURATION, 1);
+      
+      // Eased progress for smoother animation
+      const easedProgress = progress < 0.5 
+        ? 2 * progress * progress 
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      
+      onUpdateRegion(regionId, { morphProgress: easedProgress });
+      
+      // At the midpoint, switch the mode
+      if (progress >= 0.5 && newMode) {
+        const currentRegion = regionsRef.current.find(r => r.id === regionId);
+        if (currentRegion?.animationMode3D !== newMode) {
+          onUpdateRegion(regionId, { animationMode3D: newMode });
+        }
+      }
+      
+      if (progress < 1) {
+        const animId = requestAnimationFrame(animate);
+        morphAnimationRefs.current.set(regionId, animId);
+      } else {
+        // Reset morph progress when done
+        onUpdateRegion(regionId, { morphProgress: undefined });
+        morphAnimationRefs.current.delete(regionId);
+      }
+    };
+    
+    const animId = requestAnimationFrame(animate);
+    morphAnimationRefs.current.set(regionId, animId);
+  }, [getRandomMode3D, onUpdateRegion, clearTransitionTimeouts]);
+
+  const triggerRandomChange = useCallback((regionId: string) => {
+    const region = regionsRef.current.find(r => r.id === regionId);
+    if (!region || !region.randomizeEnabled) return;
+
+    const transitionType = region.transitionType || 'fade';
+    
+    if (transitionType === 'morph') {
+      triggerMorphTransition(regionId);
+    } else {
+      triggerFadeTransition(regionId);
+    }
+  }, [triggerFadeTransition, triggerMorphTransition]);
 
   // Setup intervals - only re-run when specific properties change
   useEffect(() => {
     if (!isVisualizerActive) {
-      // Clear all intervals when visualizer stops
+      // Clear all intervals and transitions when visualizer stops
       intervalRefs.current.forEach((interval) => clearInterval(interval));
       intervalRefs.current.clear();
-      fadeTimeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
-      fadeTimeoutRefs.current.clear();
-      fadeInTimeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
-      fadeInTimeoutRefs.current.clear();
+      transitionRefs.current.forEach((timeout) => clearTimeout(timeout));
+      transitionRefs.current.clear();
+      morphAnimationRefs.current.forEach((animId) => cancelAnimationFrame(animId));
+      morphAnimationRefs.current.clear();
       return;
     }
-
-    // Track which regions need interval updates
-    const currentIntervalSettings = new Map<string, { enabled: boolean; interval: number }>();
-    
-    regions.forEach((region) => {
-      currentIntervalSettings.set(region.id, {
-        enabled: region.randomizeEnabled ?? false,
-        interval: region.randomizeInterval ?? 30,
-      });
-    });
 
     // Update intervals based on settings
     regions.forEach((region) => {
@@ -126,30 +182,33 @@ export function useRegionRandomizer({
       if (!regions.find(r => r.id === regionId)) {
         clearInterval(interval);
         intervalRefs.current.delete(regionId);
+        clearTransitionTimeouts(regionId);
       }
     });
 
-    // Only cleanup intervals on unmount, not fade timeouts
+    // Only cleanup intervals on unmount, not transitions
     return () => {
       intervalRefs.current.forEach((interval) => clearInterval(interval));
     };
   }, [
     isVisualizerActive,
     triggerRandomChange,
+    clearTransitionTimeouts,
     // Only depend on serialized randomize settings to avoid re-running on every region update
     JSON.stringify(regions.map(r => ({ 
       id: r.id, 
       randomizeEnabled: r.randomizeEnabled, 
       randomizeInterval: r.randomizeInterval,
+      transitionType: r.transitionType,
       visible: r.visible 
     })))
   ]);
 
-  // Cleanup all timeouts on unmount
+  // Cleanup all on unmount
   useEffect(() => {
     return () => {
-      fadeTimeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
-      fadeInTimeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
+      transitionRefs.current.forEach((timeout) => clearTimeout(timeout));
+      morphAnimationRefs.current.forEach((animId) => cancelAnimationFrame(animId));
     };
   }, []);
 }
