@@ -210,7 +210,7 @@ export function useRegionRandomizer({
   }, [triggerFadeTransition, triggerZoomTransition, getRandomMode2D, onUpdateRegion]);
 
   // Track current interval settings to detect changes
-  const intervalSettingsRef = useRef<Map<string, { interval: number }>>(new Map());
+  const intervalSettingsRef = useRef<Map<string, { interval: number; enabled: boolean }>>(new Map());
 
   // Setup intervals - recreate when interval value changes
   useEffect(() => {
@@ -224,37 +224,39 @@ export function useRegionRandomizer({
     }
 
     regions.forEach(region => {
-      const { id: regionId, randomizeEnabled, randomizeInterval = 30, visible } = region;
-      const existingInterval = intervalRefs.current.get(regionId);
+      const { id: regionId, randomizeEnabled = false, randomizeInterval = 30, visible } = region;
       const storedSettings = intervalSettingsRef.current.get(regionId);
       
       const shouldBeActive = randomizeEnabled && visible !== false;
       const intervalMs = randomizeInterval * 1000;
-      const intervalChanged = storedSettings?.interval !== randomizeInterval;
+      
+      // Check if settings actually changed
+      const settingsChanged = storedSettings?.interval !== randomizeInterval || 
+                              storedSettings?.enabled !== shouldBeActive;
+      
+      if (!settingsChanged) {
+        // No changes, keep existing interval
+        return;
+      }
+      
+      // Clear existing interval if present
+      const existingInterval = intervalRefs.current.get(regionId);
+      if (existingInterval) {
+        clearInterval(existingInterval);
+        intervalRefs.current.delete(regionId);
+      }
       
       if (shouldBeActive) {
-        // Create or recreate interval if it doesn't exist or interval value changed
-        if (!existingInterval || intervalChanged) {
-          // Clear existing if present
-          if (existingInterval) {
-            clearInterval(existingInterval);
-          }
-          
-          const newInterval = setInterval(() => {
-            triggerRandomChange(regionId);
-          }, intervalMs);
-          
-          intervalRefs.current.set(regionId, newInterval);
-          intervalSettingsRef.current.set(regionId, { interval: randomizeInterval });
-        }
-      } else {
-        // Clear interval if it shouldn't be active
-        if (existingInterval) {
-          clearInterval(existingInterval);
-          intervalRefs.current.delete(regionId);
-          intervalSettingsRef.current.delete(regionId);
-        }
+        // Create new interval
+        const newInterval = setInterval(() => {
+          triggerRandomChange(regionId);
+        }, intervalMs);
+        
+        intervalRefs.current.set(regionId, newInterval);
       }
+      
+      // Store current settings
+      intervalSettingsRef.current.set(regionId, { interval: randomizeInterval, enabled: shouldBeActive });
     });
 
     // Cleanup intervals for removed regions
@@ -268,9 +270,7 @@ export function useRegionRandomizer({
       }
     });
 
-    return () => {
-      intervalRefs.current.forEach((interval) => clearInterval(interval));
-    };
+    // No cleanup on re-render - we manage intervals manually above
   }, [
     isVisualizerActive,
     triggerRandomChange,
