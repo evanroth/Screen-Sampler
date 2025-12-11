@@ -318,13 +318,13 @@ export function VisualizerCanvas({
       const offsetY = region.position2D?.y ?? 0;
       ctx.translate(updated.x + finalWidth / 2 + offsetX, updated.y + finalHeight / 2 + offsetY);
       
-      // Apply transition scale
+      // Apply transition scale (without rotation - zoom should scale only)
       if (transitionScale !== 1) {
         ctx.scale(transitionScale, transitionScale);
       }
       
-      // Apply rotation
-      if (settings.enableRotation) {
+      // Apply rotation only if NOT in a zoom transition
+      if (settings.enableRotation && region.morphProgress === undefined) {
         ctx.rotate((updated.rotation * Math.PI) / 180);
       }
       
