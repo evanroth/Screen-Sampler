@@ -58,7 +58,7 @@ export function VisualizerCanvas({
     });
   }, [regions, settings.opacityVariation, settings.blurIntensity, settings.enableRotation]);
 
-  // Handle canvas resize
+  // Handle canvas resize - only reinitialize on actual window resize
   useEffect(() => {
     const handleResize = () => {
       if (!canvasRef.current) return;
@@ -76,7 +76,12 @@ export function VisualizerCanvas({
       initializedRef.current = true;
     };
     
-    handleResize();
+    // Only set canvas size initially, don't reinitialize panels
+    if (!initializedRef.current && canvasRef.current) {
+      canvasRef.current.width = window.innerWidth;
+      canvasRef.current.height = window.innerHeight;
+    }
+    
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [regions, settings.opacityVariation, settings.blurIntensity, settings.enableRotation]);
