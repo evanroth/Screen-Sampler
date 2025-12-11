@@ -77,11 +77,6 @@ export function useRegionRandomizer({
           clearInterval(existingInterval);
         }
 
-        // Initialize fadeOpacity to 1 if not set
-        if (region.fadeOpacity === undefined) {
-          onUpdateRegion(region.id, { fadeOpacity: 1 });
-        }
-
         // Set new interval
         const newInterval = setInterval(() => {
           // Re-fetch the region to get current state
