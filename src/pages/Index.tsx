@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useScreenCapture, CaptureRegion } from '@/hooks/useScreenCapture';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useVisualizerSettings } from '@/hooks/useVisualizerSettings';
+import { useRegionRandomizer } from '@/hooks/useRegionRandomizer';
 import { Onboarding } from '@/components/visualizer/Onboarding';
 import { ScreenPreview } from '@/components/visualizer/ScreenPreview';
 import { VisualizerCanvas } from '@/components/visualizer/VisualizerCanvas';
@@ -78,6 +79,14 @@ export default function Index() {
   const handleStartVisualizer = useCallback(() => { setAppState('visualizing'); setIsControlPanelOpen(false); }, []);
   const handleStopVisualizer = useCallback(() => setAppState('ready'), []);
   const handleToggleFullscreen = useCallback(async () => { if (!document.fullscreenElement) { await document.documentElement.requestFullscreen(); setIsFullscreen(true); } else { await document.exitFullscreen(); setIsFullscreen(false); } }, []);
+
+  // Region randomizer hook for auto-cycling modes
+  useRegionRandomizer({
+    regions,
+    onUpdateRegion: handleUpdateRegion,
+    visualizerMode: settings.visualizerMode,
+    isVisualizerActive: appState === 'visualizing',
+  });
 
   useEffect(() => { const h = () => setIsFullscreen(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => document.removeEventListener('fullscreenchange', h); }, []);
   useEffect(() => { 

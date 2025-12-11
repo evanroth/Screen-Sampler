@@ -841,6 +841,44 @@ export function ControlPanel({
                             <SelectItem value="mobius3D">Möbius</SelectItem>
                           </SelectContent>
                         </Select>
+
+                        {/* Randomize Controls */}
+                        <div className="mt-2 space-y-2 pl-2 border-l-2 border-border">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Randomize Mode</span>
+                            <Switch
+                              checked={!!region.randomizeEnabled}
+                              onCheckedChange={(checked) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { 
+                                    randomizeEnabled: checked,
+                                    randomizeInterval: region.randomizeInterval || 30,
+                                    fadeOpacity: 1
+                                  });
+                                }
+                              }}
+                            />
+                          </div>
+                          {region.randomizeEnabled && (
+                            <div className="space-y-1">
+                              <div className="flex justify-between">
+                                <span className="text-xs text-muted-foreground">Interval</span>
+                                <span className="text-xs text-foreground">{region.randomizeInterval || 30}s</span>
+                              </div>
+                              <Slider
+                                value={[region.randomizeInterval || 30]}
+                                onValueChange={([v]) => {
+                                  if (onUpdateRegion) {
+                                    onUpdateRegion(region.id, { randomizeInterval: v });
+                                  }
+                                }}
+                                min={1}
+                                max={300}
+                                step={1}
+                              />
+                            </div>
+                          )}
+                        </div>
                         
                         {/* Position X/Y/Z Controls */}
                         <div className="mt-2 space-y-2 pl-2 border-l-2 border-border">
