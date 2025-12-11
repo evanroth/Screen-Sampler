@@ -284,8 +284,11 @@ export function VisualizerCanvas({
         activeMode = currentRandomModeRef.current;
       }
 
-      // Update panel position
-      const updated = updatePanel(
+      // Check if region is in a transition - if so, freeze position updates
+      const isInTransition = region.morphProgress !== undefined || (region.fadeOpacity !== undefined && region.fadeOpacity < 1);
+
+      // Update panel position only if NOT in a transition
+      const updated = isInTransition ? panel : updatePanel(
         panel,
         finalWidth,
         finalHeight,
@@ -324,7 +327,6 @@ export function VisualizerCanvas({
       }
       
       // Apply rotation only if NOT in any transition (zoom or fade)
-      const isInTransition = region.morphProgress !== undefined || (region.fadeOpacity !== undefined && region.fadeOpacity < 1);
       if (settings.enableRotation && !isInTransition) {
         ctx.rotate((updated.rotation * Math.PI) / 180);
       }
