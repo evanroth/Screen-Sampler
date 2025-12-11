@@ -491,25 +491,26 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
   const normalRegions = visibleRegions.filter(r => !r.fullscreenBackground);
   
   useEffect(() => {
-    // Calculate camera distance to fit all objects at ~85% of screen
-    // For multiple regions, account for spacing
+    // Calculate camera distance to fit objects at ~85% of screen
     const regionCount = regions.filter(r => r.visible !== false && !r.fullscreenBackground).length;
     const totalWidth = regionCount > 1 ? (regionCount - 1) * settings.regionSpacing3D : 0;
-    const objectSize = settings.panelScaleX * 2; // Approximate object diameter
-    const sceneWidth = totalWidth + objectSize * 2; // Total scene width with padding
     
-    // Use FOV to calculate required distance for 85% fill
+    // Object size based on scale and geometry (mobius/torus knot is roughly 2.4 units diameter)
+    const objectSize = settings.panelScaleX * 2.4;
+    const sceneWidth = Math.max(totalWidth + objectSize, objectSize);
+    
+    // Use FOV to calculate required distance for 85% screen fill
     const fov = 60 * (Math.PI / 180);
     const aspectRatio = window.innerWidth / window.innerHeight;
     const targetFillRatio = 0.85;
     
-    // Calculate distance needed to fit scene width at 85% of viewport
+    // Calculate distance based on whether scene is wider or taller
     const horizontalFov = 2 * Math.atan(Math.tan(fov / 2) * aspectRatio);
     const distanceForWidth = (sceneWidth / 2) / (Math.tan(horizontalFov / 2) * targetFillRatio);
+    const distanceForHeight = (objectSize / 2) / (Math.tan(fov / 2) * targetFillRatio);
     
-    // Ensure minimum distance for single objects
-    const minDistance = objectSize / (Math.tan(fov / 2) * targetFillRatio);
-    const cameraZ = Math.max(distanceForWidth, minDistance, 4);
+    // Use the larger distance needed, but keep it close
+    const cameraZ = Math.max(distanceForWidth, distanceForHeight, 2);
     
     camera.position.set(0, 0, cameraZ);
   }, [camera, regions, settings.regionSpacing3D, settings.panelScaleX]);
