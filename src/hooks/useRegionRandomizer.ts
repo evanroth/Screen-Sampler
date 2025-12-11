@@ -17,44 +17,61 @@ export function useRegionRandomizer({
 }: UseRegionRandomizerProps) {
   const intervalRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const fadeTimeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const fadeInTimeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  
+  // Store regions in a ref so interval callbacks can access latest state
+  const regionsRef = useRef(regions);
+  regionsRef.current = regions;
+  
+  // Store visualizerMode in ref for callbacks
+  const visualizerModeRef = useRef(visualizerMode);
+  visualizerModeRef.current = visualizerMode;
 
   const getRandomMode3D = useCallback((excludeMode?: AnimationMode3D): AnimationMode3D => {
     const availableModes = ANIMATION_MODES_3D.filter(m => m !== excludeMode);
     return availableModes[Math.floor(Math.random() * availableModes.length)];
   }, []);
 
-  const triggerRandomChange = useCallback((region: CaptureRegion) => {
-    if (!region.randomizeEnabled) return;
+  const triggerRandomChange = useCallback((regionId: string) => {
+    const region = regionsRef.current.find(r => r.id === regionId);
+    if (!region || !region.randomizeEnabled) return;
 
     // Start fade out
-    onUpdateRegion(region.id, { fadeOpacity: 0 });
+    onUpdateRegion(regionId, { fadeOpacity: 0 });
 
-    // Clear any existing fade timeout for this region
-    const existingTimeout = fadeTimeoutRefs.current.get(region.id);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
+    // Clear any existing fade timeouts for this region
+    const existingFadeTimeout = fadeTimeoutRefs.current.get(regionId);
+    if (existingFadeTimeout) {
+      clearTimeout(existingFadeTimeout);
+    }
+    const existingFadeInTimeout = fadeInTimeoutRefs.current.get(regionId);
+    if (existingFadeInTimeout) {
+      clearTimeout(existingFadeInTimeout);
     }
 
     // After fade out, change mode
     const fadeTimeout = setTimeout(() => {
-      if (visualizerMode === '3d') {
-        const currentMode = region.animationMode3D;
+      if (visualizerModeRef.current === '3d') {
+        const currentRegion = regionsRef.current.find(r => r.id === regionId);
+        const currentMode = currentRegion?.animationMode3D;
         const newMode = getRandomMode3D(currentMode);
-        onUpdateRegion(region.id, { animationMode3D: newMode });
+        onUpdateRegion(regionId, { animationMode3D: newMode });
       }
-      // For 2D mode, we also change to a random 3D mode stored in the region
-      // This can be used to trigger different behaviors if needed
 
       // Start fade in after mode change
-      setTimeout(() => {
-        onUpdateRegion(region.id, { fadeOpacity: 1 });
+      const fadeInTimeout = setTimeout(() => {
+        onUpdateRegion(regionId, { fadeOpacity: 1 });
+        fadeInTimeoutRefs.current.delete(regionId);
       }, 100);
-    }, 400); // 400ms fade out duration
+      
+      fadeInTimeoutRefs.current.set(regionId, fadeInTimeout);
+      fadeTimeoutRefs.current.delete(regionId);
+    }, 400);
 
-    fadeTimeoutRefs.current.set(region.id, fadeTimeout);
-  }, [visualizerMode, getRandomMode3D, onUpdateRegion]);
+    fadeTimeoutRefs.current.set(regionId, fadeTimeout);
+  }, [getRandomMode3D, onUpdateRegion]);
 
-  // Setup intervals for each region with randomize enabled
+  // Setup intervals - only re-run when specific properties change
   useEffect(() => {
     if (!isVisualizerActive) {
       // Clear all intervals when visualizer stops
@@ -62,28 +79,36 @@ export function useRegionRandomizer({
       intervalRefs.current.clear();
       fadeTimeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
       fadeTimeoutRefs.current.clear();
+      fadeInTimeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
+      fadeInTimeoutRefs.current.clear();
       return;
     }
 
+    // Track which regions need interval updates
+    const currentIntervalSettings = new Map<string, { enabled: boolean; interval: number }>();
+    
+    regions.forEach((region) => {
+      currentIntervalSettings.set(region.id, {
+        enabled: region.randomizeEnabled ?? false,
+        interval: region.randomizeInterval ?? 30,
+      });
+    });
+
+    // Update intervals based on settings
     regions.forEach((region) => {
       const existingInterval = intervalRefs.current.get(region.id);
       
       if (region.randomizeEnabled && region.visible !== false) {
         const intervalMs = (region.randomizeInterval || 30) * 1000;
         
-        // Check if we need to create/update interval
-        // We need to track the interval time to know if it changed
+        // Clear existing interval to reset timing
         if (existingInterval) {
           clearInterval(existingInterval);
         }
 
-        // Set new interval
+        // Set new interval that uses ref to get latest region state
         const newInterval = setInterval(() => {
-          // Re-fetch the region to get current state
-          const currentRegion = regions.find(r => r.id === region.id);
-          if (currentRegion && currentRegion.randomizeEnabled) {
-            triggerRandomChange(currentRegion);
-          }
+          triggerRandomChange(region.id);
         }, intervalMs);
 
         intervalRefs.current.set(region.id, newInterval);
@@ -92,10 +117,6 @@ export function useRegionRandomizer({
         if (existingInterval) {
           clearInterval(existingInterval);
           intervalRefs.current.delete(region.id);
-        }
-        // Reset opacity when disabled
-        if (region.fadeOpacity !== undefined && region.fadeOpacity !== 1) {
-          onUpdateRegion(region.id, { fadeOpacity: 1 });
         }
       }
     });
@@ -108,9 +129,27 @@ export function useRegionRandomizer({
       }
     });
 
+    // Only cleanup intervals on unmount, not fade timeouts
     return () => {
       intervalRefs.current.forEach((interval) => clearInterval(interval));
-      fadeTimeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
     };
-  }, [regions, isVisualizerActive, triggerRandomChange, onUpdateRegion]);
+  }, [
+    isVisualizerActive,
+    triggerRandomChange,
+    // Only depend on serialized randomize settings to avoid re-running on every region update
+    JSON.stringify(regions.map(r => ({ 
+      id: r.id, 
+      randomizeEnabled: r.randomizeEnabled, 
+      randomizeInterval: r.randomizeInterval,
+      visible: r.visible 
+    })))
+  ]);
+
+  // Cleanup all timeouts on unmount
+  useEffect(() => {
+    return () => {
+      fadeTimeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
+      fadeInTimeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
+    };
+  }, []);
 }
