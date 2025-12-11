@@ -192,6 +192,14 @@ export function useRegionRandomizer({
     // Don't trigger if already in a transition
     if (region.transitionFrozen) return;
 
+    // In 2D mode, just instantly change the mode (no transition)
+    if (visualizerModeRef.current === '2d') {
+      const newMode2D = getRandomMode2D(region.animationMode2D);
+      onUpdateRegion(regionId, { animationMode2D: newMode2D });
+      return;
+    }
+
+    // In 3D mode, use transitions
     const transitionType = region.transitionType || 'fade';
     
     if (transitionType === 'zoom') {
@@ -199,7 +207,7 @@ export function useRegionRandomizer({
     } else {
       triggerFadeTransition(regionId);
     }
-  }, [triggerFadeTransition, triggerZoomTransition]);
+  }, [triggerFadeTransition, triggerZoomTransition, getRandomMode2D, onUpdateRegion]);
 
   // Setup intervals - use stable serialized key to avoid re-running on unrelated changes
   useEffect(() => {
