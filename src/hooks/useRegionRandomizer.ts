@@ -59,31 +59,62 @@ export function useRegionRandomizer({
 
     clearTransitionTimeouts(regionId);
 
-    // Start fade out
-    onUpdateRegion(regionId, { fadeOpacity: 0 });
+    // Get the new mode upfront
+    let newMode3D: AnimationMode3D | undefined;
+    let newMode2D: AnimationMode | undefined;
+    
+    if (visualizerModeRef.current === '3d') {
+      const currentMode = region.animationMode3D;
+      newMode3D = getRandomMode3D(currentMode);
+    } else {
+      const currentMode = region.animationMode2D;
+      newMode2D = getRandomMode2D(currentMode);
+    }
 
-    // After fade out, change mode and fade in
-    const timeout = setTimeout(() => {
-      if (visualizerModeRef.current === '3d') {
-        const currentRegion = regionsRef.current.find(r => r.id === regionId);
-        const currentMode = currentRegion?.animationMode3D;
-        const newMode = getRandomMode3D(currentMode);
-        onUpdateRegion(regionId, { animationMode3D: newMode });
+    const startTime = performance.now();
+    
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / FADE_DURATION, 1);
+      
+      // Fade out from 0-0.5, fade in from 0.5-1
+      let opacity: number;
+      if (progress < 0.5) {
+        // Fade out: 1 -> 0
+        opacity = 1 - (progress * 2);
       } else {
-        const currentRegion = regionsRef.current.find(r => r.id === regionId);
-        const currentMode = currentRegion?.animationMode2D;
-        const newMode = getRandomMode2D(currentMode);
-        onUpdateRegion(regionId, { animationMode2D: newMode });
+        // Fade in: 0 -> 1
+        opacity = (progress - 0.5) * 2;
       }
-
-      // Fade in after a brief delay
-      setTimeout(() => {
-        onUpdateRegion(regionId, { fadeOpacity: 1 });
-        transitionRefs.current.delete(regionId);
-      }, 100);
-    }, FADE_DURATION);
-
-    transitionRefs.current.set(regionId, timeout);
+      
+      onUpdateRegion(regionId, { fadeOpacity: opacity });
+      
+      // At the midpoint, switch the mode
+      if (progress >= 0.5) {
+        const currentRegion = regionsRef.current.find(r => r.id === regionId);
+        if (visualizerModeRef.current === '3d' && newMode3D) {
+          if (currentRegion?.animationMode3D !== newMode3D) {
+            onUpdateRegion(regionId, { animationMode3D: newMode3D });
+          }
+        } else if (newMode2D) {
+          if (currentRegion?.animationMode2D !== newMode2D) {
+            onUpdateRegion(regionId, { animationMode2D: newMode2D });
+          }
+        }
+      }
+      
+      if (progress < 1) {
+        const animId = requestAnimationFrame(animate);
+        animationRefs.current.set(regionId, animId);
+      } else {
+        // Reset fade opacity when done
+        onUpdateRegion(regionId, { fadeOpacity: undefined });
+        animationRefs.current.delete(regionId);
+      }
+    };
+    
+    const animId = requestAnimationFrame(animate);
+    animationRefs.current.set(regionId, animId);
   }, [getRandomMode3D, getRandomMode2D, onUpdateRegion, clearTransitionTimeouts]);
 
   const triggerZoomTransition = useCallback((regionId: string) => {
