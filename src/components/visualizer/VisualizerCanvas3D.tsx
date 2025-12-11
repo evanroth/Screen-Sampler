@@ -491,7 +491,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
   const normalRegions = visibleRegions.filter(r => !r.fullscreenBackground);
   
   useEffect(() => {
-    camera.position.set(0, 0, 8);
+    camera.position.set(0, 0, 4); // 2x zoom (closer to scene)
   }, [camera]);
 
   // Update OrbitControls target to center of all meshes
