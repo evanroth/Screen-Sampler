@@ -53,6 +53,22 @@ export type AnimationMode3D =
   | 'capsule3D'
   | 'ring3D'
   | 'mobius3D'
+  | 'tetrakisHexahedron3D'
+  | 'greatDodecahedron3D'
+  | 'greatIcosahedron3D'
+  | 'smallStellatedDodecahedron3D'
+  | 'greatStellatedDodecahedron3D'
+  | 'tripleTwistMobius3D'
+  | 'verrill3D'
+  | 'doubleTrefoil3D'
+  | 'schwarzP3D'
+  | 'enneper3D'
+  | 'boysSurface3D'
+  | 'cliffordTorus3D'
+  | 'hyperbolicParaboloid3D'
+  | 'hyperboloidOneSheet3D'
+  | 'steiner3D'
+  | 'helicoid3D'
   | 'random3D';
 
 export const ANIMATION_MODES: AnimationMode[] = [
@@ -65,7 +81,12 @@ export const ANIMATION_MODES_3D: AnimationMode3D[] = [
   'sphere3D', 'cube3D', 'cylinder3D', 'torus3D', 'pyramid3D', 'cone3D',
   'dodecahedron3D', 'icosahedron3D', 'octahedron3D', 'tetrahedron3D', 
   'torusKnot3D', 'trefoil3D', 'cinquefoil3D', 'septafoil3D', 'figure8_3D',
-  'granny3D', 'lissajous3D', 'capsule3D', 'ring3D', 'mobius3D'
+  'granny3D', 'lissajous3D', 'capsule3D', 'ring3D', 'mobius3D',
+  'tetrakisHexahedron3D', 'greatDodecahedron3D', 'greatIcosahedron3D',
+  'smallStellatedDodecahedron3D', 'greatStellatedDodecahedron3D',
+  'tripleTwistMobius3D', 'verrill3D', 'doubleTrefoil3D', 'schwarzP3D',
+  'enneper3D', 'boysSurface3D', 'cliffordTorus3D', 'hyperbolicParaboloid3D',
+  'hyperboloidOneSheet3D', 'steiner3D', 'helicoid3D'
 ];
 
 export type VisualizerMode = '2d' | '3d';

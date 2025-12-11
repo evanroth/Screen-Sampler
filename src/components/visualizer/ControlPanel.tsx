@@ -880,6 +880,22 @@ export function ControlPanel({
                       <SelectItem value="capsule3D">Capsule</SelectItem>
                       <SelectItem value="ring3D">Ring</SelectItem>
                       <SelectItem value="mobius3D">Möbius</SelectItem>
+                      <SelectItem value="tetrakisHexahedron3D">Tetrakis Hexahedron</SelectItem>
+                      <SelectItem value="greatDodecahedron3D">Great Dodecahedron</SelectItem>
+                      <SelectItem value="greatIcosahedron3D">Great Icosahedron</SelectItem>
+                      <SelectItem value="smallStellatedDodecahedron3D">Small Stellated Dodecahedron</SelectItem>
+                      <SelectItem value="greatStellatedDodecahedron3D">Great Stellated Dodecahedron</SelectItem>
+                      <SelectItem value="tripleTwistMobius3D">Triple Twist Möbius</SelectItem>
+                      <SelectItem value="verrill3D">Verrill Surface</SelectItem>
+                      <SelectItem value="doubleTrefoil3D">Double Trefoil</SelectItem>
+                      <SelectItem value="schwarzP3D">Schwarz P Surface</SelectItem>
+                      <SelectItem value="enneper3D">Enneper Surface</SelectItem>
+                      <SelectItem value="boysSurface3D">Boy's Surface</SelectItem>
+                      <SelectItem value="cliffordTorus3D">Clifford Torus</SelectItem>
+                      <SelectItem value="hyperbolicParaboloid3D">Hyperbolic Paraboloid</SelectItem>
+                      <SelectItem value="hyperboloidOneSheet3D">Hyperboloid</SelectItem>
+                      <SelectItem value="steiner3D">Steiner Surface</SelectItem>
+                      <SelectItem value="helicoid3D">Helicoid</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -966,6 +982,22 @@ export function ControlPanel({
                             <SelectItem value="capsule3D">Capsule</SelectItem>
                             <SelectItem value="ring3D">Ring</SelectItem>
                             <SelectItem value="mobius3D">Möbius</SelectItem>
+                            <SelectItem value="tetrakisHexahedron3D">Tetrakis Hexahedron</SelectItem>
+                            <SelectItem value="greatDodecahedron3D">Great Dodecahedron</SelectItem>
+                            <SelectItem value="greatIcosahedron3D">Great Icosahedron</SelectItem>
+                            <SelectItem value="smallStellatedDodecahedron3D">Small Stellated Dodecahedron</SelectItem>
+                            <SelectItem value="greatStellatedDodecahedron3D">Great Stellated Dodecahedron</SelectItem>
+                            <SelectItem value="tripleTwistMobius3D">Triple Twist Möbius</SelectItem>
+                            <SelectItem value="verrill3D">Verrill Surface</SelectItem>
+                            <SelectItem value="doubleTrefoil3D">Double Trefoil</SelectItem>
+                            <SelectItem value="schwarzP3D">Schwarz P Surface</SelectItem>
+                            <SelectItem value="enneper3D">Enneper Surface</SelectItem>
+                            <SelectItem value="boysSurface3D">Boy's Surface</SelectItem>
+                            <SelectItem value="cliffordTorus3D">Clifford Torus</SelectItem>
+                            <SelectItem value="hyperbolicParaboloid3D">Hyperbolic Paraboloid</SelectItem>
+                            <SelectItem value="hyperboloidOneSheet3D">Hyperboloid</SelectItem>
+                            <SelectItem value="steiner3D">Steiner Surface</SelectItem>
+                            <SelectItem value="helicoid3D">Helicoid</SelectItem>
                           </SelectContent>
                         </Select>
 

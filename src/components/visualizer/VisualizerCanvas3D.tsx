@@ -4,6 +4,24 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { CaptureRegion } from '@/hooks/useScreenCapture';
 import { VisualizerSettings, AnimationMode3D, ANIMATION_MODES_3D } from '@/hooks/useVisualizerSettings';
+import {
+  createTetrakisHexahedron,
+  createGreatDodecahedron,
+  createGreatIcosahedron,
+  createSmallStellatedDodecahedron,
+  createGreatStellatedDodecahedron,
+  createTripleTwistMobius,
+  createVerrillSurface,
+  createDoubleTrefoil,
+  createSchwarzPSurface,
+  createEnneperSurface,
+  createBoysSurface,
+  createCliffordTorus,
+  createHyperbolicParaboloid,
+  createHyperboloidOneSheet,
+  createSteinerSurface,
+  createHelicoid,
+} from './customGeometries';
 
 interface VisualizerCanvas3DProps {
   regions: CaptureRegion[];
@@ -238,6 +256,22 @@ function RegionMesh({
       case 'capsule3D':
       case 'ring3D':
       case 'mobius3D':
+      case 'tetrakisHexahedron3D':
+      case 'greatDodecahedron3D':
+      case 'greatIcosahedron3D':
+      case 'smallStellatedDodecahedron3D':
+      case 'greatStellatedDodecahedron3D':
+      case 'tripleTwistMobius3D':
+      case 'verrill3D':
+      case 'doubleTrefoil3D':
+      case 'schwarzP3D':
+      case 'enneper3D':
+      case 'boysSurface3D':
+      case 'cliffordTorus3D':
+      case 'hyperbolicParaboloid3D':
+      case 'hyperboloidOneSheet3D':
+      case 'steiner3D':
+      case 'helicoid3D':
         // For shape modes, use custom position if set, otherwise spread out by index
         const customPos = region.position3D;
         if (customPos) {
@@ -259,12 +293,26 @@ function RegionMesh({
     mesh.scale.setScalar(baseScale * audioScale * regionScale * morphScale);
   });
 
-  // Create mobius geometry using TubeGeometry with a custom curve
-  const mobiusGeometry = useMemo(() => {
-    // TorusKnotGeometry with p=2, q=1 creates a figure-8 like shape
-    const geometry = new THREE.TorusKnotGeometry(1.2, 0.25, 100, 16, 2, 1);
-    return geometry;
-  }, []);
+  // Create custom geometries
+  const customGeometries = useMemo(() => ({
+    mobius: new THREE.TorusKnotGeometry(1.2, 0.25, 100, 16, 2, 1),
+    tetrakisHexahedron: createTetrakisHexahedron(1.5),
+    greatDodecahedron: createGreatDodecahedron(1.5),
+    greatIcosahedron: createGreatIcosahedron(1.5),
+    smallStellatedDodecahedron: createSmallStellatedDodecahedron(1.5),
+    greatStellatedDodecahedron: createGreatStellatedDodecahedron(1.5),
+    tripleTwistMobius: createTripleTwistMobius(1.2),
+    verrill: createVerrillSurface(1.2),
+    doubleTrefoil: createDoubleTrefoil(1.0),
+    schwarzP: createSchwarzPSurface(1.2),
+    enneper: createEnneperSurface(0.8),
+    boysSurface: createBoysSurface(1.0),
+    cliffordTorus: createCliffordTorus(1.2),
+    hyperbolicParaboloid: createHyperbolicParaboloid(1.2),
+    hyperboloidOneSheet: createHyperboloidOneSheet(1.0),
+    steiner: createSteinerSurface(1.2),
+    helicoid: createHelicoid(1.0),
+  }), []);
 
   // Determine geometry based on mode
   const geometry = useMemo(() => {
@@ -308,11 +356,43 @@ function RegionMesh({
       case 'ring3D':
         return <torusGeometry args={[1.5, 0.15, 8, 48]} />;
       case 'mobius3D':
-        return <primitive object={mobiusGeometry} attach="geometry" />;
+        return <primitive object={customGeometries.mobius} attach="geometry" />;
+      case 'tetrakisHexahedron3D':
+        return <primitive object={customGeometries.tetrakisHexahedron} attach="geometry" />;
+      case 'greatDodecahedron3D':
+        return <primitive object={customGeometries.greatDodecahedron} attach="geometry" />;
+      case 'greatIcosahedron3D':
+        return <primitive object={customGeometries.greatIcosahedron} attach="geometry" />;
+      case 'smallStellatedDodecahedron3D':
+        return <primitive object={customGeometries.smallStellatedDodecahedron} attach="geometry" />;
+      case 'greatStellatedDodecahedron3D':
+        return <primitive object={customGeometries.greatStellatedDodecahedron} attach="geometry" />;
+      case 'tripleTwistMobius3D':
+        return <primitive object={customGeometries.tripleTwistMobius} attach="geometry" />;
+      case 'verrill3D':
+        return <primitive object={customGeometries.verrill} attach="geometry" />;
+      case 'doubleTrefoil3D':
+        return <primitive object={customGeometries.doubleTrefoil} attach="geometry" />;
+      case 'schwarzP3D':
+        return <primitive object={customGeometries.schwarzP} attach="geometry" />;
+      case 'enneper3D':
+        return <primitive object={customGeometries.enneper} attach="geometry" />;
+      case 'boysSurface3D':
+        return <primitive object={customGeometries.boysSurface} attach="geometry" />;
+      case 'cliffordTorus3D':
+        return <primitive object={customGeometries.cliffordTorus} attach="geometry" />;
+      case 'hyperbolicParaboloid3D':
+        return <primitive object={customGeometries.hyperbolicParaboloid} attach="geometry" />;
+      case 'hyperboloidOneSheet3D':
+        return <primitive object={customGeometries.hyperboloidOneSheet} attach="geometry" />;
+      case 'steiner3D':
+        return <primitive object={customGeometries.steiner} attach="geometry" />;
+      case 'helicoid3D':
+        return <primitive object={customGeometries.helicoid} attach="geometry" />;
       default:
         return <planeGeometry args={[2, 2]} />;
     }
-  }, [mode, mobiusGeometry]);
+  }, [mode, customGeometries]);
 
   return (
     <mesh ref={meshRef}>
