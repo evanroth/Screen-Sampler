@@ -131,7 +131,7 @@ const defaultSettings: VisualizerSettings = {
   randomModeInterval: 10,
   autoRotateCamera: false,
   autoRotateCameraSpeed: 1,
-  regionSpacing3D: 3,
+  regionSpacing3D: 1.5,
   textureQuality: 2048,
   textureSmoothing: false,
   playMode: {
