@@ -382,39 +382,6 @@ export function ControlPanel({
               </>
             )}
 
-            {/* 2D-only: Opacity Variation */}
-            {settings.visualizerMode === '2d' && (
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <Label className="text-muted-foreground">Opacity Variation</Label>
-                  <span className="text-sm text-foreground">{(settings.opacityVariation * 100).toFixed(0)}%</span>
-                </div>
-                <Slider
-                  value={[settings.opacityVariation]}
-                  onValueChange={([v]) => onUpdateSetting('opacityVariation', v)}
-                  min={0}
-                  max={0.7}
-                  step={0.05}
-                />
-              </div>
-            )}
-
-            {/* 2D-only: Blur Intensity */}
-            {settings.visualizerMode === '2d' && (
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <Label className="text-muted-foreground">Blur Intensity</Label>
-                  <span className="text-sm text-foreground">{(settings.blurIntensity * 100).toFixed(0)}%</span>
-                </div>
-                <Slider
-                  value={[settings.blurIntensity]}
-                  onValueChange={([v]) => onUpdateSetting('blurIntensity', v)}
-                  min={0}
-                  max={1}
-                  step={0.05}
-                />
-              </div>
-            )}
 
             {/* 2D-only: Rotation */}
             {settings.visualizerMode === '2d' && (
