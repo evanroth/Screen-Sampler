@@ -884,7 +884,7 @@ export function ControlPanel({
                                   value={region.transitionType || 'fade'}
                                   onValueChange={(v) => {
                                     if (onUpdateRegion) {
-                                      onUpdateRegion(region.id, { transitionType: v as 'fade' | 'morph' });
+                                      onUpdateRegion(region.id, { transitionType: v as 'fade' | 'zoom' | 'morph' });
                                     }
                                   }}
                                 >
@@ -893,6 +893,7 @@ export function ControlPanel({
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="fade">Fade</SelectItem>
+                                    <SelectItem value="zoom">Zoom</SelectItem>
                                     <SelectItem value="morph">Morph</SelectItem>
                                   </SelectContent>
                                 </Select>
