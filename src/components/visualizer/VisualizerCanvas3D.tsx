@@ -491,8 +491,28 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
   const normalRegions = visibleRegions.filter(r => !r.fullscreenBackground);
   
   useEffect(() => {
-    camera.position.set(0, 0, 2); // 4x zoom (closer to scene)
-  }, [camera]);
+    // Calculate camera distance to fit all objects at ~85% of screen
+    // For multiple regions, account for spacing
+    const regionCount = regions.filter(r => r.visible !== false && !r.fullscreenBackground).length;
+    const totalWidth = regionCount > 1 ? (regionCount - 1) * settings.regionSpacing3D : 0;
+    const objectSize = settings.panelScaleX * 2; // Approximate object diameter
+    const sceneWidth = totalWidth + objectSize * 2; // Total scene width with padding
+    
+    // Use FOV to calculate required distance for 85% fill
+    const fov = 60 * (Math.PI / 180);
+    const aspectRatio = window.innerWidth / window.innerHeight;
+    const targetFillRatio = 0.85;
+    
+    // Calculate distance needed to fit scene width at 85% of viewport
+    const horizontalFov = 2 * Math.atan(Math.tan(fov / 2) * aspectRatio);
+    const distanceForWidth = (sceneWidth / 2) / (Math.tan(horizontalFov / 2) * targetFillRatio);
+    
+    // Ensure minimum distance for single objects
+    const minDistance = objectSize / (Math.tan(fov / 2) * targetFillRatio);
+    const cameraZ = Math.max(distanceForWidth, minDistance, 4);
+    
+    camera.position.set(0, 0, cameraZ);
+  }, [camera, regions, settings.regionSpacing3D, settings.panelScaleX]);
 
   // Update OrbitControls target to center of all meshes
   useFrame(() => {
