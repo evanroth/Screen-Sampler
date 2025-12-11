@@ -99,10 +99,9 @@ export default function Index() {
       // 'f' key to test fade out on first region
       if ((e.key === 'f' || e.key === 'F') && regions.length > 0) {
         if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-        const region = regions[0];
-        // Animate fade out over 500ms
+        // Animate fade out over 2000ms
         const startTime = performance.now();
-        const duration = 500;
+        const duration = 2000;
         const animate = (currentTime: number) => {
           const elapsed = currentTime - startTime;
           const progress = Math.min(elapsed / duration, 1);

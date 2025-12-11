@@ -526,7 +526,7 @@ export function ControlPanel({
                                   value={region.transitionType || 'none'}
                                   onValueChange={(v) => {
                                     if (onUpdateRegion) {
-                                      onUpdateRegion(region.id, { transitionType: v as 'none' | 'fade' });
+                                      onUpdateRegion(region.id, { transitionType: v as 'none' | 'fade' | 'zoom' });
                                     }
                                   }}
                                 >
@@ -536,6 +536,7 @@ export function ControlPanel({
                                   <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
                                     <SelectItem value="fade">Fade</SelectItem>
+                                    <SelectItem value="zoom">Zoom</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
