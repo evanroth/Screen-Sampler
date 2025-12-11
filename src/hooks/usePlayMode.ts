@@ -24,11 +24,15 @@ export function usePlayMode({
   isVisualizerActive,
   settings,
 }: UsePlayModeProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const currentIndexRef = useRef(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const animationRef = useRef<number | null>(null);
   const regionsRef = useRef(regions);
+  const settingsRef = useRef(settings);
+  const isInitializedRef = useRef(false);
+  
   regionsRef.current = regions;
+  settingsRef.current = settings;
 
   const cancelAnimation = useCallback(() => {
     if (animationRef.current) {
@@ -47,10 +51,11 @@ export function usePlayMode({
   // Transition to next region with animation
   const transitionToNext = useCallback(() => {
     const currentRegions = regionsRef.current;
+    const currentSettings = settingsRef.current;
     if (currentRegions.length < 2) return;
 
-    const currentIdx = currentIndex % currentRegions.length;
-    const nextIdx = (currentIndex + 1) % currentRegions.length;
+    const currentIdx = currentIndexRef.current % currentRegions.length;
+    const nextIdx = (currentIndexRef.current + 1) % currentRegions.length;
     const currentRegion = currentRegions[currentIdx];
     const nextRegion = currentRegions[nextIdx];
 
@@ -58,12 +63,12 @@ export function usePlayMode({
 
     cancelAnimation();
 
-    if (settings.transition === 'none') {
+    if (currentSettings.transition === 'none') {
       // Instant switch
       onUpdateRegion(currentRegion.id, { visible: false });
       onUpdateRegion(nextRegion.id, { visible: true });
-      setCurrentIndex(nextIdx);
-    } else if (settings.transition === 'fade') {
+      currentIndexRef.current = nextIdx;
+    } else if (currentSettings.transition === 'fade') {
       // Fade transition
       const startTime = performance.now();
       
@@ -100,12 +105,12 @@ export function usePlayMode({
         } else {
           // Complete
           onUpdateRegion(nextRegion.id, { fadeOpacity: undefined });
-          setCurrentIndex(nextIdx);
+          currentIndexRef.current = nextIdx;
         }
       };
       
       animationRef.current = requestAnimationFrame(animate);
-    } else if (settings.transition === 'zoom') {
+    } else if (currentSettings.transition === 'zoom') {
       // Zoom transition
       const startTime = performance.now();
       
@@ -128,13 +133,13 @@ export function usePlayMode({
         } else {
           // Complete
           onUpdateRegion(nextRegion.id, { morphProgress: undefined, transitionType: undefined });
-          setCurrentIndex(nextIdx);
+          currentIndexRef.current = nextIdx;
         }
       };
       
       animationRef.current = requestAnimationFrame(animate);
     }
-  }, [currentIndex, settings.transition, onUpdateRegion, cancelAnimation]);
+  }, [onUpdateRegion, cancelAnimation]);
 
   // Initialize play mode - show only first region
   const initializePlayMode = useCallback(() => {
@@ -148,7 +153,8 @@ export function usePlayMode({
         morphProgress: undefined
       });
     });
-    setCurrentIndex(0);
+    currentIndexRef.current = 0;
+    isInitializedRef.current = true;
   }, [onUpdateRegion]);
 
   // Restore all regions visibility when play mode ends
@@ -161,6 +167,7 @@ export function usePlayMode({
         morphProgress: undefined
       });
     });
+    isInitializedRef.current = false;
   }, [onUpdateRegion]);
 
   // Main effect for play mode
@@ -170,15 +177,20 @@ export function usePlayMode({
     if (!canRun) {
       clearPlayInterval();
       cancelAnimation();
-      if (settings.enabled === false && regions.length > 0) {
-        // Play mode was turned off, restore all regions
+      if (isInitializedRef.current) {
+        // Play mode was active, now turning off - restore all regions
         restoreAllRegions();
       }
       return;
     }
 
-    // Initialize when play mode starts
-    initializePlayMode();
+    // Only initialize once when play mode starts
+    if (!isInitializedRef.current) {
+      initializePlayMode();
+    }
+
+    // Clear existing interval before setting new one
+    clearPlayInterval();
 
     // Set up interval
     const intervalMs = settings.interval * 1000;
@@ -211,7 +223,7 @@ export function usePlayMode({
   }, [cancelAnimation, clearPlayInterval]);
 
   return {
-    currentIndex,
+    currentIndex: currentIndexRef.current,
     isActive: settings.enabled && regions.length >= 2,
   };
 }
