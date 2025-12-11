@@ -123,8 +123,10 @@ function RegionMesh({
     if (materialRef.current) {
       materialRef.current.map = textureRef.current;
       // Smoothly interpolate opacity for fade transitions
-      const targetOpacity = region.fadeOpacity ?? 1;
-      materialRef.current.opacity += (targetOpacity * 0.95 - materialRef.current.opacity) * 0.1;
+      const targetOpacity = (region.fadeOpacity ?? 1) * 0.95;
+      const currentOpacity = materialRef.current.opacity;
+      // Use faster interpolation and ensure we don't go below a minimum visible threshold during active display
+      materialRef.current.opacity = currentOpacity + (targetOpacity - currentOpacity) * 0.15;
     }
 
     // Audio-reactive scale
@@ -295,7 +297,7 @@ function RegionMesh({
         ref={materialRef} 
         side={THREE.DoubleSide}
         transparent
-        opacity={region.fadeOpacity ?? 0.95}
+        opacity={0.95}
       />
     </mesh>
   );
