@@ -10,7 +10,8 @@ interface UseRegionRandomizerProps {
 }
 
 const FADE_DURATION = 400;
-const MORPH_DURATION = 800;
+const ZOOM_DURATION = 800;
+const MORPH_DURATION = 1000;
 
 export function useRegionRandomizer({
   regions,
@@ -20,7 +21,7 @@ export function useRegionRandomizer({
 }: UseRegionRandomizerProps) {
   const intervalRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const transitionRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
-  const morphAnimationRefs = useRef<Map<string, number>>(new Map());
+  const animationRefs = useRef<Map<string, number>>(new Map());
   
   // Store regions in a ref so interval callbacks can access latest state
   const regionsRef = useRef(regions);
@@ -41,10 +42,10 @@ export function useRegionRandomizer({
       clearTimeout(existingTimeout);
       transitionRefs.current.delete(regionId);
     }
-    const existingAnimation = morphAnimationRefs.current.get(regionId);
+    const existingAnimation = animationRefs.current.get(regionId);
     if (existingAnimation) {
       cancelAnimationFrame(existingAnimation);
-      morphAnimationRefs.current.delete(regionId);
+      animationRefs.current.delete(regionId);
     }
   }, []);
 
@@ -76,7 +77,7 @@ export function useRegionRandomizer({
     transitionRefs.current.set(regionId, timeout);
   }, [getRandomMode3D, onUpdateRegion, clearTransitionTimeouts]);
 
-  const triggerMorphTransition = useCallback((regionId: string) => {
+  const triggerZoomTransition = useCallback((regionId: string) => {
     const region = regionsRef.current.find(r => r.id === regionId);
     if (!region || !region.randomizeEnabled) return;
 
@@ -93,7 +94,7 @@ export function useRegionRandomizer({
     
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / MORPH_DURATION, 1);
+      const progress = Math.min(elapsed / ZOOM_DURATION, 1);
       
       // Eased progress for smoother animation
       const easedProgress = progress < 0.5 
@@ -112,16 +113,66 @@ export function useRegionRandomizer({
       
       if (progress < 1) {
         const animId = requestAnimationFrame(animate);
-        morphAnimationRefs.current.set(regionId, animId);
+        animationRefs.current.set(regionId, animId);
       } else {
         // Reset morph progress when done
         onUpdateRegion(regionId, { morphProgress: undefined });
-        morphAnimationRefs.current.delete(regionId);
+        animationRefs.current.delete(regionId);
       }
     };
     
     const animId = requestAnimationFrame(animate);
-    morphAnimationRefs.current.set(regionId, animId);
+    animationRefs.current.set(regionId, animId);
+  }, [getRandomMode3D, onUpdateRegion, clearTransitionTimeouts]);
+
+  const triggerMorphTransition = useCallback((regionId: string) => {
+    const region = regionsRef.current.find(r => r.id === regionId);
+    if (!region || !region.randomizeEnabled) return;
+
+    clearTransitionTimeouts(regionId);
+
+    // Store the current mode as previous before getting new mode
+    const currentMode = region.animationMode3D;
+    let newMode: AnimationMode3D | undefined;
+    
+    if (visualizerModeRef.current === '3d') {
+      newMode = getRandomMode3D(currentMode);
+      // Set up the transition: store previous mode, set new mode, start morph
+      onUpdateRegion(regionId, { 
+        previousAnimationMode3D: currentMode,
+        animationMode3D: newMode,
+        morphProgress: 0 
+      });
+    }
+
+    const startTime = performance.now();
+    
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / MORPH_DURATION, 1);
+      
+      // Smooth easing
+      const easedProgress = progress < 0.5 
+        ? 4 * progress * progress * progress 
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+      
+      onUpdateRegion(regionId, { morphProgress: easedProgress });
+      
+      if (progress < 1) {
+        const animId = requestAnimationFrame(animate);
+        animationRefs.current.set(regionId, animId);
+      } else {
+        // Clear transition state when done
+        onUpdateRegion(regionId, { 
+          morphProgress: undefined,
+          previousAnimationMode3D: undefined 
+        });
+        animationRefs.current.delete(regionId);
+      }
+    };
+    
+    const animId = requestAnimationFrame(animate);
+    animationRefs.current.set(regionId, animId);
   }, [getRandomMode3D, onUpdateRegion, clearTransitionTimeouts]);
 
   const triggerRandomChange = useCallback((regionId: string) => {
@@ -132,10 +183,12 @@ export function useRegionRandomizer({
     
     if (transitionType === 'morph') {
       triggerMorphTransition(regionId);
+    } else if (transitionType === 'zoom') {
+      triggerZoomTransition(regionId);
     } else {
       triggerFadeTransition(regionId);
     }
-  }, [triggerFadeTransition, triggerMorphTransition]);
+  }, [triggerFadeTransition, triggerZoomTransition, triggerMorphTransition]);
 
   // Setup intervals - only re-run when specific properties change
   useEffect(() => {
@@ -145,8 +198,8 @@ export function useRegionRandomizer({
       intervalRefs.current.clear();
       transitionRefs.current.forEach((timeout) => clearTimeout(timeout));
       transitionRefs.current.clear();
-      morphAnimationRefs.current.forEach((animId) => cancelAnimationFrame(animId));
-      morphAnimationRefs.current.clear();
+      animationRefs.current.forEach((animId) => cancelAnimationFrame(animId));
+      animationRefs.current.clear();
       return;
     }
 
@@ -208,7 +261,7 @@ export function useRegionRandomizer({
   useEffect(() => {
     return () => {
       transitionRefs.current.forEach((timeout) => clearTimeout(timeout));
-      morphAnimationRefs.current.forEach((animId) => cancelAnimationFrame(animId));
+      animationRefs.current.forEach((animId) => cancelAnimationFrame(animId));
     };
   }, []);
 }

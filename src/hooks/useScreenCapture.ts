@@ -30,8 +30,9 @@ export interface CaptureRegion {
   randomizeEnabled?: boolean; // Enable random mode cycling
   randomizeInterval?: number; // Interval in seconds (1-300)
   fadeOpacity?: number; // For fade transitions (0-1)
-  transitionType?: 'fade' | 'morph'; // Transition style between modes
-  morphProgress?: number; // For morph transitions (0-1, where 0.5 is mid-transition)
+  transitionType?: 'fade' | 'zoom' | 'morph'; // Transition style between modes
+  morphProgress?: number; // For zoom/morph transitions (0-1)
+  previousAnimationMode3D?: AnimationMode3D; // For morph transitions - the mode we're transitioning from
 }
 
 export function useScreenCapture() {
