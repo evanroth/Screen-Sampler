@@ -855,11 +855,8 @@ export function ControlPanel({
                     <SelectContent>
                       <SelectItem value="random3D">Random</SelectItem>
                       <SelectItem value="floating3D">Floating Panels</SelectItem>
-                      <SelectItem value="orbit3D">Orbit</SelectItem>
-                      <SelectItem value="carousel3D">Carousel</SelectItem>
-                      <SelectItem value="helix3D">Helix</SelectItem>
-                      <SelectItem value="explode3D">Explode</SelectItem>
-                      <SelectItem value="wave3D">Wave</SelectItem>
+                      <SelectItem value="orbit3D">Orbit Panel</SelectItem>
+                      <SelectItem value="wave3D">Wave Panel</SelectItem>
                       <SelectItem value="sphere3D">Sphere</SelectItem>
                       <SelectItem value="cube3D">Cube</SelectItem>
                       <SelectItem value="cylinder3D">Cylinder</SelectItem>
@@ -880,10 +877,8 @@ export function ControlPanel({
                       <SelectItem value="capsule3D">Capsule</SelectItem>
                       <SelectItem value="ring3D">Ring</SelectItem>
                       <SelectItem value="mobius3D">Möbius</SelectItem>
-                      <SelectItem value="tetrakisHexahedron3D">Tetrakis Hexahedron</SelectItem>
                       <SelectItem value="greatDodecahedron3D">Great Dodecahedron</SelectItem>
                       <SelectItem value="greatIcosahedron3D">Great Icosahedron</SelectItem>
-                      <SelectItem value="smallStellatedDodecahedron3D">Small Stellated Dodecahedron</SelectItem>
                       <SelectItem value="greatStellatedDodecahedron3D">Great Stellated Dodecahedron</SelectItem>
                       <SelectItem value="tripleTwistMobius3D">Triple Twist Möbius</SelectItem>
                       <SelectItem value="verrill3D">Verrill Surface</SelectItem>
@@ -957,11 +952,8 @@ export function ControlPanel({
                           <SelectContent>
                             <SelectItem value="default">Default (Use Global)</SelectItem>
                             <SelectItem value="floating3D">Floating Panels</SelectItem>
-                            <SelectItem value="orbit3D">Orbit</SelectItem>
-                            <SelectItem value="carousel3D">Carousel</SelectItem>
-                            <SelectItem value="helix3D">Helix</SelectItem>
-                            <SelectItem value="explode3D">Explode</SelectItem>
-                            <SelectItem value="wave3D">Wave</SelectItem>
+                            <SelectItem value="orbit3D">Orbit Panel</SelectItem>
+                            <SelectItem value="wave3D">Wave Panel</SelectItem>
                             <SelectItem value="sphere3D">Sphere</SelectItem>
                             <SelectItem value="cube3D">Cube</SelectItem>
                             <SelectItem value="cylinder3D">Cylinder</SelectItem>
@@ -982,10 +974,8 @@ export function ControlPanel({
                             <SelectItem value="capsule3D">Capsule</SelectItem>
                             <SelectItem value="ring3D">Ring</SelectItem>
                             <SelectItem value="mobius3D">Möbius</SelectItem>
-                            <SelectItem value="tetrakisHexahedron3D">Tetrakis Hexahedron</SelectItem>
                             <SelectItem value="greatDodecahedron3D">Great Dodecahedron</SelectItem>
                             <SelectItem value="greatIcosahedron3D">Great Icosahedron</SelectItem>
-                            <SelectItem value="smallStellatedDodecahedron3D">Small Stellated Dodecahedron</SelectItem>
                             <SelectItem value="greatStellatedDodecahedron3D">Great Stellated Dodecahedron</SelectItem>
                             <SelectItem value="tripleTwistMobius3D">Triple Twist Möbius</SelectItem>
                             <SelectItem value="verrill3D">Verrill Surface</SelectItem>
