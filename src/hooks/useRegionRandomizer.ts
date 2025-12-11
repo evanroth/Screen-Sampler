@@ -72,6 +72,7 @@ export function useRegionRandomizer({
     }
 
     const startTime = performance.now();
+    let modeChanged = false;
     
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
@@ -89,17 +90,13 @@ export function useRegionRandomizer({
       
       onUpdateRegion(regionId, { fadeOpacity: opacity });
       
-      // At the midpoint, switch the mode
-      if (progress >= 0.5) {
-        const currentRegion = regionsRef.current.find(r => r.id === regionId);
+      // At the midpoint, switch the mode (only once)
+      if (progress >= 0.5 && !modeChanged) {
+        modeChanged = true;
         if (visualizerModeRef.current === '3d' && newMode3D) {
-          if (currentRegion?.animationMode3D !== newMode3D) {
-            onUpdateRegion(regionId, { animationMode3D: newMode3D });
-          }
+          onUpdateRegion(regionId, { animationMode3D: newMode3D });
         } else if (newMode2D) {
-          if (currentRegion?.animationMode2D !== newMode2D) {
-            onUpdateRegion(regionId, { animationMode2D: newMode2D });
-          }
+          onUpdateRegion(regionId, { animationMode2D: newMode2D });
         }
       }
       
@@ -136,6 +133,7 @@ export function useRegionRandomizer({
     }
 
     const startTime = performance.now();
+    let modeChanged = false;
     
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
@@ -146,19 +144,15 @@ export function useRegionRandomizer({
         ? 2 * progress * progress 
         : 1 - Math.pow(-2 * progress + 2, 2) / 2;
       
-      onUpdateRegion(regionId, { morphProgress: easedProgress });
+      onUpdateRegion(regionId, { morphProgress: easedProgress, transitionType: 'zoom' });
       
-      // At the midpoint, switch the mode
-      if (progress >= 0.5) {
-        const currentRegion = regionsRef.current.find(r => r.id === regionId);
+      // At the midpoint, switch the mode (only once)
+      if (progress >= 0.5 && !modeChanged) {
+        modeChanged = true;
         if (visualizerModeRef.current === '3d' && newMode3D) {
-          if (currentRegion?.animationMode3D !== newMode3D) {
-            onUpdateRegion(regionId, { animationMode3D: newMode3D });
-          }
+          onUpdateRegion(regionId, { animationMode3D: newMode3D });
         } else if (newMode2D) {
-          if (currentRegion?.animationMode2D !== newMode2D) {
-            onUpdateRegion(regionId, { animationMode2D: newMode2D });
-          }
+          onUpdateRegion(regionId, { animationMode2D: newMode2D });
         }
       }
       
