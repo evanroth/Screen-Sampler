@@ -181,7 +181,18 @@ export function ControlPanel({
               onValueChange={(v) => onUpdateSetting('visualizerMode', v as VisualizerMode)}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList
+                className="grid w-full grid-cols-2"
+                onKeyDownCapture={(e) => {
+                  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    // Prevent Tabs from changing visualizer mode with arrow keys
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Re-dispatch to window so global handler can cycle animations instead
+                    window.dispatchEvent(new KeyboardEvent('keydown', { key: e.key }));
+                  }
+                }}
+              >
                 <TabsTrigger value="2d" className="gap-2">
                   <Layers className="w-4 h-4" />
                   2D
