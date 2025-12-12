@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useScreenCapture, CaptureRegion } from '@/hooks/useScreenCapture';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
-import { useVisualizerSettings } from '@/hooks/useVisualizerSettings';
+import { useVisualizerSettings, ANIMATION_MODES, ANIMATION_MODES_3D } from '@/hooks/useVisualizerSettings';
 import { useRegionRandomizer } from '@/hooks/useRegionRandomizer';
 import { usePlayMode } from '@/hooks/usePlayMode';
 import { Onboarding } from '@/components/visualizer/Onboarding';
@@ -100,21 +100,50 @@ export default function Index() {
   useEffect(() => { const h = () => setIsFullscreen(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => document.removeEventListener('fullscreenchange', h); }, []);
   useEffect(() => { 
     const h = (e: KeyboardEvent) => { 
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
       if (e.key === 'Escape' && appState === 'visualizing') setIsControlPanelOpen(true);
       if (e.key === 's' || e.key === 'S') {
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
         setIsControlPanelOpen(prev => !prev);
       }
+      
+      // 'p' key to toggle Play Mode
+      if (e.key === 'p' || e.key === 'P') {
+        updateSetting('playMode', { ...settings.playMode, enabled: !settings.playMode.enabled });
+      }
+      
+      // Arrow keys for navigation
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const direction = e.key === 'ArrowRight' ? 1 : -1;
+        
+        if (settings.playMode.enabled && regions.length > 0) {
+          // In Play Mode: cycle through regions manually
+          const visibleIndex = regions.findIndex(r => r.visible !== false);
+          const nextIndex = (visibleIndex + direction + regions.length) % regions.length;
+          setRegions(prev => prev.map((r, i) => ({ ...r, visible: i === nextIndex })));
+        } else if (settings.visualizerMode === '3d') {
+          // 3D mode: cycle through 3D animations
+          const modes = ANIMATION_MODES_3D;
+          const currentIndex = modes.indexOf(settings.animationMode3D);
+          const nextIndex = (currentIndex + direction + modes.length) % modes.length;
+          updateSetting('animationMode3D', modes[nextIndex]);
+        } else {
+          // 2D mode: cycle through 2D animations
+          const modes = ANIMATION_MODES;
+          const currentIndex = modes.indexOf(settings.animationMode);
+          const nextIndex = (currentIndex + direction + modes.length) % modes.length;
+          updateSetting('animationMode', modes[nextIndex]);
+        }
+      }
+      
       // 'f' key to test fade out on first region
       if ((e.key === 'f' || e.key === 'F') && regions.length > 0) {
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-        // Animate fade out over 2000ms
         const startTime = performance.now();
         const duration = 2000;
         const animate = (currentTime: number) => {
           const elapsed = currentTime - startTime;
           const progress = Math.min(elapsed / duration, 1);
-          const opacity = 1 - progress; // Fade from 1 to 0
+          const opacity = 1 - progress;
           setRegions(prev => prev.map((r, i) => 
             i === 0 ? { ...r, fadeOpacity: opacity } : r
           ));
@@ -124,8 +153,8 @@ export default function Index() {
         };
         requestAnimationFrame(animate);
       }
+      
       // Number keys 1-9 toggle region visibility
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       const num = parseInt(e.key, 10);
       if (num >= 1 && num <= 9 && regions.length >= num) {
         const regionIndex = num - 1;
@@ -139,7 +168,7 @@ export default function Index() {
     }; 
     window.addEventListener('keydown', h); 
     return () => window.removeEventListener('keydown', h); 
-  }, [appState, regions]);
+  }, [appState, regions, settings, updateSetting]);
 
   return (
     <div className="min-h-screen bg-background">
