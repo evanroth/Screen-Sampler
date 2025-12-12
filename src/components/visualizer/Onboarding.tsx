@@ -18,6 +18,7 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
         <div className="flex gap-3 mb-4">
           <div className="w-6 h-6 rounded-full border-2 border-foreground" />
           <div className="w-6 h-6 rounded-full border-2 border-foreground" />
+          <div className="w-6 h-6 rounded-full border-2 border-foreground" />
         </div>
 
         {/* Main content area */}
