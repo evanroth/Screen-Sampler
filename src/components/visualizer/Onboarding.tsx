@@ -1,16 +1,14 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import cropIcon from '@/assets/crop-icon.png';
 
 interface OnboardingProps {
   onStartCapture: () => void;
 }
 
-// Crop icon SVG component - L-shaped corner
+// Crop icon component using the image asset
 const CropIcon = () => (
-  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-foreground">
-    <path d="M4 4V36H36" stroke="currentColor" strokeWidth="3" fill="none"/>
-    <path d="M12 12H44V44" stroke="currentColor" strokeWidth="3" fill="none"/>
-  </svg>
+  <img src={cropIcon} alt="Crop region" width={48} height={48} className="dark:invert" />
 );
 
 export function Onboarding({ onStartCapture }: OnboardingProps) {
