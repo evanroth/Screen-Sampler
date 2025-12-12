@@ -37,7 +37,7 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
               {/* Crop icon with dashed instruction box */}
               <div className="relative mb-8">
                 {/* Crop icon */}
-                <div className="absolute -top-[10px] -left-[4px]">
+                <div className="absolute -top-[11px] -left-[4px]">
                   <CropIcon />
                 </div>
 
