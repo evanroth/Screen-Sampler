@@ -1,75 +1,112 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import logo from '@/assets/beats-and-bobbins-logo.png';
 
 interface OnboardingProps {
   onStartCapture: () => void;
 }
 
+// Crop icon SVG component
+const CropIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-foreground">
+    <path d="M12 4V36H44" stroke="currentColor" strokeWidth="2" fill="none"/>
+    <path d="M4 12H36V44" stroke="currentColor" strokeWidth="2" fill="none"/>
+    <path d="M12 12L20 20" stroke="currentColor" strokeWidth="2"/>
+    <path d="M20 12L12 20" stroke="currentColor" strokeWidth="2"/>
+  </svg>
+);
+
 export function Onboarding({ onStartCapture }: OnboardingProps) {
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
-      <div className="max-w-xl w-full flex flex-col items-center text-center space-y-8">
-        
-        {/* Logo */}
-        <img 
-          src={logo} 
-          alt="Beats and Bobbins" 
-          className="w-64 md:w-80 h-auto"
-        />
-
-        {/* Title */}
-        <div className="space-y-2">
-          <h1 className="text-2xl md:text-3xl font-mono font-normal text-foreground tracking-widest uppercase">
-            Screen Sampler v.1.0
-          </h1>
-          <p className="text-sm text-muted-foreground uppercase tracking-[0.3em] font-mono">
-            VJ software for DJs
-          </p>
+    <div className="min-h-screen bg-muted/50 flex items-center justify-center p-4 md:p-8">
+      {/* Outer hardware frame */}
+      <div className="w-full max-w-5xl bg-muted border-2 border-foreground rounded-[2rem] p-4 md:p-6">
+        {/* Window controls */}
+        <div className="flex gap-3 mb-4">
+          <div className="w-6 h-6 rounded-full border-2 border-foreground" />
+          <div className="w-6 h-6 rounded-full border-2 border-foreground" />
         </div>
 
-        {/* Instructions */}
-        <div className="space-y-2 text-sm text-muted-foreground font-mono">
-          <p>1. Share screen</p>
-          <p>2. Select regions</p>
-          <p>3. Enable microphone</p>
-        </div>
+        {/* Main content area */}
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
+          {/* Left panel - Main content */}
+          <div className="flex-1 bg-muted border-2 border-foreground rounded-lg p-6 md:p-8 flex flex-col">
+            {/* Title */}
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-mono font-bold text-foreground tracking-wider uppercase mb-1">
+              SCREEN SAMPLER V.1.0
+            </h1>
+            <p className="text-xs md:text-sm text-foreground uppercase tracking-[0.3em] font-mono mb-8">
+              VJ SOFTWARE FOR DJS
+            </p>
 
-        {/* Start Button */}
-        <Button
-          onClick={onStartCapture}
-          size="lg"
-          className="px-20 py-7 text-lg font-bold uppercase tracking-widest bg-primary hover:bg-primary/90 text-primary-foreground rounded-md shadow-md mt-4"
-        >
-          Start
-        </Button>
+            {/* Logo and instructions area */}
+            <div className="flex-1 flex flex-col">
+              {/* Crop icon with dashed instruction box */}
+              <div className="relative mb-8">
+                {/* Crop icon */}
+                <div className="absolute top-0 left-0">
+                  <CropIcon />
+                </div>
+                
+                {/* Dashed instruction box */}
+                <div className="ml-8 mt-6 border-2 border-dashed border-foreground/60 p-6 md:p-8 max-w-xs">
+                  <div className="space-y-3 text-sm md:text-base text-foreground font-mono">
+                    <p>1. Share screen</p>
+                    <p>2. Select regions</p>
+                    <p>3. Enable microphone</p>
+                  </div>
+                </div>
+              </div>
 
-        {/* Footer Links */}
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground font-mono pt-8">
-          <a 
-            href="https://github.com/evanroth/Screen-Sampler" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors underline underline-offset-4"
-          >
-            Source code
-          </a>
-          <a 
-            href="https://evan-roth.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors underline underline-offset-4"
-          >
-            By Evan Roth
-          </a>
-          <a 
-            href="https://www.youtube.com/@evan-roth-com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors underline underline-offset-4"
-          >
-            Beats and Bobbins
-          </a>
+              {/* Start Button */}
+              <Button
+                onClick={onStartCapture}
+                size="lg"
+                className="w-full max-w-sm px-12 py-6 text-lg font-bold uppercase tracking-widest bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-none"
+              >
+                START
+              </Button>
+            </div>
+
+            {/* Footer Links */}
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-foreground font-mono mt-8">
+              <a 
+                href="https://github.com/evanroth/Screen-Sampler" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-foreground/70 transition-colors underline underline-offset-4"
+              >
+                Source code
+              </a>
+              <a 
+                href="https://evan-roth.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-foreground/70 transition-colors underline underline-offset-4"
+              >
+                By Evan Roth
+              </a>
+              <a 
+                href="https://www.youtube.com/@evan-roth-com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-foreground/70 transition-colors underline underline-offset-4"
+              >
+                Beats and Bobbins
+              </a>
+            </div>
+          </div>
+
+          {/* Right panel - MPC-style pad grid */}
+          <div className="lg:w-80 flex items-center justify-center p-4">
+            <div className="grid grid-cols-3 gap-3 md:gap-4">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div 
+                  key={i}
+                  className="w-16 h-16 md:w-20 md:h-20 border-2 border-foreground rounded-md bg-muted"
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
