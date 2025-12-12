@@ -19,7 +19,7 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
   return (
     <div className="min-h-screen bg-muted/50 flex items-center justify-center p-4 md:p-8">
       {/* Outer hardware frame */}
-      <div className="w-full max-w-5xl bg-muted border-2 border-foreground rounded-[2rem] p-4 md:p-6">
+      <div className="w-full max-w-5xl bg-muted border-[6px] border-foreground rounded-[2rem] p-4 md:p-6">
         {/* Window controls */}
         <div className="flex gap-3 mb-4">
           <div className="w-6 h-6 rounded-full border-2 border-foreground" />
