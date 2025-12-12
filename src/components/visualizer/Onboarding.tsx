@@ -1,15 +1,13 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import cropIcon from '@/assets/crop-icon.png';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import cropIcon from "@/assets/crop-icon.png";
 
 interface OnboardingProps {
   onStartCapture: () => void;
 }
 
 // Crop icon component using the image asset
-const CropIcon = () => (
-  <img src={cropIcon} alt="Crop region" width={48} height={48} className="dark:invert" />
-);
+const CropIcon = () => <img src={cropIcon} alt="Crop region" width={48} height={48} className="dark:invert" />;
 
 export function Onboarding({ onStartCapture }: OnboardingProps) {
   return (
@@ -39,10 +37,10 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
               {/* Crop icon with dashed instruction box */}
               <div className="relative mb-8">
                 {/* Crop icon */}
-                <div className="absolute -top-[10px] -left-[6px]">
+                <div className="absolute -top-[8px] -left-[4px]">
                   <CropIcon />
                 </div>
-                
+
                 {/* Dashed instruction box */}
                 <div className="ml-8 mt-6 border-2 border-dashed border-foreground/60 p-6 md:p-8 max-w-xs">
                   <div className="space-y-3 text-sm md:text-base text-foreground font-mono">
@@ -65,25 +63,25 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
 
             {/* Footer Links */}
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-foreground font-mono mt-8">
-              <a 
-                href="https://github.com/evanroth/Screen-Sampler" 
-                target="_blank" 
+              <a
+                href="https://github.com/evanroth/Screen-Sampler"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-foreground/70 transition-colors underline underline-offset-4"
               >
                 Source code
               </a>
-              <a 
-                href="https://evan-roth.com" 
-                target="_blank" 
+              <a
+                href="https://evan-roth.com"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-foreground/70 transition-colors underline underline-offset-4"
               >
                 By Evan Roth
               </a>
-              <a 
-                href="https://www.youtube.com/@evan-roth-com" 
-                target="_blank" 
+              <a
+                href="https://www.youtube.com/@evan-roth-com"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-foreground/70 transition-colors underline underline-offset-4"
               >
@@ -96,10 +94,7 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
           <div className="lg:w-80 flex items-center justify-center p-4">
             <div className="grid grid-cols-3 gap-3 md:gap-4">
               {Array.from({ length: 12 }).map((_, i) => (
-                <div 
-                  key={i}
-                  className="w-16 h-16 md:w-20 md:h-20 border-2 border-foreground rounded-md bg-muted"
-                />
+                <div key={i} className="w-16 h-16 md:w-20 md:h-20 border-2 border-foreground rounded-md bg-muted" />
               ))}
             </div>
           </div>
