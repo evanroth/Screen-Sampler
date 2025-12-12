@@ -112,8 +112,9 @@ export default function Index() {
         updateSetting('playMode', { ...settings.playMode, enabled: !settings.playMode.enabled });
       }
       
-      // Arrow keys for navigation
+      // Arrow keys for navigation - prevent default to stop Tabs component from capturing
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
         const direction = e.key === 'ArrowRight' ? 1 : -1;
         
         if (settings.playMode.enabled && regions.length > 0) {
