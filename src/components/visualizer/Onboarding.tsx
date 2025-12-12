@@ -5,13 +5,11 @@ interface OnboardingProps {
   onStartCapture: () => void;
 }
 
-// Crop icon SVG component
+// Crop icon SVG component - L-shaped corner
 const CropIcon = () => (
   <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-foreground">
-    <path d="M12 4V36H44" stroke="currentColor" strokeWidth="2" fill="none"/>
-    <path d="M4 12H36V44" stroke="currentColor" strokeWidth="2" fill="none"/>
-    <path d="M12 12L20 20" stroke="currentColor" strokeWidth="2"/>
-    <path d="M20 12L12 20" stroke="currentColor" strokeWidth="2"/>
+    <path d="M4 4V36H36" stroke="currentColor" strokeWidth="3" fill="none"/>
+    <path d="M12 12H44V44" stroke="currentColor" strokeWidth="3" fill="none"/>
   </svg>
 );
 
