@@ -47,7 +47,7 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
                   <div className="space-y-3 text-sm md:text-base text-foreground font-mono">
                     <p>1. Share screen</p>
                     <p>2. Select regions</p>
-                    <p>3. Enable microphone</p>
+                    <p>3. Start Visualizer</p>
                   </div>
                 </div>
               </div>
