@@ -100,18 +100,14 @@ export default function Index() {
   useEffect(() => { const h = () => setIsFullscreen(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => document.removeEventListener('fullscreenchange', h); }, []);
   useEffect(() => { 
     const h = (e: KeyboardEvent) => { 
-      // Skip keyboard shortcuts when typing in inputs or when interactive elements are focused
+      // Skip keyboard shortcuts when typing in inputs
       const target = e.target as HTMLElement;
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
       
-      // Skip if a select/combobox is focused or open (Radix uses button with aria-expanded)
-      const isSelectFocused = target.getAttribute('role') === 'combobox' || 
-                              target.getAttribute('aria-expanded') === 'true' ||
-                              target.closest('[role="listbox"]') ||
-                              document.querySelector('[data-radix-select-viewport]');
-      
       if (e.key === 'Escape' && appState === 'visualizing') setIsControlPanelOpen(true);
-      if ((e.key === 's' || e.key === 'S') && !isSelectFocused) {
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        e.stopPropagation();
         setIsControlPanelOpen(prev => !prev);
       }
       
@@ -175,8 +171,8 @@ export default function Index() {
         }
       }
     }; 
-    window.addEventListener('keydown', h); 
-    return () => window.removeEventListener('keydown', h); 
+    window.addEventListener('keydown', h, true); // Use capture phase to intercept before Select components
+    return () => window.removeEventListener('keydown', h, true);
   }, [appState, regions, settings, updateSetting]);
 
   return (
