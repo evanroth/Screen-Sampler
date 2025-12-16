@@ -100,10 +100,18 @@ export default function Index() {
   useEffect(() => { const h = () => setIsFullscreen(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => document.removeEventListener('fullscreenchange', h); }, []);
   useEffect(() => { 
     const h = (e: KeyboardEvent) => { 
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      // Skip keyboard shortcuts when typing in inputs or when interactive elements are focused
+      const target = e.target as HTMLElement;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+      
+      // Skip if a select/combobox is focused or open (Radix uses button with aria-expanded)
+      const isSelectFocused = target.getAttribute('role') === 'combobox' || 
+                              target.getAttribute('aria-expanded') === 'true' ||
+                              target.closest('[role="listbox"]') ||
+                              document.querySelector('[data-radix-select-viewport]');
       
       if (e.key === 'Escape' && appState === 'visualizing') setIsControlPanelOpen(true);
-      if (e.key === 's' || e.key === 'S') {
+      if ((e.key === 's' || e.key === 'S') && !isSelectFocused) {
         setIsControlPanelOpen(prev => !prev);
       }
       
