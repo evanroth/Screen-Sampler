@@ -45,12 +45,13 @@ export default function Index() {
   }, [screenCapture, toast]);
 
   const handleRemoveSource = useCallback((sourceId: string) => {
+    // Check if this is the last source BEFORE removing (state update is async)
+    const isLastSource = screenCapture.sources.length === 1;
+
     screenCapture.removeSource(sourceId);
-    // Remove regions associated with this source
     setRegions(prev => prev.filter(r => r.sourceId !== sourceId));
-    
-    // If no sources left, go back to onboarding
-    if (screenCapture.sources.length <= 1) {
+
+    if (isLastSource) {
       setAppState('onboarding');
       setRegions([]);
       setIsRegionConfirmed(false);

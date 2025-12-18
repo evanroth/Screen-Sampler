@@ -29,6 +29,8 @@ export function RegionSelector({
   const initialRegionRef = useRef(region);
   const containerRectRef = useRef<DOMRect | null>(null);
   const isDraggingRef = useRef(false);
+  const localRegionRef = useRef(localRegion);
+  localRegionRef.current = localRegion;
 
   // Sync local region with prop when not dragging
   useEffect(() => {
@@ -115,8 +117,8 @@ export function RegionSelector({
     };
 
     const handleMouseUp = () => {
-      // Sync to parent only on drag end
-      onRegionChange(localRegion);
+      // Sync to parent only on drag end - use ref to get latest value
+      onRegionChange(localRegionRef.current);
       isDraggingRef.current = false;
       setDragType(null);
       containerRectRef.current = null;
@@ -129,7 +131,7 @@ export function RegionSelector({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragType, getRelativePosition, onRegionChange, localRegion]);
+  }, [dragType, getRelativePosition, onRegionChange]);
 
   const handleStyle = "absolute w-5 h-5 bg-background rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform shadow-lg";
 

@@ -25,7 +25,7 @@ export function usePlayMode({
   settings,
 }: UsePlayModeProps) {
   const currentIndexRef = useRef(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animationRef = useRef<number | null>(null);
   const regionsRef = useRef(regions);
   const settingsRef = useRef(settings);
