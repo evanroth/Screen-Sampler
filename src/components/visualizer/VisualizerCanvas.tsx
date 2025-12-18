@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { CaptureRegion } from '@/hooks/useScreenCapture';
 import { VisualizerSettings, AnimationMode, ANIMATION_MODES } from '@/hooks/useVisualizerSettings';
 import { PanelState, createPanel, updatePanel } from './Panel';

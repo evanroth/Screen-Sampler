@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { CaptureRegion } from './useScreenCapture';
 
 export type PlayModeTransition = 'none' | 'fade' | 'zoom';

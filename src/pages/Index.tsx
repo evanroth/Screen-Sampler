@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useScreenCapture, CaptureRegion } from '@/hooks/useScreenCapture';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useVisualizerSettings, ANIMATION_MODES, ANIMATION_MODES_3D } from '@/hooks/useVisualizerSettings';

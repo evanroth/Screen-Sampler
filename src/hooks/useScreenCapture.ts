@@ -60,7 +60,6 @@ export function useScreenCapture() {
       video.srcObject = mediaStream;
       await video.play();
 
-      const trackSettings = mediaStream.getVideoTracks()[0]?.getSettings();
       const displayName = `Source ${sourceCounterRef.current}`;
 
       const newSource: CaptureSource = {

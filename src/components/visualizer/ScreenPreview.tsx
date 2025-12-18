@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Check, Plus, Trash2, RotateCcw, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RegionSelector } from './RegionSelector';
@@ -118,7 +118,7 @@ export function ScreenPreview({
         {/* Source tabs and Add Source button */}
         {!isRegionConfirmed && (
           <div className="flex flex-wrap justify-center gap-2 items-center">
-            {sources.map((source, idx) => (
+            {sources.map((source) => (
               <div
                 key={source.id}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${

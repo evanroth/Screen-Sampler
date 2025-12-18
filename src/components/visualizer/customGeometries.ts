@@ -9,7 +9,6 @@ function createParametricGeometry(
   const vertices: number[] = [];
   const indices: number[] = [];
   const uvs: number[] = [];
-  const normals: number[] = [];
 
   const p = new THREE.Vector3();
   
@@ -97,7 +96,6 @@ export function createTetrakisHexahedron(radius: number = 1.5): THREE.BufferGeom
 // Great Dodecahedron (star polyhedron)
 export function createGreatDodecahedron(radius: number = 1.5): THREE.BufferGeometry {
   // Approximation using icosahedron with extended vertices
-  const phi = (1 + Math.sqrt(5)) / 2;
   const geometry = new THREE.IcosahedronGeometry(radius * 1.2, 0);
   // Scale to create stellated effect
   const positions = geometry.attributes.position;
@@ -105,7 +103,6 @@ export function createGreatDodecahedron(radius: number = 1.5): THREE.BufferGeome
     const x = positions.getX(i);
     const y = positions.getY(i);
     const z = positions.getZ(i);
-    const len = Math.sqrt(x * x + y * y + z * z);
     const factor = 1 + 0.3 * Math.sin(i * 1.5);
     positions.setXYZ(i, x * factor, y * factor, z * factor);
   }
@@ -137,7 +134,6 @@ export function createSmallStellatedDodecahedron(radius: number = 1.5): THREE.Bu
     const x = positions.getX(i);
     const y = positions.getY(i);
     const z = positions.getZ(i);
-    const len = Math.sqrt(x * x + y * y + z * z);
     const factor = 1.4;
     positions.setXYZ(i, x * factor, y * factor, z * factor);
   }
