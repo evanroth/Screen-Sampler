@@ -18,7 +18,7 @@ export function useRegionRandomizer({
   visualizerMode,
   isVisualizerActive,
 }: UseRegionRandomizerProps) {
-  const intervalRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const intervalRefs = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const animationRefs = useRef<Map<string, number>>(new Map());
   
   // Store regions in a ref so interval callbacks can access latest state
