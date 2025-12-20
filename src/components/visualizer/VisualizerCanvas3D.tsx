@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, useState } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -85,7 +85,7 @@ function RegionMesh({
   }, [settings.textureQuality, settings.textureSmoothing]);
 
 
-  useFrame((state, delta) => {
+  useFrame((_state, delta) => {
     const videoElement = getVideoElement(region.sourceId);
     if (!meshRef.current || !canvasRef.current || !textureRef.current || !videoElement) return;
     
@@ -674,15 +674,14 @@ export function VisualizerCanvas3D({
   settings,
   audioLevel,
   isActive,
-  onUpdateRegion,
+  onUpdateRegion: _onUpdateRegion,
   getVideoElement,
 }: VisualizerCanvas3DProps) {
   const [currentDefaultMode, setCurrentDefaultMode] = useState<AnimationMode3D>(
-    settings.animationMode3D === 'random3D' 
-      ? ANIMATION_MODES_3D[0] 
+    settings.animationMode3D === 'random3D'
+      ? ANIMATION_MODES_3D[0]
       : settings.animationMode3D
   );
-  const lastModeChangeRef = useRef<number>(Date.now());
   const bgCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Handle random mode switching for default mode

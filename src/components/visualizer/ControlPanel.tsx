@@ -1,5 +1,4 @@
-import React from 'react';
-import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers, ListOrdered } from 'lucide-react';
+import { Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers, ListOrdered } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode, AnimationMode3D, VisualizerMode, TextureQuality, GradientSettings, PlayModeTransition } from '@/hooks/useVisualizerSettings';
+import { VisualizerSettings, BackgroundStyle, AnimationMode, AnimationMode3D, VisualizerMode, TextureQuality, PlayModeTransition } from '@/hooks/useVisualizerSettings';
 import { CaptureRegion } from '@/hooks/useScreenCapture';
 import { cn } from '@/lib/utils';
 import { ColorPicker } from '@/components/ui/color-picker';
@@ -37,7 +36,7 @@ interface ControlPanelProps {
 
 export function ControlPanel({
   isOpen,
-  onToggle,
+  onToggle: _onToggle,
   isCapturing,
   isMicActive,
   isVisualizerActive,
