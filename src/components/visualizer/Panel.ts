@@ -58,7 +58,8 @@ export function updatePanel(
   const elapsed = (timestamp - panel.startTime) / 1000;
   const speed = speedMultiplier * 2;
   
-  let { x, y, vx, vy, rotation, rotationSpeed, angle } = panel;
+  const { rotationSpeed } = panel;
+  let { x, y, vx, vy, rotation, angle } = panel;
   
   const centerX = canvasWidth / 2 - panelWidth / 2;
   const centerY = canvasHeight / 2 - panelHeight / 2;

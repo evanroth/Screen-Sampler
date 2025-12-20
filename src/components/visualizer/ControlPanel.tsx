@@ -36,7 +36,7 @@ interface ControlPanelProps {
 
 export function ControlPanel({
   isOpen,
-  onToggle: _onToggle,
+  onToggle: _,
   isCapturing,
   isMicActive,
   isVisualizerActive,

@@ -14,7 +14,7 @@ interface RegionSelectorProps {
 type DragType = 'move' | 'resize-nw' | 'resize-ne' | 'resize-sw' | 'resize-se' | 'resize-n' | 'resize-s' | 'resize-e' | 'resize-w';
 
 export function RegionSelector({
-  videoElement: _videoElement,
+  videoElement: _,
   region,
   onRegionChange,
   isActive,
@@ -76,7 +76,7 @@ export function RegionSelector({
       const dy = current.y - dragStartRef.current.y;
       const initial = initialRegionRef.current;
 
-      let newRegion = { ...initial };
+      const newRegion = { ...initial };
 
       if (dragType === 'move') {
         newRegion.x = Math.max(0, Math.min(1 - initial.width, initial.x + dx));

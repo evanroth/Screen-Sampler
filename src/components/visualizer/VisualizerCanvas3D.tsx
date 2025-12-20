@@ -191,15 +191,16 @@ function RegionMesh({
         mesh.rotation.y = time * 0.3;
         break;
         
-      case 'orbit3D':
+      case 'orbit3D': {
         const orbitRadius = settings.regionSpacing3D + index * 0.5;
         mesh.position.x = Math.cos(time * speed + angleOffset) * orbitRadius;
         mesh.position.y = Math.sin(time * speed * 0.3 + phaseOffset) * (settings.regionSpacing3D * 0.5);
         mesh.position.z = Math.sin(time * speed + angleOffset) * orbitRadius;
         mesh.rotation.y = -time * speed - angleOffset;
         break;
-        
-      case 'carousel3D':
+      }
+
+      case 'carousel3D': {
         const carouselRadius = settings.regionSpacing3D * 1.33;
         const carouselAngle = time * speed * 0.5 + angleOffset;
         mesh.position.x = Math.cos(carouselAngle) * carouselRadius;
@@ -207,8 +208,9 @@ function RegionMesh({
         mesh.position.z = Math.sin(carouselAngle) * carouselRadius;
         mesh.rotation.y = -carouselAngle + Math.PI / 2;
         break;
-        
-      case 'helix3D':
+      }
+
+      case 'helix3D': {
         const helixRadius = settings.regionSpacing3D;
         const helixAngle = time * speed + angleOffset;
         mesh.position.x = Math.cos(helixAngle) * helixRadius;
@@ -216,8 +218,9 @@ function RegionMesh({
         mesh.position.z = Math.sin(helixAngle) * helixRadius;
         mesh.rotation.y = -helixAngle;
         break;
-        
-      case 'explode3D':
+      }
+
+      case 'explode3D': {
         const explodePhase = (Math.sin(time * speed * 0.5) + 1) / 2;
         const explodeRadius = (settings.regionSpacing3D * 0.66) + explodePhase * settings.regionSpacing3D * 1.33;
         const theta = (index / totalRegions) * Math.PI * 2;
@@ -228,6 +231,7 @@ function RegionMesh({
         mesh.rotation.x = time * 0.5;
         mesh.rotation.y = time * 0.3;
         break;
+      }
         
       case 'wave3D':
         mesh.position.x = (index - totalRegions / 2) * (settings.regionSpacing3D * 0.83);
@@ -271,7 +275,7 @@ function RegionMesh({
       case 'hyperbolicParaboloid3D':
       case 'hyperboloidOneSheet3D':
       case 'steiner3D':
-      case 'helicoid3D':
+      case 'helicoid3D': {
         // For shape modes, use custom position if set, otherwise spread out by index
         const customPos = region.position3D;
         if (customPos) {
@@ -289,6 +293,7 @@ function RegionMesh({
           mesh.rotation.x = Math.sin(time * speed * 0.1) * 0.1;
         }
         break;
+      }
     }
 
     // Apply scale with optional per-region override and morph effect
@@ -565,7 +570,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
 }) {
   const { camera } = useThree();
-  const controlsRef = useRef<any>(null);
+  const controlsRef = useRef<React.ComponentRef<typeof OrbitControls>>(null);
   const meshGroupRef = useRef<THREE.Group>(null);
   
   // Filter visible regions, then separate fullscreen background from normal
@@ -674,7 +679,7 @@ export function VisualizerCanvas3D({
   settings,
   audioLevel,
   isActive,
-  onUpdateRegion: _onUpdateRegion,
+  onUpdateRegion: _,
   getVideoElement,
 }: VisualizerCanvas3DProps) {
   const [currentDefaultMode, setCurrentDefaultMode] = useState<AnimationMode3D>(
