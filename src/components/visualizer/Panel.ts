@@ -1,5 +1,5 @@
-import { CaptureRegion } from '@/hooks/useScreenCapture';
-import { AnimationMode } from '@/hooks/useVisualizerSettings';
+import type { CaptureRegion } from '@/hooks/useScreenCapture';
+import type { AnimationMode } from '@/hooks/useVisualizerSettings';
 
 export interface PanelState {
   regionId: string;
@@ -25,7 +25,7 @@ export function createPanel(
     blurIntensity: number;
     enableRotation: boolean;
   },
-  index: number = 0
+  index: number = 0,
 ): PanelState {
   return {
     regionId: region.id,
@@ -52,18 +52,18 @@ export function updatePanel(
   speedMultiplier: number,
   deltaTime: number,
   animationMode: AnimationMode,
-  timestamp: number
+  timestamp: number,
 ): PanelState {
   const dt = deltaTime / 16.67;
   const elapsed = (timestamp - panel.startTime) / 1000;
   const speed = speedMultiplier * 2;
-  
+
   const { rotationSpeed } = panel;
   let { x, y, vx, vy, rotation, angle } = panel;
-  
+
   const centerX = canvasWidth / 2 - panelWidth / 2;
   const centerY = canvasHeight / 2 - panelHeight / 2;
-  
+
   switch (animationMode) {
     case 'bounce':
       x += vx * speed * dt;
@@ -78,7 +78,7 @@ export function updatePanel(
       }
       rotation += rotationSpeed * dt;
       break;
-      
+
     case 'verticalDrop':
       y += speed * 3 * dt;
       if (y > canvasHeight) {
@@ -86,7 +86,7 @@ export function updatePanel(
         x = Math.random() * (canvasWidth - panelWidth);
       }
       break;
-      
+
     case 'horizontalSweep':
       x += speed * 3 * dt;
       if (x > canvasWidth) {
@@ -94,34 +94,34 @@ export function updatePanel(
         y = Math.random() * (canvasHeight - panelHeight);
       }
       break;
-      
+
     case 'clockwise': {
       const radius = Math.min(canvasWidth, canvasHeight) * 0.35;
       angle += speed * 0.02 * dt;
       x = centerX + Math.cos(angle) * radius;
       y = centerY + Math.sin(angle) * radius;
-      rotation = (angle * 180 / Math.PI) + 90;
+      rotation = (angle * 180) / Math.PI + 90;
       break;
     }
-    
+
     case 'counterClockwise': {
       const radius = Math.min(canvasWidth, canvasHeight) * 0.35;
       angle -= speed * 0.02 * dt;
       x = centerX + Math.cos(angle) * radius;
       y = centerY + Math.sin(angle) * radius;
-      rotation = (angle * 180 / Math.PI) + 90;
+      rotation = (angle * 180) / Math.PI + 90;
       break;
     }
-    
+
     case 'clockHand': {
       angle += speed * 0.015 * dt;
       const handLength = Math.min(canvasWidth, canvasHeight) * 0.4;
       x = canvasWidth / 2 + Math.cos(angle - Math.PI / 2) * handLength - panelWidth / 2;
       y = canvasHeight / 2 + Math.sin(angle - Math.PI / 2) * handLength - panelHeight / 2;
-      rotation = (angle * 180 / Math.PI);
+      rotation = (angle * 180) / Math.PI;
       break;
     }
-    
+
     case 'pendulum': {
       const swingAngle = Math.sin(elapsed * speed) * 0.8;
       const armLength = canvasHeight * 0.4;
@@ -130,7 +130,7 @@ export function updatePanel(
       rotation = swingAngle * 45;
       break;
     }
-    
+
     case 'waterfall': {
       y += speed * 4 * dt;
       x += Math.sin(elapsed * 2 + panel.phase) * speed * 0.5 * dt;
@@ -140,16 +140,16 @@ export function updatePanel(
       }
       break;
     }
-    
+
     case 'spiral': {
       angle += speed * 0.02 * dt;
-      const spiralRadius = ((elapsed * speed * 20) % (Math.min(canvasWidth, canvasHeight) * 0.45));
+      const spiralRadius = (elapsed * speed * 20) % (Math.min(canvasWidth, canvasHeight) * 0.45);
       x = centerX + Math.cos(angle) * spiralRadius;
       y = centerY + Math.sin(angle) * spiralRadius;
       rotation += speed * dt;
       break;
     }
-    
+
     case 'orbit': {
       const orbitRadius = Math.min(canvasWidth, canvasHeight) * 0.3;
       angle += speed * 0.025 * dt;
@@ -158,7 +158,7 @@ export function updatePanel(
       y = centerY + Math.sin(angle) * (orbitRadius + wobble);
       break;
     }
-    
+
     case 'zigzag': {
       x += speed * 3 * dt;
       const zigzagHeight = canvasHeight * 0.3;
@@ -169,7 +169,7 @@ export function updatePanel(
       rotation = Math.cos(x * 0.02) * 15;
       break;
     }
-    
+
     case 'wave': {
       x += speed * 2 * dt;
       y = centerY + Math.sin(elapsed * 2 + panel.phase) * canvasHeight * 0.25;
@@ -179,7 +179,7 @@ export function updatePanel(
       rotation = Math.sin(elapsed * 2 + panel.phase) * 10;
       break;
     }
-    
+
     case 'float': {
       x = panel.x + Math.sin(elapsed * 0.5 + panel.phase) * 50 * speed;
       y = panel.y + Math.cos(elapsed * 0.3 + panel.phase) * 30 * speed;
@@ -192,6 +192,6 @@ export function updatePanel(
       return { ...panel, rotation, angle };
     }
   }
-  
+
   return { ...panel, x, y, vx, vy, rotation, angle };
 }

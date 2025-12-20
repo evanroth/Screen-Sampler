@@ -1,8 +1,8 @@
-import { useRef, useEffect, useState } from 'react';
-import { Check, Plus, Trash2, RotateCcw, Monitor } from 'lucide-react';
+import { Check, Monitor, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import type { CaptureRegion, CaptureSource } from '@/hooks/useScreenCapture';
 import { RegionSelector } from './RegionSelector';
-import { CaptureRegion, CaptureSource } from '@/hooks/useScreenCapture';
 
 interface ScreenPreviewProps {
   sources: CaptureSource[];
@@ -33,7 +33,7 @@ export function ScreenPreview({
   useEffect(() => {
     if (sources.length > 0 && !activeSourceId) {
       setActiveSourceId(sources[0].id);
-    } else if (sources.length > 0 && !sources.find(s => s.id === activeSourceId)) {
+    } else if (sources.length > 0 && !sources.find((s) => s.id === activeSourceId)) {
       setActiveSourceId(sources[0].id);
     }
   }, [sources, activeSourceId]);
@@ -57,7 +57,7 @@ export function ScreenPreview({
   }, [sources, regions, activeRegionId, onRegionsChange]);
 
   const handleRegionChange = (updatedRegion: CaptureRegion) => {
-    onRegionsChange(regions.map(r => r.id === updatedRegion.id ? updatedRegion : r));
+    onRegionsChange(regions.map((r) => (r.id === updatedRegion.id ? updatedRegion : r)));
   };
 
   const handleAddRegion = (sourceId: string) => {
@@ -74,7 +74,7 @@ export function ScreenPreview({
   };
 
   const handleDeleteRegion = (id: string) => {
-    const newRegions = regions.filter(r => r.id !== id);
+    const newRegions = regions.filter((r) => r.id !== id);
     onRegionsChange(newRegions);
     if (activeRegionId === id) {
       setActiveRegionId(newRegions[0]?.id || null);
@@ -95,10 +95,10 @@ export function ScreenPreview({
   const getRegionColor = (index: number) => regionColors[index % regionColors.length];
 
   // Get regions for a specific source
-  const getRegionsForSource = (sourceId: string) => regions.filter(r => r.sourceId === sourceId);
+  const getRegionsForSource = (sourceId: string) => regions.filter((r) => r.sourceId === sourceId);
 
   // Get global index of region for coloring
-  const getGlobalRegionIndex = (regionId: string) => regions.findIndex(r => r.id === regionId);
+  const getGlobalRegionIndex = (regionId: string) => regions.findIndex((r) => r.id === regionId);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-start p-8 overflow-auto">
@@ -108,10 +108,9 @@ export function ScreenPreview({
             {isRegionConfirmed ? 'Regions Selected' : 'Select Capture Regions'}
           </h2>
           <p className="text-muted-foreground">
-            {isRegionConfirmed 
+            {isRegionConfirmed
               ? `${regions.length} region${regions.length > 1 ? 's' : ''} from ${sources.length} source${sources.length > 1 ? 's' : ''} locked. You can now start the visualizer.`
-              : 'Add capture sources and select regions from each. Each region will appear as a floating panel.'
-            }
+              : 'Add capture sources and select regions from each. Each region will appear as a floating panel.'}
           </p>
         </div>
 
@@ -122,8 +121,8 @@ export function ScreenPreview({
               <div
                 key={source.id}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${
-                  activeSourceId === source.id 
-                    ? 'border-primary bg-primary/10' 
+                  activeSourceId === source.id
+                    ? 'border-primary bg-primary/10'
                     : 'border-border bg-card hover:border-primary/50'
                 }`}
                 onClick={() => setActiveSourceId(source.id)}
@@ -131,10 +130,12 @@ export function ScreenPreview({
                 <Monitor className="w-4 h-4" />
                 <span className="text-sm font-medium">{source.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  ({getRegionsForSource(source.id).length} region{getRegionsForSource(source.id).length !== 1 ? 's' : ''})
+                  ({getRegionsForSource(source.id).length} region
+                  {getRegionsForSource(source.id).length !== 1 ? 's' : ''})
                 </span>
                 {sources.length > 1 && (
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onRemoveSource(source.id);
@@ -146,12 +147,7 @@ export function ScreenPreview({
                 )}
               </div>
             ))}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onAddSource}
-              className="gap-2"
-            >
+            <Button variant="outline" size="sm" onClick={onAddSource} className="gap-2">
               <Plus className="w-4 h-4" />
               Add Source
             </Button>
@@ -166,13 +162,14 @@ export function ScreenPreview({
               return (
                 <div
                   key={region.id}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full border-2 cursor-pointer transition-all ${
-                    getRegionColor(globalIndex)
-                  } ${activeRegionId === region.id ? 'bg-secondary' : 'bg-background'}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full border-2 cursor-pointer transition-all ${getRegionColor(
+                    globalIndex,
+                  )} ${activeRegionId === region.id ? 'bg-secondary' : 'bg-background'}`}
                   onClick={() => setActiveRegionId(region.id)}
                 >
                   <span className="text-sm text-foreground">Region {globalIndex + 1}</span>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteRegion(region.id);
@@ -200,25 +197,18 @@ export function ScreenPreview({
         {sources.map((source) => {
           const isActive = source.id === activeSourceId;
           const sourceRegions = getRegionsForSource(source.id);
-          
+
           if (isRegionConfirmed && !isActive) {
             // In confirmed mode, show all sources
           }
-          
+
           return (
-            <div 
-              key={source.id}
-              className={`transition-all ${
-                !isRegionConfirmed && !isActive ? 'hidden' : ''
-              }`}
-            >
+            <div key={source.id} className={`transition-all ${!isRegionConfirmed && !isActive ? 'hidden' : ''}`}>
               {/* Source label */}
               {isRegionConfirmed && sources.length > 1 && (
-                <div className="text-sm font-medium text-muted-foreground mb-2">
-                  {source.name}
-                </div>
+                <div className="text-sm font-medium text-muted-foreground mb-2">{source.name}</div>
               )}
-              
+
               <div className="relative rounded-xl overflow-hidden border border-border bg-card">
                 <video
                   ref={(el) => {
@@ -232,44 +222,49 @@ export function ScreenPreview({
                   muted
                   className="w-full h-auto"
                 />
-                
-                {!isRegionConfirmed && sourceRegions.map((region) => {
-                  const globalIndex = getGlobalRegionIndex(region.id);
-                  return (
-                    <RegionSelector
-                      key={region.id}
-                      videoElement={videoRefs.current.get(source.id) ?? null}
-                      region={region}
-                      onRegionChange={handleRegionChange}
-                      isActive={activeRegionId === region.id}
-                      colorClass={getRegionColor(globalIndex)}
-                      label={`Region ${globalIndex + 1}`}
-                      onClick={() => setActiveRegionId(region.id)}
-                    />
-                  );
-                })}
 
-                {isRegionConfirmed && sourceRegions.map((region) => {
-                  const globalIndex = getGlobalRegionIndex(region.id);
-                  return (
-                    <div
-                      key={region.id}
-                      className={`absolute border-2 pointer-events-none ${getRegionColor(globalIndex)}`}
-                      style={{
-                        left: `${region.x * 100}%`,
-                        top: `${region.y * 100}%`,
-                        width: `${region.width * 100}%`,
-                        height: `${region.height * 100}%`,
-                      }}
-                    >
-                      <div className={`absolute -top-6 left-1/2 -translate-x-1/2 ${
-                        getRegionColor(globalIndex).replace('border-', 'bg-')
-                      } text-background text-xs px-2 py-0.5 rounded`}>
-                        Region {globalIndex + 1}
+                {!isRegionConfirmed &&
+                  sourceRegions.map((region) => {
+                    const globalIndex = getGlobalRegionIndex(region.id);
+                    return (
+                      <RegionSelector
+                        key={region.id}
+                        videoElement={videoRefs.current.get(source.id) ?? null}
+                        region={region}
+                        onRegionChange={handleRegionChange}
+                        isActive={activeRegionId === region.id}
+                        colorClass={getRegionColor(globalIndex)}
+                        label={`Region ${globalIndex + 1}`}
+                        onClick={() => setActiveRegionId(region.id)}
+                      />
+                    );
+                  })}
+
+                {isRegionConfirmed &&
+                  sourceRegions.map((region) => {
+                    const globalIndex = getGlobalRegionIndex(region.id);
+                    return (
+                      <div
+                        key={region.id}
+                        className={`absolute border-2 pointer-events-none ${getRegionColor(globalIndex)}`}
+                        style={{
+                          left: `${region.x * 100}%`,
+                          top: `${region.y * 100}%`,
+                          width: `${region.width * 100}%`,
+                          height: `${region.height * 100}%`,
+                        }}
+                      >
+                        <div
+                          className={`absolute -top-6 left-1/2 -translate-x-1/2 ${getRegionColor(globalIndex).replace(
+                            'border-',
+                            'bg-',
+                          )} text-background text-xs px-2 py-0.5 rounded`}
+                        >
+                          Region {globalIndex + 1}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           );
@@ -278,12 +273,7 @@ export function ScreenPreview({
         {/* Action Buttons */}
         <div className="flex justify-center gap-4">
           {!isRegionConfirmed ? (
-            <Button 
-              onClick={onConfirmRegions} 
-              size="lg" 
-              className="glow-primary"
-              disabled={regions.length === 0}
-            >
+            <Button onClick={onConfirmRegions} size="lg" className="glow-primary" disabled={regions.length === 0}>
               <Check className="w-4 h-4 mr-2" />
               Confirm {regions.length} Region{regions.length !== 1 ? 's' : ''}
             </Button>

@@ -1,15 +1,36 @@
-import { Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers, ListOrdered } from 'lucide-react';
+import {
+  Box,
+  Layers,
+  Link,
+  ListOrdered,
+  Maximize,
+  Mic,
+  Minimize,
+  Monitor,
+  Play,
+  RotateCcw,
+  Square,
+  Unlink,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
+import { ColorPicker } from '@/components/ui/color-picker';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { VisualizerSettings, BackgroundStyle, AnimationMode, AnimationMode3D, VisualizerMode, TextureQuality, PlayModeTransition } from '@/hooks/useVisualizerSettings';
-import { CaptureRegion } from '@/hooks/useScreenCapture';
+import type { CaptureRegion } from '@/hooks/useScreenCapture';
+import type {
+  AnimationMode,
+  AnimationMode3D,
+  BackgroundStyle,
+  PlayModeTransition,
+  TextureQuality,
+  VisualizerMode,
+  VisualizerSettings,
+} from '@/hooks/useVisualizerSettings';
 import { cn } from '@/lib/utils';
-import { ColorPicker } from '@/components/ui/color-picker';
 
 interface ControlPanelProps {
   isOpen: boolean;
@@ -58,14 +79,13 @@ export function ControlPanel({
 }: ControlPanelProps) {
   return (
     <>
-
       {/* Panel */}
       <div
         className={cn(
-          "fixed top-0 right-0 h-full w-80 z-40 glass-panel",
-          "transform transition-transform duration-300 ease-out",
-          "overflow-y-auto",
-          isOpen ? "translate-x-0" : "translate-x-full"
+          'fixed top-0 right-0 h-full w-80 z-40 glass-panel',
+          'transform transition-transform duration-300 ease-out',
+          'overflow-y-auto',
+          isOpen ? 'translate-x-0' : 'translate-x-full',
         )}
       >
         <div className="p-5 pt-6 space-y-5">
@@ -77,23 +97,19 @@ export function ControlPanel({
           {/* Status Indicators */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                isCapturing ? "bg-green-500" : "bg-muted-foreground"
-              )} />
+              <div className={cn('w-2 h-2 rounded-full', isCapturing ? 'bg-green-500' : 'bg-muted-foreground')} />
               <span className="text-muted-foreground">Screen Capture</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                isMicActive ? "bg-green-500" : "bg-muted-foreground"
-              )} />
+              <div className={cn('w-2 h-2 rounded-full', isMicActive ? 'bg-green-500' : 'bg-muted-foreground')} />
               <span className="text-muted-foreground">Microphone</span>
             </div>
             {hasRegions && (
               <div className="flex items-center gap-2 text-sm">
                 <div className="w-2 h-2 rounded-full bg-purple-500" />
-                <span className="text-muted-foreground">{regionCount} Region{regionCount > 1 ? 's' : ''}</span>
+                <span className="text-muted-foreground">
+                  {regionCount} Region{regionCount > 1 ? 's' : ''}
+                </span>
               </div>
             )}
           </div>
@@ -104,37 +120,29 @@ export function ControlPanel({
           <div className="space-y-3">
             <Button
               onClick={isCapturing ? onStopCapture : onStartCapture}
-              variant={isCapturing ? "destructive" : "default"}
+              variant={isCapturing ? 'destructive' : 'default'}
               className="w-full"
             >
               <Monitor className="w-4 h-4 mr-2" />
-              {isCapturing ? "Stop Capture" : "Start Capture"}
+              {isCapturing ? 'Stop Capture' : 'Start Capture'}
             </Button>
 
             {isCapturing && (
-              <Button
-                onClick={onReselectRegion}
-                variant="secondary"
-                className="w-full"
-              >
+              <Button onClick={onReselectRegion} variant="secondary" className="w-full">
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Edit Regions
               </Button>
             )}
 
-            <Button
-              onClick={onToggleMic}
-              variant={isMicActive ? "destructive" : "secondary"}
-              className="w-full"
-            >
+            <Button onClick={onToggleMic} variant={isMicActive ? 'destructive' : 'secondary'} className="w-full">
               <Mic className="w-4 h-4 mr-2" />
-              {isMicActive ? "Disable Mic" : "Enable Mic"}
+              {isMicActive ? 'Disable Mic' : 'Enable Mic'}
             </Button>
 
             {hasRegions && (
               <Button
                 onClick={isVisualizerActive ? onStopVisualizer : onStartVisualizer}
-                variant={isVisualizerActive ? "destructive" : "default"}
+                variant={isVisualizerActive ? 'destructive' : 'default'}
                 className="w-full glow-primary"
               >
                 {isVisualizerActive ? (
@@ -151,11 +159,7 @@ export function ControlPanel({
               </Button>
             )}
 
-            <Button
-              onClick={onToggleFullscreen}
-              variant="outline"
-              className="w-full"
-            >
+            <Button onClick={onToggleFullscreen} variant="outline" className="w-full">
               {isFullscreen ? (
                 <>
                   <Minimize className="w-4 h-4 mr-2" />
@@ -175,8 +179,8 @@ export function ControlPanel({
           {/* Visualizer Mode - Moved to top */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Visualizer Mode</h3>
-            <Tabs 
-              value={settings.visualizerMode} 
+            <Tabs
+              value={settings.visualizerMode}
               onValueChange={(v) => onUpdateSetting('visualizerMode', v as VisualizerMode)}
               className="w-full"
             >
@@ -217,18 +221,16 @@ export function ControlPanel({
                   </div>
                   <Switch
                     checked={settings.playMode.enabled}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       onUpdateSetting('playMode', { ...settings.playMode, enabled: checked })
                     }
                   />
                 </div>
-                
+
                 {regionCount < 2 && settings.playMode.enabled && (
-                  <p className="text-xs text-muted-foreground">
-                    Requires at least 2 regions to function.
-                  </p>
+                  <p className="text-xs text-muted-foreground">Requires at least 2 regions to function.</p>
                 )}
-                
+
                 {settings.playMode.enabled && regionCount >= 2 && (
                   <div className="space-y-3 pl-2 border-l-2 border-border">
                     <div className="space-y-2">
@@ -238,20 +240,18 @@ export function ControlPanel({
                       </div>
                       <Slider
                         value={[settings.playMode.interval]}
-                        onValueChange={([v]) => 
-                          onUpdateSetting('playMode', { ...settings.playMode, interval: v })
-                        }
+                        onValueChange={([v]) => onUpdateSetting('playMode', { ...settings.playMode, interval: v })}
                         min={1}
                         max={120}
                         step={1}
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-muted-foreground text-xs">Transition</Label>
                       <Select
                         value={settings.playMode.transition}
-                        onValueChange={(v) => 
+                        onValueChange={(v) =>
                           onUpdateSetting('playMode', { ...settings.playMode, transition: v as PlayModeTransition })
                         }
                       >
@@ -272,7 +272,6 @@ export function ControlPanel({
             </>
           )}
 
-
           {/* Settings Sliders */}
           <div className="space-y-5">
             <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Parameters</h3>
@@ -283,6 +282,7 @@ export function ControlPanel({
                 <div className="flex justify-between items-center">
                   <Label className="text-muted-foreground">Panel Scale</Label>
                   <button
+                    type="button"
                     onClick={() => onUpdateSetting('panelScaleLinked', !settings.panelScaleLinked)}
                     className={`p-1 rounded transition-colors ${settings.panelScaleLinked ? 'text-primary' : 'text-muted-foreground'}`}
                     title={settings.panelScaleLinked ? 'Linked (click to unlink)' : 'Unlinked (click to link)'}
@@ -290,7 +290,7 @@ export function ControlPanel({
                     {settings.panelScaleLinked ? <Link className="w-4 h-4" /> : <Unlink className="w-4 h-4" />}
                   </button>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-xs text-muted-foreground">Width</span>
@@ -309,7 +309,7 @@ export function ControlPanel({
                     step={0.05}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-xs text-muted-foreground">Height</span>
@@ -368,10 +368,7 @@ export function ControlPanel({
               <>
                 <div className="flex items-center justify-between">
                   <Label className="text-muted-foreground">Enable Trails</Label>
-                  <Switch
-                    checked={settings.enableTrails}
-                    onCheckedChange={(v) => onUpdateSetting('enableTrails', v)}
-                  />
+                  <Switch checked={settings.enableTrails} onCheckedChange={(v) => onUpdateSetting('enableTrails', v)} />
                 </div>
 
                 {settings.enableTrails && (
@@ -392,7 +389,6 @@ export function ControlPanel({
               </>
             )}
 
-
             {/* 2D-only: Rotation */}
             {settings.visualizerMode === '2d' && (
               <div className="flex items-center justify-between">
@@ -403,7 +399,6 @@ export function ControlPanel({
                 />
               </div>
             )}
-
           </div>
 
           <Separator className="bg-border" />
@@ -452,8 +447,6 @@ export function ControlPanel({
                 </div>
               )}
             </div>
-
-
 
             {/* 2D Animation Mode */}
             {settings.visualizerMode === '2d' && (
@@ -508,9 +501,7 @@ export function ControlPanel({
                   <div className="space-y-3">
                     <Separator className="bg-border" />
                     <Label className="text-muted-foreground font-medium">Per-Region 2D Transforms</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Adjust position and scale for each region.
-                    </p>
+                    <p className="text-xs text-muted-foreground">Adjust position and scale for each region.</p>
                     {regions.map((region, index) => (
                       <div key={region.id} className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -528,7 +519,7 @@ export function ControlPanel({
                             <span className="text-xs text-muted-foreground opacity-50">({index + 1})</span>
                           </div>
                         </div>
-                        
+
                         {/* Randomize Controls */}
                         <div className="mt-2 space-y-2 pl-2 border-l-2 border-border">
                           <div className="flex items-center justify-between">
@@ -537,10 +528,10 @@ export function ControlPanel({
                               checked={!!region.randomizeEnabled}
                               onCheckedChange={(checked) => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { 
+                                  onUpdateRegion(region.id, {
                                     randomizeEnabled: checked,
                                     randomizeInterval: region.randomizeInterval || 30,
-                                    fadeOpacity: 1
+                                    fadeOpacity: 1,
                                   });
                                 }
                               }}
@@ -588,24 +579,26 @@ export function ControlPanel({
                             </>
                           )}
                         </div>
-                        
+
                         {/* Position X/Y/Z Controls */}
                         <div className="mt-2 space-y-2 pl-2 border-l-2 border-border">
                           <div className="space-y-1">
                             <div className="flex justify-between">
                               <span className="text-xs text-muted-foreground">Position X</span>
-                              <span className="text-xs text-foreground">{(region.position2D?.x ?? 0).toFixed(0)}px</span>
+                              <span className="text-xs text-foreground">
+                                {(region.position2D?.x ?? 0).toFixed(0)}px
+                              </span>
                             </div>
                             <Slider
                               value={[region.position2D?.x ?? 0]}
                               onValueChange={([v]) => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { 
-                                    position2D: { 
-                                      x: v, 
-                                      y: region.position2D?.y ?? 0, 
-                                      z: region.position2D?.z ?? 0 
-                                    } 
+                                  onUpdateRegion(region.id, {
+                                    position2D: {
+                                      x: v,
+                                      y: region.position2D?.y ?? 0,
+                                      z: region.position2D?.z ?? 0,
+                                    },
                                   });
                                 }
                               }}
@@ -617,18 +610,20 @@ export function ControlPanel({
                           <div className="space-y-1">
                             <div className="flex justify-between">
                               <span className="text-xs text-muted-foreground">Position Y</span>
-                              <span className="text-xs text-foreground">{(region.position2D?.y ?? 0).toFixed(0)}px</span>
+                              <span className="text-xs text-foreground">
+                                {(region.position2D?.y ?? 0).toFixed(0)}px
+                              </span>
                             </div>
                             <Slider
                               value={[region.position2D?.y ?? 0]}
                               onValueChange={([v]) => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { 
-                                    position2D: { 
-                                      x: region.position2D?.x ?? 0, 
-                                      y: v, 
-                                      z: region.position2D?.z ?? 0 
-                                    } 
+                                  onUpdateRegion(region.id, {
+                                    position2D: {
+                                      x: region.position2D?.x ?? 0,
+                                      y: v,
+                                      z: region.position2D?.z ?? 0,
+                                    },
                                   });
                                 }
                               }}
@@ -646,12 +641,12 @@ export function ControlPanel({
                               value={[region.position2D?.z ?? 0]}
                               onValueChange={([v]) => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { 
-                                    position2D: { 
-                                      x: region.position2D?.x ?? 0, 
-                                      y: region.position2D?.y ?? 0, 
-                                      z: v 
-                                    } 
+                                  onUpdateRegion(region.id, {
+                                    position2D: {
+                                      x: region.position2D?.x ?? 0,
+                                      y: region.position2D?.y ?? 0,
+                                      z: v,
+                                    },
                                   });
                                 }
                               }}
@@ -664,7 +659,9 @@ export function ControlPanel({
                           <div className="space-y-1 mt-2">
                             <div className="flex justify-between">
                               <span className="text-xs text-muted-foreground">Scale</span>
-                              <span className="text-xs text-foreground">{((region.scale2D ?? 1) * 100).toFixed(0)}%</span>
+                              <span className="text-xs text-foreground">
+                                {((region.scale2D ?? 1) * 100).toFixed(0)}%
+                              </span>
                             </div>
                             <Slider
                               value={[region.scale2D ?? 1]}
@@ -700,9 +697,9 @@ export function ControlPanel({
                                 checked={!!region.transparentColor}
                                 onCheckedChange={(checked) => {
                                   if (onUpdateRegion) {
-                                    onUpdateRegion(region.id, { 
+                                    onUpdateRegion(region.id, {
                                       transparentColor: checked ? '#000000' : undefined,
-                                      transparentThreshold: checked ? 30 : undefined
+                                      transparentThreshold: checked ? 30 : undefined,
                                     });
                                   }
                                 }}
@@ -747,10 +744,10 @@ export function ControlPanel({
                                 checked={!!region.glowEnabled}
                                 onCheckedChange={(checked) => {
                                   if (onUpdateRegion) {
-                                    onUpdateRegion(region.id, { 
+                                    onUpdateRegion(region.id, {
                                       glowEnabled: checked,
                                       glowColor: checked ? '#FFFFFF' : undefined,
-                                      glowAmount: checked ? 20 : undefined
+                                      glowAmount: checked ? 20 : undefined,
                                     });
                                   }
                                 }}
@@ -787,22 +784,26 @@ export function ControlPanel({
                               </>
                             )}
                           </div>
-                          {(region.position2D || region.scale2D !== undefined || region.transparentColor || region.glowEnabled || region.fullscreenBackground) && (
+                          {(region.position2D ||
+                            region.scale2D !== undefined ||
+                            region.transparentColor ||
+                            region.glowEnabled ||
+                            region.fullscreenBackground) && (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="text-xs h-7 mt-2"
                               onClick={() => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { 
-                                    position2D: undefined, 
+                                  onUpdateRegion(region.id, {
+                                    position2D: undefined,
                                     scale2D: undefined,
                                     transparentColor: undefined,
                                     transparentThreshold: undefined,
                                     glowEnabled: undefined,
                                     glowColor: undefined,
                                     glowAmount: undefined,
-                                    fullscreenBackground: undefined
+                                    fullscreenBackground: undefined,
                                   });
                                 }
                               }}
@@ -918,8 +919,8 @@ export function ControlPanel({
                           value={region.animationMode3D || 'default'}
                           onValueChange={(v) => {
                             if (onUpdateRegion) {
-                              onUpdateRegion(region.id, { 
-                                animationMode3D: v === 'default' ? undefined : v as AnimationMode3D 
+                              onUpdateRegion(region.id, {
+                                animationMode3D: v === 'default' ? undefined : (v as AnimationMode3D),
                               });
                             }
                           }}
@@ -977,10 +978,10 @@ export function ControlPanel({
                               checked={!!region.randomizeEnabled}
                               onCheckedChange={(checked) => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { 
+                                  onUpdateRegion(region.id, {
                                     randomizeEnabled: checked,
                                     randomizeInterval: region.randomizeInterval || 30,
-                                    fadeOpacity: 1
+                                    fadeOpacity: 1,
                                   });
                                 }
                               }}
@@ -1027,7 +1028,7 @@ export function ControlPanel({
                             </>
                           )}
                         </div>
-                        
+
                         {/* Position X/Y/Z Controls */}
                         <div className="mt-2 space-y-2 pl-2 border-l-2 border-border">
                           <div className="space-y-1">
@@ -1039,12 +1040,12 @@ export function ControlPanel({
                               value={[region.position3D?.x ?? 0]}
                               onValueChange={([v]) => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { 
-                                    position3D: { 
-                                      x: v, 
-                                      y: region.position3D?.y ?? 0, 
-                                      z: region.position3D?.z ?? 0 
-                                    } 
+                                  onUpdateRegion(region.id, {
+                                    position3D: {
+                                      x: v,
+                                      y: region.position3D?.y ?? 0,
+                                      z: region.position3D?.z ?? 0,
+                                    },
                                   });
                                 }
                               }}
@@ -1062,12 +1063,12 @@ export function ControlPanel({
                               value={[region.position3D?.y ?? 0]}
                               onValueChange={([v]) => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { 
-                                    position3D: { 
-                                      x: region.position3D?.x ?? 0, 
-                                      y: v, 
-                                      z: region.position3D?.z ?? 0 
-                                    } 
+                                  onUpdateRegion(region.id, {
+                                    position3D: {
+                                      x: region.position3D?.x ?? 0,
+                                      y: v,
+                                      z: region.position3D?.z ?? 0,
+                                    },
                                   });
                                 }
                               }}
@@ -1085,12 +1086,12 @@ export function ControlPanel({
                               value={[region.position3D?.z ?? 0]}
                               onValueChange={([v]) => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { 
-                                    position3D: { 
-                                      x: region.position3D?.x ?? 0, 
-                                      y: region.position3D?.y ?? 0, 
-                                      z: v 
-                                    } 
+                                  onUpdateRegion(region.id, {
+                                    position3D: {
+                                      x: region.position3D?.x ?? 0,
+                                      y: region.position3D?.y ?? 0,
+                                      z: v,
+                                    },
                                   });
                                 }
                               }}
@@ -1103,7 +1104,9 @@ export function ControlPanel({
                           <div className="space-y-1 mt-2">
                             <div className="flex justify-between">
                               <span className="text-xs text-muted-foreground">Scale</span>
-                              <span className="text-xs text-foreground">{((region.scale3D ?? 1) * 100).toFixed(0)}%</span>
+                              <span className="text-xs text-foreground">
+                                {((region.scale3D ?? 1) * 100).toFixed(0)}%
+                              </span>
                             </div>
                             <Slider
                               value={[region.scale3D ?? 1]}
@@ -1139,9 +1142,9 @@ export function ControlPanel({
                                 checked={!!region.transparentColor}
                                 onCheckedChange={(checked) => {
                                   if (onUpdateRegion) {
-                                    onUpdateRegion(region.id, { 
+                                    onUpdateRegion(region.id, {
                                       transparentColor: checked ? '#000000' : undefined,
-                                      transparentThreshold: checked ? 30 : undefined
+                                      transparentThreshold: checked ? 30 : undefined,
                                     });
                                   }
                                 }}
@@ -1178,19 +1181,22 @@ export function ControlPanel({
                               </>
                             )}
                           </div>
-                          {(region.position3D || region.scale3D !== undefined || region.transparentColor || region.fullscreenBackground) && (
+                          {(region.position3D ||
+                            region.scale3D !== undefined ||
+                            region.transparentColor ||
+                            region.fullscreenBackground) && (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="text-xs h-7 mt-2"
                               onClick={() => {
                                 if (onUpdateRegion) {
-                                  onUpdateRegion(region.id, { 
-                                    position3D: undefined, 
+                                  onUpdateRegion(region.id, {
+                                    position3D: undefined,
                                     scale3D: undefined,
                                     transparentColor: undefined,
                                     transparentThreshold: undefined,
-                                    fullscreenBackground: undefined
+                                    fullscreenBackground: undefined,
                                   });
                                 }
                               }}
@@ -1238,7 +1244,7 @@ export function ControlPanel({
                 {/* Texture Settings */}
                 <div className="space-y-4">
                   <Label className="text-muted-foreground font-medium">Texture Settings</Label>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Texture Quality</Label>
                     <Select
@@ -1264,9 +1270,9 @@ export function ControlPanel({
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {settings.textureSmoothing 
-                      ? "Smooth scaling (bilinear filtering)" 
-                      : "Crisp pixels (nearest neighbor)"}
+                    {settings.textureSmoothing
+                      ? 'Smooth scaling (bilinear filtering)'
+                      : 'Crisp pixels (nearest neighbor)'}
                   </p>
                 </div>
 
@@ -1287,9 +1293,7 @@ export function ControlPanel({
                   />
                 </div>
 
-                <p className="text-xs text-muted-foreground">
-                  Tip: Click and drag to rotate view.
-                </p>
+                <p className="text-xs text-muted-foreground">Tip: Click and drag to rotate view.</p>
               </>
             )}
           </div>

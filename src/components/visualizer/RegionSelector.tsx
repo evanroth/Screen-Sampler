@@ -1,5 +1,6 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { CaptureRegion } from '@/hooks/useScreenCapture';
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { CaptureRegion } from '@/hooks/useScreenCapture';
 
 interface RegionSelectorProps {
   videoElement: HTMLVideoElement | null;
@@ -11,7 +12,16 @@ interface RegionSelectorProps {
   onClick: () => void;
 }
 
-type DragType = 'move' | 'resize-nw' | 'resize-ne' | 'resize-sw' | 'resize-se' | 'resize-n' | 'resize-s' | 'resize-e' | 'resize-w';
+type DragType =
+  | 'move'
+  | 'resize-nw'
+  | 'resize-ne'
+  | 'resize-sw'
+  | 'resize-se'
+  | 'resize-n'
+  | 'resize-s'
+  | 'resize-e'
+  | 'resize-w';
 
 export function RegionSelector({
   videoElement: _,
@@ -48,24 +58,27 @@ export function RegionSelector({
     };
   }, []);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent, type: DragType) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (containerRef.current) {
-      containerRectRef.current = containerRef.current.getBoundingClientRect();
-    }
-    
-    if (!isActive) {
-      onClick();
-    }
-    
-    const startPos = getRelativePosition(e.clientX, e.clientY);
-    dragStartRef.current = startPos;
-    initialRegionRef.current = localRegion;
-    isDraggingRef.current = true;
-    setDragType(type);
-  }, [getRelativePosition, localRegion, onClick, isActive]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent, type: DragType) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (containerRef.current) {
+        containerRectRef.current = containerRef.current.getBoundingClientRect();
+      }
+
+      if (!isActive) {
+        onClick();
+      }
+
+      const startPos = getRelativePosition(e.clientX, e.clientY);
+      dragStartRef.current = startPos;
+      initialRegionRef.current = localRegion;
+      isDraggingRef.current = true;
+      setDragType(type);
+    },
+    [getRelativePosition, localRegion, onClick, isActive],
+  );
 
   useEffect(() => {
     if (!dragType) return;
@@ -133,14 +146,11 @@ export function RegionSelector({
     };
   }, [dragType, getRelativePosition, onRegionChange]);
 
-  const handleStyle = "absolute w-5 h-5 bg-background rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform shadow-lg";
+  const handleStyle =
+    'absolute w-5 h-5 bg-background rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform shadow-lg';
 
   return (
-    <div
-      ref={containerRef}
-      className="absolute inset-0"
-      onClick={onClick}
-    >
+    <div ref={containerRef} className="absolute inset-0" onClick={onClick}>
       {/* Region Box */}
       <div
         className={`absolute border-2 ${colorClass} ${isActive ? 'ring-2 ring-white/30' : 'opacity-70'} cursor-move`}
@@ -154,9 +164,12 @@ export function RegionSelector({
         onMouseDown={(e) => handleMouseDown(e, 'move')}
       >
         {/* Label */}
-        <div className={`absolute -top-6 left-1/2 -translate-x-1/2 ${
-          colorClass.replace('border-', 'bg-')
-        } text-background text-xs px-2 py-0.5 rounded whitespace-nowrap`}>
+        <div
+          className={`absolute -top-6 left-1/2 -translate-x-1/2 ${colorClass.replace(
+            'border-',
+            'bg-',
+          )} text-background text-xs px-2 py-0.5 rounded whitespace-nowrap`}
+        >
           {label}
         </div>
 

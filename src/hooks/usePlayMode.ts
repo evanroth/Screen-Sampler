@@ -1,5 +1,5 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { CaptureRegion } from './useScreenCapture';
+import { useCallback, useEffect, useRef } from 'react';
+import type { CaptureRegion } from './useScreenCapture';
 
 export type PlayModeTransition = 'none' | 'fade' | 'zoom';
 
@@ -18,19 +18,14 @@ interface UsePlayModeProps {
 
 const TRANSITION_DURATION = 2000;
 
-export function usePlayMode({
-  regions,
-  onUpdateRegion,
-  isVisualizerActive,
-  settings,
-}: UsePlayModeProps) {
+export function usePlayMode({ regions, onUpdateRegion, isVisualizerActive, settings }: UsePlayModeProps) {
   const currentIndexRef = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animationRef = useRef<number | null>(null);
   const regionsRef = useRef(regions);
   const settingsRef = useRef(settings);
   const isInitializedRef = useRef(false);
-  
+
   regionsRef.current = regions;
   settingsRef.current = settings;
 
@@ -71,25 +66,25 @@ export function usePlayMode({
     } else if (currentSettings.transition === 'fade') {
       // Fade transition
       const startTime = performance.now();
-      
+
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / TRANSITION_DURATION, 1);
-        
+
         // Fade out current, fade in next
         let outOpacity: number;
         let inOpacity: number;
-        
+
         if (progress < 0.5) {
           // First half: fade out current
-          outOpacity = 1 - (progress * 2);
+          outOpacity = 1 - progress * 2;
           inOpacity = 0;
         } else {
           // Second half: fade in next
           outOpacity = 0;
           inOpacity = (progress - 0.5) * 2;
         }
-        
+
         // At midpoint, switch visibility
         if (progress >= 0.5 && progress < 0.55) {
           onUpdateRegion(currentRegion.id, { visible: false, fadeOpacity: undefined });
@@ -99,7 +94,7 @@ export function usePlayMode({
         } else {
           onUpdateRegion(nextRegion.id, { fadeOpacity: inOpacity });
         }
-        
+
         if (progress < 1) {
           animationRef.current = requestAnimationFrame(animate);
         } else {
@@ -108,16 +103,16 @@ export function usePlayMode({
           currentIndexRef.current = nextIdx;
         }
       };
-      
+
       animationRef.current = requestAnimationFrame(animate);
     } else if (currentSettings.transition === 'zoom') {
       // Zoom transition
       const startTime = performance.now();
-      
+
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / TRANSITION_DURATION, 1);
-        
+
         // At midpoint, switch visibility
         if (progress >= 0.5 && progress < 0.55) {
           onUpdateRegion(currentRegion.id, { visible: false, morphProgress: undefined });
@@ -127,7 +122,7 @@ export function usePlayMode({
         } else {
           onUpdateRegion(nextRegion.id, { morphProgress: progress, transitionType: 'zoom' });
         }
-        
+
         if (progress < 1) {
           animationRef.current = requestAnimationFrame(animate);
         } else {
@@ -136,7 +131,7 @@ export function usePlayMode({
           currentIndexRef.current = nextIdx;
         }
       };
-      
+
       animationRef.current = requestAnimationFrame(animate);
     }
   }, [onUpdateRegion, cancelAnimation]);
@@ -145,12 +140,12 @@ export function usePlayMode({
   const initializePlayMode = useCallback(() => {
     const currentRegions = regionsRef.current;
     if (currentRegions.length < 2) return;
-    
+
     currentRegions.forEach((region, index) => {
-      onUpdateRegion(region.id, { 
+      onUpdateRegion(region.id, {
         visible: index === 0,
         fadeOpacity: undefined,
-        morphProgress: undefined
+        morphProgress: undefined,
       });
     });
     currentIndexRef.current = 0;
@@ -161,10 +156,10 @@ export function usePlayMode({
   const restoreAllRegions = useCallback(() => {
     const currentRegions = regionsRef.current;
     currentRegions.forEach((region) => {
-      onUpdateRegion(region.id, { 
+      onUpdateRegion(region.id, {
         visible: true,
         fadeOpacity: undefined,
-        morphProgress: undefined
+        morphProgress: undefined,
       });
     });
     isInitializedRef.current = false;
@@ -211,7 +206,7 @@ export function usePlayMode({
     transitionToNext,
     clearPlayInterval,
     cancelAnimation,
-    restoreAllRegions
+    restoreAllRegions,
   ]);
 
   // Cleanup on unmount

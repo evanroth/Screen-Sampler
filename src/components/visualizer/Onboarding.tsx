@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import cropIcon from "@/assets/crop-icon.png";
+import cropIcon from '@/assets/crop-icon.png';
+import { Button } from '@/components/ui/button';
 
 interface OnboardingProps {
   onStartCapture: () => void;

@@ -11,12 +11,10 @@ interface ColorPickerProps {
 
 export function ColorPicker({ value, onChange, label, className }: ColorPickerProps) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      {label && (
-        <Label className="text-xs text-muted-foreground min-w-[60px]">{label}</Label>
-      )}
+    <div className={cn('flex items-center gap-2', className)}>
+      {label && <Label className="text-xs text-muted-foreground min-w-[60px]">{label}</Label>}
       <div className="relative flex items-center gap-2 flex-1">
-        <div 
+        <div
           className="w-8 h-8 rounded-md border border-border overflow-hidden cursor-pointer flex-shrink-0"
           style={{ backgroundColor: value }}
         >

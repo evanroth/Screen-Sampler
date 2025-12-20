@@ -1,26 +1,26 @@
-import { useRef, useEffect, useMemo, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { CaptureRegion } from '@/hooks/useScreenCapture';
-import { VisualizerSettings, AnimationMode3D, ANIMATION_MODES_3D } from '@/hooks/useVisualizerSettings';
+import type { CaptureRegion } from '@/hooks/useScreenCapture';
+import { ANIMATION_MODES_3D, type AnimationMode3D, type VisualizerSettings } from '@/hooks/useVisualizerSettings';
 import {
-  createTetrakisHexahedron,
-  createGreatDodecahedron,
-  createGreatIcosahedron,
-  createSmallStellatedDodecahedron,
-  createGreatStellatedDodecahedron,
-  createTripleTwistMobius,
-  createVerrillSurface,
-  createDoubleTrefoil,
-  createSchwarzPSurface,
-  createEnneperSurface,
   createBoysSurface,
   createCliffordTorus,
+  createDoubleTrefoil,
+  createEnneperSurface,
+  createGreatDodecahedron,
+  createGreatIcosahedron,
+  createGreatStellatedDodecahedron,
+  createHelicoid,
   createHyperbolicParaboloid,
   createHyperboloidOneSheet,
+  createSchwarzPSurface,
+  createSmallStellatedDodecahedron,
   createSteinerSurface,
-  createHelicoid,
+  createTetrakisHexahedron,
+  createTripleTwistMobius,
+  createVerrillSurface,
 } from './customGeometries';
 
 interface VisualizerCanvas3DProps {
@@ -44,16 +44,16 @@ interface RegionTextureProps {
   overrideOpacity?: number; // For morph transitions
 }
 
-function RegionMesh({ 
-  region, 
-  index, 
-  totalRegions, 
-  settings, 
-  audioLevel, 
+function RegionMesh({
+  region,
+  index,
+  totalRegions,
+  settings,
+  audioLevel,
   defaultMode,
   getVideoElement,
   overrideMode,
-  overrideOpacity
+  overrideOpacity,
 }: RegionTextureProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
@@ -61,7 +61,7 @@ function RegionMesh({
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
   const timeRef = useRef(0);
   const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
-  
+
   // Use override mode (for morph ghost), region-specific mode, or fall back to default
   const mode = overrideMode || region.animationMode3D || defaultMode;
 
@@ -78,20 +78,19 @@ function RegionMesh({
     const filter = settings.textureSmoothing ? THREE.LinearFilter : THREE.NearestFilter;
     textureRef.current.minFilter = filter;
     textureRef.current.magFilter = filter;
-    
+
     return () => {
       textureRef.current?.dispose();
     };
   }, [settings.textureQuality, settings.textureSmoothing]);
 
-
   useFrame((_state, delta) => {
     const videoElement = getVideoElement(region.sourceId);
     if (!meshRef.current || !canvasRef.current || !textureRef.current || !videoElement) return;
-    
+
     timeRef.current += delta;
     const time = timeRef.current;
-    
+
     // Update texture from video
     const ctx = canvasRef.current.getContext('2d');
     if (ctx && videoElement.videoWidth > 0) {
@@ -101,50 +100,46 @@ function RegionMesh({
       const ry = region.y * vh;
       const rw = region.width * vw;
       const rh = region.height * vh;
-      
+
       const quality = settings.textureQuality;
       ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, quality, quality);
-      
+
       // Per-region transparent color processing
       if (region.transparentColor) {
         const imageData = ctx.getImageData(0, 0, quality, quality);
         const data = imageData.data;
         const threshold = region.transparentThreshold ?? 30;
-        
+
         // Parse the hex color
         const hex = region.transparentColor.replace('#', '');
         const targetR = parseInt(hex.substring(0, 2), 16);
         const targetG = parseInt(hex.substring(2, 4), 16);
         const targetB = parseInt(hex.substring(4, 6), 16);
-        
+
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];
           const g = data[i + 1];
           const b = data[i + 2];
-          
+
           // Calculate color distance from target
-          const distance = Math.sqrt(
-            Math.pow(r - targetR, 2) + 
-            Math.pow(g - targetG, 2) + 
-            Math.pow(b - targetB, 2)
-          );
-          
+          const distance = Math.sqrt((r - targetR) ** 2 + (g - targetG) ** 2 + (b - targetB) ** 2);
+
           if (distance < threshold) {
             const closeness = 1 - distance / threshold;
             data[i + 3] = Math.round(data[i + 3] * (1 - closeness));
           }
         }
-        
+
         ctx.putImageData(imageData, 0, 0);
       }
-      
+
       textureRef.current.needsUpdate = true;
     }
 
     // Apply material texture and fade/morph opacity
     if (materialRef.current) {
       materialRef.current.map = textureRef.current;
-      
+
       // Use override opacity if provided (for ghost meshes)
       let targetOpacity: number;
       if (overrideOpacity !== undefined) {
@@ -152,13 +147,13 @@ function RegionMesh({
       } else {
         // Handle opacity based on transition type
         targetOpacity = (region.fadeOpacity ?? 1) * 0.95;
-        
+
         // For zoom transitions, don't change opacity
         if (region.morphProgress !== undefined && region.transitionType === 'zoom') {
           targetOpacity = 0.95;
         }
       }
-      
+
       const currentOpacity = materialRef.current.opacity;
       materialRef.current.opacity = currentOpacity + (targetOpacity - currentOpacity) * 0.15;
     }
@@ -176,7 +171,6 @@ function RegionMesh({
     const baseScale = settings.panelScaleX;
 
     const mesh = meshRef.current;
-    
 
     // Animation based on mode
     const speed = settings.movementSpeed;
@@ -190,7 +184,7 @@ function RegionMesh({
         mesh.rotation.x = time * 0.2;
         mesh.rotation.y = time * 0.3;
         break;
-        
+
       case 'orbit3D': {
         const orbitRadius = settings.regionSpacing3D + index * 0.5;
         mesh.position.x = Math.cos(time * speed + angleOffset) * orbitRadius;
@@ -214,7 +208,7 @@ function RegionMesh({
         const helixRadius = settings.regionSpacing3D;
         const helixAngle = time * speed + angleOffset;
         mesh.position.x = Math.cos(helixAngle) * helixRadius;
-        mesh.position.y = (Math.sin(helixAngle * 2) * (settings.regionSpacing3D * 0.66));
+        mesh.position.y = Math.sin(helixAngle * 2) * (settings.regionSpacing3D * 0.66);
         mesh.position.z = Math.sin(helixAngle) * helixRadius;
         mesh.rotation.y = -helixAngle;
         break;
@@ -222,7 +216,7 @@ function RegionMesh({
 
       case 'explode3D': {
         const explodePhase = (Math.sin(time * speed * 0.5) + 1) / 2;
-        const explodeRadius = (settings.regionSpacing3D * 0.66) + explodePhase * settings.regionSpacing3D * 1.33;
+        const explodeRadius = settings.regionSpacing3D * 0.66 + explodePhase * settings.regionSpacing3D * 1.33;
         const theta = (index / totalRegions) * Math.PI * 2;
         const phi = ((index % 3) / 3) * Math.PI;
         mesh.position.x = Math.sin(phi) * Math.cos(theta) * explodeRadius;
@@ -232,7 +226,7 @@ function RegionMesh({
         mesh.rotation.y = time * 0.3;
         break;
       }
-        
+
       case 'wave3D':
         mesh.position.x = (index - totalRegions / 2) * (settings.regionSpacing3D * 0.83);
         mesh.position.y = Math.sin(time * speed * 2 + index * 0.5) * (settings.regionSpacing3D * 0.66);
@@ -302,25 +296,28 @@ function RegionMesh({
   });
 
   // Create custom geometries
-  const customGeometries = useMemo(() => ({
-    mobius: new THREE.TorusKnotGeometry(1.2, 0.25, 100, 16, 2, 1),
-    tetrakisHexahedron: createTetrakisHexahedron(1.5),
-    greatDodecahedron: createGreatDodecahedron(1.5),
-    greatIcosahedron: createGreatIcosahedron(1.5),
-    smallStellatedDodecahedron: createSmallStellatedDodecahedron(1.5),
-    greatStellatedDodecahedron: createGreatStellatedDodecahedron(1.5),
-    tripleTwistMobius: createTripleTwistMobius(1.2),
-    verrill: createVerrillSurface(1.2),
-    doubleTrefoil: createDoubleTrefoil(1.0),
-    schwarzP: createSchwarzPSurface(1.2),
-    enneper: createEnneperSurface(0.8),
-    boysSurface: createBoysSurface(1.0),
-    cliffordTorus: createCliffordTorus(1.2),
-    hyperbolicParaboloid: createHyperbolicParaboloid(1.2),
-    hyperboloidOneSheet: createHyperboloidOneSheet(1.0),
-    steiner: createSteinerSurface(1.2),
-    helicoid: createHelicoid(1.0),
-  }), []);
+  const customGeometries = useMemo(
+    () => ({
+      mobius: new THREE.TorusKnotGeometry(1.2, 0.25, 100, 16, 2, 1),
+      tetrakisHexahedron: createTetrakisHexahedron(1.5),
+      greatDodecahedron: createGreatDodecahedron(1.5),
+      greatIcosahedron: createGreatIcosahedron(1.5),
+      smallStellatedDodecahedron: createSmallStellatedDodecahedron(1.5),
+      greatStellatedDodecahedron: createGreatStellatedDodecahedron(1.5),
+      tripleTwistMobius: createTripleTwistMobius(1.2),
+      verrill: createVerrillSurface(1.2),
+      doubleTrefoil: createDoubleTrefoil(1.0),
+      schwarzP: createSchwarzPSurface(1.2),
+      enneper: createEnneperSurface(0.8),
+      boysSurface: createBoysSurface(1.0),
+      cliffordTorus: createCliffordTorus(1.2),
+      hyperbolicParaboloid: createHyperbolicParaboloid(1.2),
+      hyperboloidOneSheet: createHyperboloidOneSheet(1.0),
+      steiner: createSteinerSurface(1.2),
+      helicoid: createHelicoid(1.0),
+    }),
+    [],
+  );
 
   // Determine geometry based on mode
   const geometry = useMemo(() => {
@@ -405,21 +402,16 @@ function RegionMesh({
   return (
     <mesh ref={meshRef}>
       {geometry}
-      <meshBasicMaterial 
-        ref={materialRef} 
-        side={THREE.DoubleSide}
-        transparent
-        opacity={0.95}
-      />
+      <meshBasicMaterial ref={materialRef} side={THREE.DoubleSide} transparent opacity={0.95} />
     </mesh>
   );
 }
 
 // Fullscreen background plane that renders behind everything - uses screen space
-function FullscreenBackgroundMesh({ 
+function FullscreenBackgroundMesh({
   region,
   settings,
-  getVideoElement
+  getVideoElement,
 }: {
   region: CaptureRegion;
   settings: VisualizerSettings;
@@ -440,13 +432,13 @@ function FullscreenBackgroundMesh({
     const filter = settings.textureSmoothing ? THREE.LinearFilter : THREE.NearestFilter;
     textureRef.current.minFilter = filter;
     textureRef.current.magFilter = filter;
-    
+
     // Assign texture to material immediately
     if (materialRef.current) {
       materialRef.current.map = textureRef.current;
       materialRef.current.needsUpdate = true;
     }
-    
+
     return () => {
       textureRef.current?.dispose();
     };
@@ -463,7 +455,7 @@ function FullscreenBackgroundMesh({
   useFrame(() => {
     const videoElement = getVideoElement(region.sourceId);
     if (!meshRef.current || !canvasRef.current || !textureRef.current || !videoElement) return;
-    
+
     const ctx = canvasRef.current.getContext('2d');
     if (ctx && videoElement.videoWidth > 0) {
       const vw = videoElement.videoWidth;
@@ -472,41 +464,37 @@ function FullscreenBackgroundMesh({
       const ry = region.y * vh;
       const rw = region.width * vw;
       const rh = region.height * vh;
-      
+
       const quality = settings.textureQuality;
       ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, quality, quality);
-      
+
       // Apply transparent color processing
       if (region.transparentColor) {
         const imageData = ctx.getImageData(0, 0, quality, quality);
         const data = imageData.data;
         const threshold = region.transparentThreshold ?? 30;
-        
+
         const hex = region.transparentColor.replace('#', '');
         const targetR = parseInt(hex.substring(0, 2), 16);
         const targetG = parseInt(hex.substring(2, 4), 16);
         const targetB = parseInt(hex.substring(4, 6), 16);
-        
+
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];
           const g = data[i + 1];
           const b = data[i + 2];
-          
-          const distance = Math.sqrt(
-            Math.pow(r - targetR, 2) + 
-            Math.pow(g - targetG, 2) + 
-            Math.pow(b - targetB, 2)
-          );
-          
+
+          const distance = Math.sqrt((r - targetR) ** 2 + (g - targetG) ** 2 + (b - targetB) ** 2);
+
           if (distance < threshold) {
             const closeness = 1 - distance / threshold;
             data[i + 3] = Math.round(data[i + 3] * (1 - closeness));
           }
         }
-        
+
         ctx.putImageData(imageData, 0, 0);
       }
-      
+
       textureRef.current.needsUpdate = true;
     }
 
@@ -516,18 +504,18 @@ function FullscreenBackgroundMesh({
 
     // Position the mesh to always fill the screen, staying in front of camera
     const mesh = meshRef.current;
-    
+
     // Calculate distance from camera and size needed to fill viewport
     // Use a distance within the fog range but behind other objects
     const distance = 25; // Place within fog range but behind scene objects
     const fov = (camera as THREE.PerspectiveCamera).fov * (Math.PI / 180);
     const height = 2 * Math.tan(fov / 2) * distance;
     const width = height * (size.width / size.height);
-    
+
     // Position mesh behind camera's view, centered
     const cameraDirection = new THREE.Vector3(0, 0, -1);
     cameraDirection.applyQuaternion(camera.quaternion);
-    
+
     mesh.position.copy(camera.position).add(cameraDirection.multiplyScalar(distance));
     mesh.quaternion.copy(camera.quaternion);
     mesh.scale.set(width, height, 1);
@@ -549,8 +537,8 @@ function FullscreenBackgroundMesh({
   return (
     <mesh ref={meshRef} renderOrder={-1000}>
       <planeGeometry args={[1, 1]} />
-      <meshBasicMaterial 
-        ref={materialRef} 
+      <meshBasicMaterial
+        ref={materialRef}
         map={textureRef.current || defaultTexture}
         side={THREE.FrontSide}
         transparent
@@ -562,7 +550,13 @@ function FullscreenBackgroundMesh({
   );
 }
 
-function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: {
+function Scene({
+  regions,
+  settings,
+  audioLevel,
+  defaultMode,
+  getVideoElement,
+}: {
   regions: CaptureRegion[];
   settings: VisualizerSettings;
   audioLevel: number;
@@ -572,46 +566,48 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
   const { camera } = useThree();
   const controlsRef = useRef<React.ComponentRef<typeof OrbitControls>>(null);
   const meshGroupRef = useRef<THREE.Group>(null);
-  
+
   // Filter visible regions, then separate fullscreen background from normal
-  const visibleRegions = regions.filter(r => r.visible !== false);
-  const backgroundRegions = visibleRegions.filter(r => r.fullscreenBackground);
-  const normalRegions = visibleRegions.filter(r => !r.fullscreenBackground);
-  
+  const visibleRegions = regions.filter((r) => r.visible !== false);
+  const backgroundRegions = visibleRegions.filter((r) => r.fullscreenBackground);
+  const normalRegions = visibleRegions.filter((r) => !r.fullscreenBackground);
+
   useEffect(() => {
     // Calculate camera distance to fit objects at ~85% of screen
-    const regionCount = regions.filter(r => r.visible !== false && !r.fullscreenBackground).length;
+    const regionCount = regions.filter((r) => r.visible !== false && !r.fullscreenBackground).length;
     const totalWidth = regionCount > 1 ? (regionCount - 1) * settings.regionSpacing3D : 0;
-    
+
     // Object size based on scale and geometry (mobius/torus knot is roughly 2.4 units diameter)
     const objectSize = settings.panelScaleX * 2.4;
     const sceneWidth = Math.max(totalWidth + objectSize, objectSize);
-    
+
     // Use FOV to calculate required distance for 85% screen fill
     const fov = 60 * (Math.PI / 180);
     const aspectRatio = window.innerWidth / window.innerHeight;
     const targetFillRatio = 0.85;
-    
+
     // Calculate distance based on whether scene is wider or taller
     const horizontalFov = 2 * Math.atan(Math.tan(fov / 2) * aspectRatio);
-    const distanceForWidth = (sceneWidth / 2) / (Math.tan(horizontalFov / 2) * targetFillRatio);
-    const distanceForHeight = (objectSize / 2) / (Math.tan(fov / 2) * targetFillRatio);
-    
+    const distanceForWidth = sceneWidth / 2 / (Math.tan(horizontalFov / 2) * targetFillRatio);
+    const distanceForHeight = objectSize / 2 / (Math.tan(fov / 2) * targetFillRatio);
+
     // Use the larger distance needed, but keep it close
     const cameraZ = Math.max(distanceForWidth, distanceForHeight, 2);
-    
+
     camera.position.set(0, 0, cameraZ);
   }, [camera, regions, settings.regionSpacing3D, settings.panelScaleX]);
 
   // Update OrbitControls target to center of all meshes
   useFrame(() => {
     if (!controlsRef.current || !meshGroupRef.current) return;
-    
+
     const children = meshGroupRef.current.children;
     if (children.length === 0) return;
-    
+
     // Calculate center point of all meshes
-    let centerX = 0, centerY = 0, centerZ = 0;
+    let centerX = 0,
+      centerY = 0,
+      centerZ = 0;
     children.forEach((child) => {
       centerX += child.position.x;
       centerY += child.position.y;
@@ -620,12 +616,9 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
     centerX /= children.length;
     centerY /= children.length;
     centerZ /= children.length;
-    
+
     // Smoothly interpolate target to center
-    controlsRef.current.target.lerp(
-      new THREE.Vector3(centerX, centerY, centerZ),
-      0.05
-    );
+    controlsRef.current.target.lerp(new THREE.Vector3(centerX, centerY, centerZ), 0.05);
   });
 
   return (
@@ -633,7 +626,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
       <ambientLight intensity={0.8} />
       <pointLight position={[10, 10, 10]} intensity={1} />
       <pointLight position={[-10, -10, -10]} intensity={0.5} />
-      
+
       {/* Render fullscreen backgrounds behind everything */}
       {backgroundRegions.map((region) => (
         <FullscreenBackgroundMesh
@@ -643,7 +636,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
           getVideoElement={getVideoElement}
         />
       ))}
-      
+
       <group ref={meshGroupRef}>
         {normalRegions.map((region, index) => (
           <RegionMesh
@@ -658,10 +651,10 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
           />
         ))}
       </group>
-      
-      <OrbitControls 
+
+      <OrbitControls
         ref={controlsRef}
-        enableDamping 
+        enableDamping
         dampingFactor={0.05}
         rotateSpeed={0.5}
         zoomSpeed={0.5}
@@ -683,9 +676,7 @@ export function VisualizerCanvas3D({
   getVideoElement,
 }: VisualizerCanvas3DProps) {
   const [currentDefaultMode, setCurrentDefaultMode] = useState<AnimationMode3D>(
-    settings.animationMode3D === 'random3D'
-      ? ANIMATION_MODES_3D[0]
-      : settings.animationMode3D
+    settings.animationMode3D === 'random3D' ? ANIMATION_MODES_3D[0] : settings.animationMode3D,
   );
   const bgCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -705,15 +696,16 @@ export function VisualizerCanvas3D({
   }, [settings.animationMode3D, settings.randomModeInterval]);
 
   // Check if we have any valid video element
-  const hasValidSource = regions.some(r => getVideoElement(r.sourceId) !== null);
+  const hasValidSource = regions.some((r) => getVideoElement(r.sourceId) !== null);
 
   // Background canvas effect - must be before any conditional returns (React hooks rules)
   useEffect(() => {
     if (!isActive || !hasValidSource) return;
 
-    const needsCanvas = settings.backgroundStyle === 'blurred' ||
-                        settings.backgroundStyle === 'linearGradient' ||
-                        settings.backgroundStyle === 'radialGradient';
+    const needsCanvas =
+      settings.backgroundStyle === 'blurred' ||
+      settings.backgroundStyle === 'linearGradient' ||
+      settings.backgroundStyle === 'radialGradient';
 
     if (!needsCanvas || !bgCanvasRef.current) return;
 
@@ -728,18 +720,19 @@ export function VisualizerCanvas3D({
       canvas.height = window.innerHeight;
 
       if (settings.backgroundStyle === 'linearGradient') {
-        const gradient = ctx.createLinearGradient(
-          canvas.width / 2, 0,
-          canvas.width / 2, canvas.height
-        );
+        const gradient = ctx.createLinearGradient(canvas.width / 2, 0, canvas.width / 2, canvas.height);
         gradient.addColorStop(0, settings.gradientSettings.color1);
         gradient.addColorStop(1, settings.gradientSettings.color2);
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       } else if (settings.backgroundStyle === 'radialGradient') {
         const gradient = ctx.createRadialGradient(
-          canvas.width / 2, canvas.height / 2, 0,
-          canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) / 2
+          canvas.width / 2,
+          canvas.height / 2,
+          0,
+          canvas.width / 2,
+          canvas.height / 2,
+          Math.max(canvas.width, canvas.height) / 2,
         );
         gradient.addColorStop(0, settings.gradientSettings.color1);
         gradient.addColorStop(1, settings.gradientSettings.color2);
@@ -804,29 +797,24 @@ export function VisualizerCanvas3D({
     }
   };
 
-  const needsCanvasBackground = settings.backgroundStyle === 'blurred' || 
-                                 settings.backgroundStyle === 'linearGradient' || 
-                                 settings.backgroundStyle === 'radialGradient';
+  const needsCanvasBackground =
+    settings.backgroundStyle === 'blurred' ||
+    settings.backgroundStyle === 'linearGradient' ||
+    settings.backgroundStyle === 'radialGradient';
 
   return (
     <div className="fixed inset-0" style={{ zIndex: 0, background: getBackgroundColor() }}>
       {needsCanvasBackground && (
-        <canvas 
-          ref={bgCanvasRef} 
-          className="absolute inset-0 w-full h-full"
-          style={{ zIndex: 0 }}
-        />
+        <canvas ref={bgCanvasRef} className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }} />
       )}
       <Canvas
         camera={{ fov: 60, near: 0.1, far: 500 }}
         gl={{ antialias: true, alpha: needsCanvasBackground, toneMapping: THREE.NoToneMapping }}
         style={{ position: 'relative', zIndex: 1 }}
       >
-        {!needsCanvasBackground && (
-          <color attach="background" args={[getBackgroundColor()]} />
-        )}
+        {!needsCanvasBackground && <color attach="background" args={[getBackgroundColor()]} />}
         <fog attach="fog" args={[getBackgroundColor(), 20, 80]} />
-        <Scene 
+        <Scene
           regions={regions}
           settings={settings}
           audioLevel={audioLevel}

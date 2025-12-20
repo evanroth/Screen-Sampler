@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import { AnimationMode, AnimationMode3D } from './useVisualizerSettings';
+import { useCallback, useRef, useState } from 'react';
+import type { AnimationMode, AnimationMode3D } from './useVisualizerSettings';
 
 export interface CaptureSource {
   id: string;
@@ -51,7 +51,7 @@ export function useScreenCapture() {
 
       const sourceId = crypto.randomUUID();
       sourceCounterRef.current += 1;
-      
+
       // Create video element for this source
       const video = document.createElement('video');
       video.autoplay = true;
@@ -71,10 +71,10 @@ export function useScreenCapture() {
 
       // Handle stream ending (user clicks "Stop sharing")
       mediaStream.getVideoTracks()[0].onended = () => {
-        setSources(prev => prev.filter(s => s.id !== sourceId));
+        setSources((prev) => prev.filter((s) => s.id !== sourceId));
       };
 
-      setSources(prev => [...prev, newSource]);
+      setSources((prev) => [...prev, newSource]);
       return newSource;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start screen capture';
@@ -84,26 +84,29 @@ export function useScreenCapture() {
   }, []);
 
   const removeSource = useCallback((sourceId: string) => {
-    setSources(prev => {
-      const source = prev.find(s => s.id === sourceId);
+    setSources((prev) => {
+      const source = prev.find((s) => s.id === sourceId);
       if (source) {
-        source.stream.getTracks().forEach(track => track.stop());
+        source.stream.getTracks().forEach((track) => track.stop());
       }
-      return prev.filter(s => s.id !== sourceId);
+      return prev.filter((s) => s.id !== sourceId);
     });
   }, []);
 
   const stopAllCaptures = useCallback(() => {
-    sources.forEach(source => {
-      source.stream.getTracks().forEach(track => track.stop());
+    sources.forEach((source) => {
+      source.stream.getTracks().forEach((track) => track.stop());
     });
     setSources([]);
     sourceCounterRef.current = 0;
   }, [sources]);
 
-  const getVideoElement = useCallback((sourceId: string) => {
-    return sources.find(s => s.id === sourceId)?.videoElement ?? null;
-  }, [sources]);
+  const getVideoElement = useCallback(
+    (sourceId: string) => {
+      return sources.find((s) => s.id === sourceId)?.videoElement ?? null;
+    },
+    [sources],
+  );
 
   // Legacy compatibility - check if any source is capturing
   const isCapturing = sources.length > 0;
