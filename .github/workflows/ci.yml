@@ -13,15 +13,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+      - uses: oven-sh/setup-bun@v2
 
-      - run: npm ci
+      - run: bun install --frozen-lockfile
 
-      - run: npm run lint
+      - run: bun run lint
 
-      - run: npm run typecheck
+      - run: bun run typecheck
 
-      - run: npm run build
+      - run: bun run build
