@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 export type BackgroundStyle = 'black' | 'white' | 'solid' | 'blurred' | 'linearGradient' | 'radialGradient';
 export type TileEffect = 'none' | 'glow' | 'opacity' | 'blur' | 'all';
@@ -9,7 +9,7 @@ export interface GradientSettings {
 }
 
 // 2D Animation modes
-export type AnimationMode = 
+export type AnimationMode =
   | 'still'
   | 'bounce'
   | 'verticalDrop'
@@ -27,7 +27,7 @@ export type AnimationMode =
   | 'random';
 
 // 3D Animation modes
-export type AnimationMode3D = 
+export type AnimationMode3D =
   | 'floating3D'
   | 'orbit3D'
   | 'carousel3D'
@@ -73,21 +73,65 @@ export type AnimationMode3D =
   | 'random3D';
 
 export const ANIMATION_MODES: AnimationMode[] = [
-  'still', 'bounce', 'verticalDrop', 'horizontalSweep', 'clockwise', 'counterClockwise',
-  'clockHand', 'pendulum', 'waterfall', 'spiral', 'orbit', 'zigzag', 'wave', 'float'
+  'still',
+  'bounce',
+  'verticalDrop',
+  'horizontalSweep',
+  'clockwise',
+  'counterClockwise',
+  'clockHand',
+  'pendulum',
+  'waterfall',
+  'spiral',
+  'orbit',
+  'zigzag',
+  'wave',
+  'float',
 ];
 
 export const ANIMATION_MODES_3D: AnimationMode3D[] = [
-  'floating3D', 'orbit3D', 'carousel3D', 'helix3D', 'explode3D', 'wave3D',
-  'sphere3D', 'cube3D', 'cylinder3D', 'torus3D', 'pyramid3D', 'cone3D',
-  'dodecahedron3D', 'icosahedron3D', 'octahedron3D', 'tetrahedron3D', 
-  'torusKnot3D', 'trefoil3D', 'cinquefoil3D', 'septafoil3D', 'figure8_3D',
-  'granny3D', 'lissajous3D', 'capsule3D', 'ring3D', 'mobius3D',
-  'tetrakisHexahedron3D', 'greatDodecahedron3D', 'greatIcosahedron3D',
-  'smallStellatedDodecahedron3D', 'greatStellatedDodecahedron3D',
-  'tripleTwistMobius3D', 'verrill3D', 'doubleTrefoil3D', 'schwarzP3D',
-  'enneper3D', 'boysSurface3D', 'cliffordTorus3D', 'hyperbolicParaboloid3D',
-  'hyperboloidOneSheet3D', 'steiner3D', 'helicoid3D'
+  'floating3D',
+  'orbit3D',
+  'carousel3D',
+  'helix3D',
+  'explode3D',
+  'wave3D',
+  'sphere3D',
+  'cube3D',
+  'cylinder3D',
+  'torus3D',
+  'pyramid3D',
+  'cone3D',
+  'dodecahedron3D',
+  'icosahedron3D',
+  'octahedron3D',
+  'tetrahedron3D',
+  'torusKnot3D',
+  'trefoil3D',
+  'cinquefoil3D',
+  'septafoil3D',
+  'figure8_3D',
+  'granny3D',
+  'lissajous3D',
+  'capsule3D',
+  'ring3D',
+  'mobius3D',
+  'tetrakisHexahedron3D',
+  'greatDodecahedron3D',
+  'greatIcosahedron3D',
+  'smallStellatedDodecahedron3D',
+  'greatStellatedDodecahedron3D',
+  'tripleTwistMobius3D',
+  'verrill3D',
+  'doubleTrefoil3D',
+  'schwarzP3D',
+  'enneper3D',
+  'boysSurface3D',
+  'cliffordTorus3D',
+  'hyperbolicParaboloid3D',
+  'hyperboloidOneSheet3D',
+  'steiner3D',
+  'helicoid3D',
 ];
 
 export type VisualizerMode = '2d' | '3d';
@@ -166,11 +210,8 @@ const defaultSettings: VisualizerSettings = {
 export function useVisualizerSettings() {
   const [settings, setSettings] = useState<VisualizerSettings>(defaultSettings);
 
-  const updateSetting = useCallback(<K extends keyof VisualizerSettings>(
-    key: K,
-    value: VisualizerSettings[K]
-  ) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+  const updateSetting = useCallback(<K extends keyof VisualizerSettings>(key: K, value: VisualizerSettings[K]) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   const resetSettings = useCallback(() => {
