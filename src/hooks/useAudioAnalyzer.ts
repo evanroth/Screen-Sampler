@@ -1,10 +1,10 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useAudioAnalyzer() {
   const [isActive, setIsActive] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  
+
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -14,7 +14,7 @@ export function useAudioAnalyzer() {
   const startAudio = useCallback(async () => {
     try {
       setError(null);
-      
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
@@ -25,7 +25,7 @@ export function useAudioAnalyzer() {
       const analyzer = audioContext.createAnalyser();
       analyzer.fftSize = 256;
       analyzer.smoothingTimeConstant = 0.8;
-      
+
       source.connect(analyzer);
       analyzerRef.current = analyzer;
 
@@ -33,28 +33,28 @@ export function useAudioAnalyzer() {
 
       // Start analyzing
       const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-      
+
       const analyze = () => {
         if (!analyzerRef.current) return;
-        
+
         analyzerRef.current.getByteFrequencyData(dataArray);
-        
+
         // Calculate average level
         let sum = 0;
         for (let i = 0; i < dataArray.length; i++) {
           sum += dataArray[i];
         }
         const average = sum / dataArray.length / 255;
-        
+
         // Smooth the level
         smoothedLevelRef.current = smoothedLevelRef.current * 0.85 + average * 0.15;
         setAudioLevel(smoothedLevelRef.current);
-        
+
         animationRef.current = requestAnimationFrame(analyze);
       };
-      
+
       analyze();
-      
+
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to access microphone';
@@ -69,17 +69,17 @@ export function useAudioAnalyzer() {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
-    
+
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
-    
+
     if (audioContextRef.current) {
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
-    
+
     analyzerRef.current = null;
     setIsActive(false);
     setAudioLevel(0);
