@@ -88,6 +88,14 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
               >
                 Beats and Bobbins
               </a>
+              <a
+                href="https://shop.evan-roth.com/product/beats-bobbins-tip-jar/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground/70 transition-colors underline underline-offset-4"
+              >
+                Support this work
+              </a>
             </div>
           </div>
 
