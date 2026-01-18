@@ -95,7 +95,7 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
                 rel="noopener noreferrer"
                 className="hover:text-foreground/70 transition-colors underline underline-offset-4 inline-flex items-center gap-1"
               >
-                <img src={tipJarIcon} alt="" width={16} height={16} className="dark:invert" />
+                <img src={tipJarIcon} alt="" width={40} height={40} className="dark:invert" />
                 Support this work
               </a>
             </div>
