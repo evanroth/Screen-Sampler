@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import cropIcon from "@/assets/crop-icon.png";
+import tipJarIcon from "@/assets/tip-jar.png";
 
 interface OnboardingProps {
   onStartCapture: () => void;
@@ -92,8 +93,9 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
                 href="https://shop.evan-roth.com/product/beats-bobbins-tip-jar/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-foreground/70 transition-colors underline underline-offset-4"
+                className="hover:text-foreground/70 transition-colors underline underline-offset-4 inline-flex items-center gap-1"
               >
+                <img src={tipJarIcon} alt="" width={16} height={16} className="dark:invert" />
                 Support this work
               </a>
             </div>
