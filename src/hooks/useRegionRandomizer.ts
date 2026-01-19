@@ -171,10 +171,9 @@ export function useRegionRandomizer({
         const animId = requestAnimationFrame(animate);
         animationRefs.current.set(regionId, animId);
       } else {
-        // Reset when done
+        // Reset when done - preserve transitionType so it stays selected
         onUpdateRegion(regionId, { 
           morphProgress: undefined, 
-          transitionType: undefined,
           transitionFrozen: false 
         });
         animationRefs.current.delete(regionId);
@@ -269,8 +268,8 @@ export function useRegionRandomizer({
         const animId = requestAnimationFrame(animate);
         animationRefs.current.set(regionId, animId);
       } else {
-        // Reset when done
-        onUpdateRegion(regionId, { morphProgress: undefined, transitionType: undefined });
+        // Reset when done - preserve transitionType so it stays selected
+        onUpdateRegion(regionId, { morphProgress: undefined });
         animationRefs.current.delete(regionId);
       }
     };
