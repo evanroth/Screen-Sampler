@@ -120,6 +120,8 @@ export function useScreenCapture() {
   const addCameraSource = useCallback(async (deviceId?: string) => {
     try {
       setError(null);
+      console.log('Requesting camera access...', deviceId ? `Device: ${deviceId}` : 'Default camera');
+      
       const videoConstraints: MediaTrackConstraints = deviceId 
         ? { deviceId: { exact: deviceId } }
         : { facingMode: 'user' };
@@ -129,6 +131,8 @@ export function useScreenCapture() {
         audio: false,
       });
 
+      console.log('Camera access granted');
+      
       const sourceId = crypto.randomUUID();
       cameraCounterRef.current += 1;
       
@@ -163,9 +167,10 @@ export function useScreenCapture() {
       setSources(prev => [...prev, newSource]);
       return newSource;
     } catch (err) {
+      console.error('Camera access failed:', err);
       const message = err instanceof Error ? err.message : 'Failed to access camera';
       setError(message);
-      return null;
+      throw err; // Re-throw so caller can handle it
     }
   }, []);
 
