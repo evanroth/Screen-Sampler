@@ -1,11 +1,14 @@
 import { useState, useRef, useCallback } from 'react';
 import { AnimationMode, AnimationMode3D } from './useVisualizerSettings';
 
+export type SourceType = 'screen' | 'camera';
+
 export interface CaptureSource {
   id: string;
   stream: MediaStream;
   videoElement: HTMLVideoElement;
   name: string;
+  type: SourceType;
 }
 
 export interface CaptureRegion {
@@ -40,6 +43,7 @@ export function useScreenCapture() {
   const [sources, setSources] = useState<CaptureSource[]>([]);
   const [error, setError] = useState<string | null>(null);
   const sourceCounterRef = useRef(0);
+  const cameraCounterRef = useRef(0);
 
   const addSource = useCallback(async () => {
     try {
@@ -68,6 +72,7 @@ export function useScreenCapture() {
         stream: mediaStream,
         videoElement: video,
         name: displayName,
+        type: 'screen',
       };
 
       // Handle stream ending (user clicks "Stop sharing")
@@ -79,6 +84,49 @@ export function useScreenCapture() {
       return newSource;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start screen capture';
+      setError(message);
+      return null;
+    }
+  }, []);
+
+  const addCameraSource = useCallback(async () => {
+    try {
+      setError(null);
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' },
+        audio: false,
+      });
+
+      const sourceId = crypto.randomUUID();
+      cameraCounterRef.current += 1;
+      
+      // Create video element for this source
+      const video = document.createElement('video');
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = true;
+      video.srcObject = mediaStream;
+      await video.play();
+
+      const displayName = `Camera ${cameraCounterRef.current}`;
+
+      const newSource: CaptureSource = {
+        id: sourceId,
+        stream: mediaStream,
+        videoElement: video,
+        name: displayName,
+        type: 'camera',
+      };
+
+      // Handle stream ending
+      mediaStream.getVideoTracks()[0].onended = () => {
+        setSources(prev => prev.filter(s => s.id !== sourceId));
+      };
+
+      setSources(prev => [...prev, newSource]);
+      return newSource;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to access camera';
       setError(message);
       return null;
     }
@@ -100,6 +148,7 @@ export function useScreenCapture() {
     });
     setSources([]);
     sourceCounterRef.current = 0;
+    cameraCounterRef.current = 0;
   }, [sources]);
 
   const getVideoElement = useCallback((sourceId: string) => {
@@ -116,6 +165,7 @@ export function useScreenCapture() {
     stream, // Legacy: first stream for backward compatibility
     error,
     addSource,
+    addCameraSource,
     removeSource,
     stopAllCaptures,
     getVideoElement,

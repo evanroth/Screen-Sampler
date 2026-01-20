@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Check, Plus, Trash2, RotateCcw, Monitor } from 'lucide-react';
+import { Check, Plus, Trash2, RotateCcw, Monitor, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RegionSelector } from './RegionSelector';
 import { CaptureRegion, CaptureSource } from '@/hooks/useScreenCapture';
@@ -11,6 +11,7 @@ interface ScreenPreviewProps {
   onConfirmRegions: () => void;
   onResetRegions: () => void;
   onAddSource: () => void;
+  onAddCameraSource: () => void;
   onRemoveSource: (sourceId: string) => void;
   isRegionConfirmed: boolean;
 }
@@ -22,6 +23,7 @@ export function ScreenPreview({
   onConfirmRegions,
   onResetRegions,
   onAddSource,
+  onAddCameraSource,
   onRemoveSource,
   isRegionConfirmed,
 }: ScreenPreviewProps) {
@@ -128,7 +130,7 @@ export function ScreenPreview({
                 }`}
                 onClick={() => setActiveSourceId(source.id)}
               >
-                <Monitor className="w-4 h-4" />
+                {source.type === 'camera' ? <Camera className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
                 <span className="text-sm font-medium">{source.name}</span>
                 <span className="text-xs text-muted-foreground">
                   ({getRegionsForSource(source.id).length} region{getRegionsForSource(source.id).length !== 1 ? 's' : ''})
@@ -152,8 +154,17 @@ export function ScreenPreview({
               onClick={onAddSource}
               className="gap-2"
             >
-              <Plus className="w-4 h-4" />
-              Add Source
+              <Monitor className="w-4 h-4" />
+              Add Screen
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onAddCameraSource}
+              className="gap-2"
+            >
+              <Camera className="w-4 h-4" />
+              Add Camera
             </Button>
           </div>
         )}
