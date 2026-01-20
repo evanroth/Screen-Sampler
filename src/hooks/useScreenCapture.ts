@@ -1,5 +1,10 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { AnimationMode, AnimationMode3D } from './useVisualizerSettings';
+
+export interface CameraDevice {
+  deviceId: string;
+  label: string;
+}
 
 export type SourceType = 'screen' | 'camera';
 
@@ -41,9 +46,32 @@ export interface CaptureRegion {
 
 export function useScreenCapture() {
   const [sources, setSources] = useState<CaptureSource[]>([]);
+  const [availableCameras, setAvailableCameras] = useState<CameraDevice[]>([]);
   const [error, setError] = useState<string | null>(null);
   const sourceCounterRef = useRef(0);
   const cameraCounterRef = useRef(0);
+
+  // Enumerate available cameras
+  const refreshCameras = useCallback(async () => {
+    try {
+      // Request permission first to get device labels
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        .then(stream => stream.getTracks().forEach(track => track.stop()));
+      
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices
+        .filter(device => device.kind === 'videoinput')
+        .map(device => ({
+          deviceId: device.deviceId,
+          label: device.label || `Camera ${device.deviceId.slice(0, 8)}`,
+        }));
+      setAvailableCameras(cameras);
+      return cameras;
+    } catch (err) {
+      console.error('Failed to enumerate cameras:', err);
+      return [];
+    }
+  }, []);
 
   const addSource = useCallback(async () => {
     try {
@@ -89,11 +117,15 @@ export function useScreenCapture() {
     }
   }, []);
 
-  const addCameraSource = useCallback(async () => {
+  const addCameraSource = useCallback(async (deviceId?: string) => {
     try {
       setError(null);
+      const videoConstraints: MediaTrackConstraints = deviceId 
+        ? { deviceId: { exact: deviceId } }
+        : { facingMode: 'user' };
+      
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+        video: videoConstraints,
         audio: false,
       });
 
@@ -108,7 +140,12 @@ export function useScreenCapture() {
       video.srcObject = mediaStream;
       await video.play();
 
-      const displayName = `Camera ${cameraCounterRef.current}`;
+      // Get camera label from the track
+      const track = mediaStream.getVideoTracks()[0];
+      const cameraLabel = track?.label || `Camera ${cameraCounterRef.current}`;
+      const displayName = cameraLabel.length > 30 
+        ? cameraLabel.substring(0, 27) + '...' 
+        : cameraLabel;
 
       const newSource: CaptureSource = {
         id: sourceId,
@@ -161,11 +198,13 @@ export function useScreenCapture() {
 
   return {
     sources,
+    availableCameras,
     isCapturing,
     stream, // Legacy: first stream for backward compatibility
     error,
     addSource,
     addCameraSource,
+    refreshCameras,
     removeSource,
     stopAllCaptures,
     getVideoElement,
