@@ -1,7 +1,9 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import cropIcon from "@/assets/crop-icon.png";
 import tipJarIcon from "@/assets/tip-jar.png";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 interface OnboardingProps {
   onStartCapture: () => void;
@@ -11,6 +13,8 @@ interface OnboardingProps {
 const CropIcon = () => <img src={cropIcon} alt="Crop region" width={48} height={48} className="dark:invert" />;
 
 export function Onboarding({ onStartCapture }: OnboardingProps) {
+  const { isInstalled, installApp } = usePWAInstall();
+
   return (
     <div className="min-h-screen bg-muted/50 flex items-center justify-center p-4 md:p-8">
       {/* Outer hardware frame */}
@@ -65,6 +69,15 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
 
             {/* Footer Links */}
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-foreground font-mono mt-8">
+              {!isInstalled && (
+                <button
+                  onClick={installApp}
+                  className="hover:text-foreground/70 transition-colors underline underline-offset-4 inline-flex items-center gap-1 bg-transparent border-none cursor-pointer font-mono text-sm text-foreground"
+                >
+                  <Download className="w-4 h-4" />
+                  Download offline version
+                </button>
+              )}
               <a
                 href="https://github.com/evanroth/Screen-Sampler"
                 target="_blank"
