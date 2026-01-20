@@ -1,8 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Check, Plus, Trash2, RotateCcw, Monitor, Camera } from 'lucide-react';
+import { Check, Plus, Trash2, RotateCcw, Monitor, Camera, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RegionSelector } from './RegionSelector';
-import { CaptureRegion, CaptureSource } from '@/hooks/useScreenCapture';
+import { CaptureRegion, CaptureSource, CameraDevice } from '@/hooks/useScreenCapture';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ScreenPreviewProps {
   sources: CaptureSource[];
@@ -11,9 +17,11 @@ interface ScreenPreviewProps {
   onConfirmRegions: () => void;
   onResetRegions: () => void;
   onAddSource: () => void;
-  onAddCameraSource: () => void;
+  onAddCameraSource: (deviceId?: string) => void;
   onRemoveSource: (sourceId: string) => void;
   isRegionConfirmed: boolean;
+  availableCameras: CameraDevice[];
+  onRefreshCameras: () => Promise<CameraDevice[]>;
 }
 
 export function ScreenPreview({
@@ -26,6 +34,8 @@ export function ScreenPreview({
   onAddCameraSource,
   onRemoveSource,
   isRegionConfirmed,
+  availableCameras,
+  onRefreshCameras,
 }: ScreenPreviewProps) {
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const [activeRegionId, setActiveRegionId] = useState<string | null>(null);
@@ -157,15 +167,35 @@ export function ScreenPreview({
               <Monitor className="w-4 h-4" />
               Add Screen
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onAddCameraSource}
-              className="gap-2"
-            >
-              <Camera className="w-4 h-4" />
-              Add Camera
-            </Button>
+            <DropdownMenu onOpenChange={(open) => open && onRefreshCameras()}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Camera className="w-4 h-4" />
+                  Add Camera
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover border border-border z-50">
+                {availableCameras.length === 0 ? (
+                  <DropdownMenuItem onClick={() => onAddCameraSource()}>
+                    Default Camera
+                  </DropdownMenuItem>
+                ) : (
+                  availableCameras.map((camera) => (
+                    <DropdownMenuItem 
+                      key={camera.deviceId} 
+                      onClick={() => onAddCameraSource(camera.deviceId)}
+                    >
+                      {camera.label}
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
 

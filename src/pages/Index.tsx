@@ -44,8 +44,8 @@ export default function Index() {
     }
   }, [screenCapture, toast]);
 
-  const handleAddCameraSource = useCallback(async () => {
-    const source = await screenCapture.addCameraSource();
+  const handleAddCameraSource = useCallback(async (deviceId?: string) => {
+    const source = await screenCapture.addCameraSource(deviceId);
     if (source) {
       if (appState === 'onboarding') {
         setAppState('selecting');
@@ -200,7 +200,9 @@ export default function Index() {
           onAddSource={handleAddSource}
           onAddCameraSource={handleAddCameraSource}
           onRemoveSource={handleRemoveSource}
-          isRegionConfirmed={isRegionConfirmed} 
+          isRegionConfirmed={isRegionConfirmed}
+          availableCameras={screenCapture.availableCameras}
+          onRefreshCameras={screenCapture.refreshCameras}
         />
       )}
       {appState === 'visualizing' && regions.length > 0 && (
