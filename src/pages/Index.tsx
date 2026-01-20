@@ -45,14 +45,17 @@ export default function Index() {
   }, [screenCapture, toast]);
 
   const handleAddCameraSource = useCallback(async (deviceId?: string) => {
-    const source = await screenCapture.addCameraSource(deviceId);
-    if (source) {
-      if (appState === 'onboarding') {
-        setAppState('selecting');
+    try {
+      const source = await screenCapture.addCameraSource(deviceId);
+      if (source) {
+        if (appState === 'onboarding') {
+          setAppState('selecting');
+        }
+        toast({ title: `Added ${source.name}` });
       }
-      toast({ title: `Added ${source.name}` });
-    } else if (screenCapture.error) {
-      toast({ title: "Camera access failed", description: screenCapture.error, variant: "destructive" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Camera access failed';
+      toast({ title: "Camera access failed", description: message, variant: "destructive" });
     }
   }, [screenCapture, toast, appState]);
 
