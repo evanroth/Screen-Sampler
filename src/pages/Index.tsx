@@ -44,6 +44,18 @@ export default function Index() {
     }
   }, [screenCapture, toast]);
 
+  const handleAddCameraSource = useCallback(async () => {
+    const source = await screenCapture.addCameraSource();
+    if (source) {
+      if (appState === 'onboarding') {
+        setAppState('selecting');
+      }
+      toast({ title: `Added ${source.name}` });
+    } else if (screenCapture.error) {
+      toast({ title: "Camera access failed", description: screenCapture.error, variant: "destructive" });
+    }
+  }, [screenCapture, toast, appState]);
+
   const handleRemoveSource = useCallback((sourceId: string) => {
     screenCapture.removeSource(sourceId);
     // Remove regions associated with this source
@@ -177,7 +189,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      {appState === 'onboarding' && <Onboarding onStartCapture={handleStartCapture} />}
+      {appState === 'onboarding' && <Onboarding onStartCapture={handleStartCapture} onStartCamera={handleAddCameraSource} />}
       {(appState === 'selecting' || appState === 'ready') && screenCapture.sources.length > 0 && (
         <ScreenPreview 
           sources={screenCapture.sources}
@@ -186,6 +198,7 @@ export default function Index() {
           onConfirmRegions={handleConfirmRegions} 
           onResetRegions={handleResetRegions}
           onAddSource={handleAddSource}
+          onAddCameraSource={handleAddCameraSource}
           onRemoveSource={handleRemoveSource}
           isRegionConfirmed={isRegionConfirmed} 
         />

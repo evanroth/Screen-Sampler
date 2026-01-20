@@ -1,18 +1,19 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Camera } from "lucide-react";
 import cropIcon from "@/assets/crop-icon.png";
 import tipJarIcon from "@/assets/tip-jar.png";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 interface OnboardingProps {
   onStartCapture: () => void;
+  onStartCamera?: () => void;
 }
 
 // Crop icon component using the image asset
 const CropIcon = () => <img src={cropIcon} alt="Crop region" width={48} height={48} className="dark:invert" />;
 
-export function Onboarding({ onStartCapture }: OnboardingProps) {
+export function Onboarding({ onStartCapture, onStartCamera }: OnboardingProps) {
   const { isInstalled, installApp } = usePWAInstall();
 
   return (
@@ -57,14 +58,27 @@ export function Onboarding({ onStartCapture }: OnboardingProps) {
                 </div>
               </div>
 
-              {/* Start Button */}
-              <Button
-                onClick={onStartCapture}
-                size="lg"
-                className="w-full max-w-sm px-12 py-6 text-lg font-bold uppercase tracking-widest bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-none"
-              >
-                START
-              </Button>
+              {/* Start Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 max-w-sm">
+                <Button
+                  onClick={onStartCapture}
+                  size="lg"
+                  className="flex-1 px-8 py-6 text-lg font-bold uppercase tracking-widest bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-none"
+                >
+                  SCREEN
+                </Button>
+                {onStartCamera && (
+                  <Button
+                    onClick={onStartCamera}
+                    size="lg"
+                    variant="outline"
+                    className="flex-1 px-8 py-6 text-lg font-bold uppercase tracking-widest rounded-sm shadow-none gap-2"
+                  >
+                    <Camera className="w-5 h-5" />
+                    CAMERA
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Footer Links */}
