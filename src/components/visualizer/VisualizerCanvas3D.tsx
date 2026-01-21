@@ -307,15 +307,18 @@ function RegionMesh({
           mesh.position.y = 0;
           mesh.position.z = 0;
         }
-        // Apply rotation: MIDI rotation takes priority, then auto-rotate, otherwise stationary
-        if (region.midiRotationY !== undefined) {
-          mesh.rotation.y = region.midiRotationY;
-          mesh.rotation.x = Math.sin(region.midiRotationY * 0.5) * 0.1;
-        } else if (settings.autoRotateCamera) {
+        // Auto-rotate only (MIDI override applied below)
+        if (settings.autoRotateCamera) {
           mesh.rotation.y = rotateTime * speed * 0.2;
           mesh.rotation.x = Math.sin(rotateTime * speed * 0.1) * 0.1;
         }
         break;
+    }
+
+    // MIDI model rotation overrides all animation mode rotations
+    if (region.midiRotationY !== undefined) {
+      mesh.rotation.y = region.midiRotationY;
+      mesh.rotation.x = Math.sin(region.midiRotationY * 0.5) * 0.1;
     }
 
     // Apply scale with optional per-region override, morph effect, and bounce
