@@ -31,6 +31,7 @@ interface VisualizerCanvas3DProps {
   onUpdateRegion?: (regionId: string, updates: Partial<CaptureRegion>) => void;
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
   getCustomGeometry?: (modelId: string) => THREE.BufferGeometry | null;
+  midiCameraAngle?: number | null; // MIDI-controlled camera horizontal rotation
 }
 
 interface RegionTextureProps {
@@ -181,6 +182,19 @@ function RegionMesh({
       morphScale = 0.1 + distFromMid * 0.9;
     }
 
+    // Calculate MIDI bounce scale (triggered by button press, decays over 300ms)
+    let bounceScale = 1;
+    if (region.bounceTime) {
+      const elapsed = Date.now() - region.bounceTime;
+      const duration = 300; // bounce duration in ms
+      if (elapsed < duration) {
+        // Quick attack, smooth decay using sine curve
+        const progress = elapsed / duration;
+        const bounceAmount = Math.sin(progress * Math.PI) * 0.5; // 0 -> 0.5 -> 0
+        bounceScale = 1 + bounceAmount;
+      }
+    }
+
     // Audio-reactive scale
     const audioScale = 1 + audioLevel * settings.bounceStrength * 2;
     const baseScale = settings.panelScaleX;
@@ -301,9 +315,9 @@ function RegionMesh({
         break;
     }
 
-    // Apply scale with optional per-region override and morph effect
+    // Apply scale with optional per-region override, morph effect, and bounce
     const regionScale = region.scale3D ?? 1;
-    mesh.scale.setScalar(baseScale * audioScale * regionScale * morphScale);
+    mesh.scale.setScalar(baseScale * audioScale * regionScale * morphScale * bounceScale);
   });
 
   // Create custom geometries
@@ -575,13 +589,14 @@ function FullscreenBackgroundMesh({
   );
 }
 
-function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, getCustomGeometry }: {
+function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, getCustomGeometry, midiCameraAngle }: {
   regions: CaptureRegion[];
   settings: VisualizerSettings;
   audioLevel: number;
   defaultMode: AnimationMode3D;
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
   getCustomGeometry?: (modelId: string) => THREE.BufferGeometry | null;
+  midiCameraAngle?: number | null;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -590,6 +605,8 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   // Track auto-rotate state to handle smooth resume
   const wasAutoRotatingRef = useRef(settings.autoRotateCamera);
   const manualRotationAngleRef = useRef(0);
+  // Track if MIDI is controlling camera (disables auto-rotate when MIDI takes over)
+  const lastMidiAngleRef = useRef<number | null>(null);
   
   // Filter visible regions, then separate fullscreen background from normal
   const visibleRegions = regions.filter(r => r.visible !== false);
@@ -668,8 +685,26 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
       0.05
     );
     
-    // Manual auto-rotation to avoid time-based jumping
-    if (settings.autoRotateCamera && controlsRef.current) {
+    // Handle MIDI camera rotation (takes priority over auto-rotate)
+    if (midiCameraAngle !== null && midiCameraAngle !== undefined && controlsRef.current) {
+      // MIDI is controlling the camera - update position based on MIDI angle
+      const controls = controlsRef.current;
+      const distance = camera.position.distanceTo(controls.target);
+      const polarAngle = controls.getPolarAngle();
+      
+      const x = controls.target.x + distance * Math.sin(polarAngle) * Math.sin(midiCameraAngle);
+      const y = controls.target.y + distance * Math.cos(polarAngle);
+      const z = controls.target.z + distance * Math.sin(polarAngle) * Math.cos(midiCameraAngle);
+      
+      camera.position.set(x, y, z);
+      camera.lookAt(controls.target);
+      
+      // Sync manual rotation angle so auto-rotate can resume smoothly
+      manualRotationAngleRef.current = midiCameraAngle;
+      lastMidiAngleRef.current = midiCameraAngle;
+    }
+    // Manual auto-rotation to avoid time-based jumping (only if MIDI not controlling)
+    else if (settings.autoRotateCamera && controlsRef.current) {
       // Disable built-in autoRotate and do it manually
       const rotationSpeed = settings.autoRotateCameraSpeed * delta * 0.5;
       manualRotationAngleRef.current += rotationSpeed;
@@ -744,6 +779,7 @@ export function VisualizerCanvas3D({
   onUpdateRegion,
   getVideoElement,
   getCustomGeometry,
+  midiCameraAngle,
 }: VisualizerCanvas3DProps) {
   const [currentDefaultMode, setCurrentDefaultMode] = useState<AnimationMode3D>(
     settings.animationMode3D === 'random3D' 
@@ -893,6 +929,7 @@ export function VisualizerCanvas3D({
           defaultMode={currentDefaultMode}
           getVideoElement={getVideoElement}
           getCustomGeometry={getCustomGeometry}
+          midiCameraAngle={midiCameraAngle}
         />
       </Canvas>
     </div>

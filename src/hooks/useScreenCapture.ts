@@ -43,6 +43,7 @@ export interface CaptureRegion {
   animationMode2D?: AnimationMode; // Per-region 2D animation mode
   transitionFrozen?: boolean; // True when position should be frozen during transition
   customModelId?: string; // ID of custom 3D model to use instead of built-in shapes
+  bounceTime?: number; // Timestamp when bounce was triggered (for animation)
 }
 
 export function useScreenCapture() {

@@ -42,6 +42,20 @@ export default function Index() {
   
   const { settings, updateSetting, loadSettings, resetSettings } = useVisualizerSettings(initialSettings);
 
+  // Camera rotation ref for MIDI control (passed to VisualizerCanvas3D)
+  const [midiCameraAngle, setMidiCameraAngle] = useState<number | null>(null);
+
+  // Bounce trigger handler
+  const handleTriggerBounce = useCallback((regionIndex: number | 'all') => {
+    const now = Date.now();
+    setRegions(prev => prev.map((r, i) => {
+      if (regionIndex === 'all' || i === regionIndex) {
+        return { ...r, bounceTime: now };
+      }
+      return r;
+    }));
+  }, []);
+
   // MIDI control
   const midiMappings = useMidiMappings({
     settings,
@@ -50,6 +64,8 @@ export default function Index() {
     onUpdateRegion: (regionId, updates) => {
       setRegions(prev => prev.map(r => r.id === regionId ? { ...r, ...updates } : r));
     },
+    onCameraRotation: setMidiCameraAngle,
+    onTriggerBounce: handleTriggerBounce,
   });
   
   const midi = useMidi(midiMappings.handleMidiMessage);
@@ -278,6 +294,7 @@ export default function Index() {
             onUpdateRegion={handleUpdateRegion}
             getVideoElement={screenCapture.getVideoElement}
             getCustomGeometry={customModels.getGeometry}
+            midiCameraAngle={midiCameraAngle}
           />
         ) : (
           <VisualizerCanvas 
