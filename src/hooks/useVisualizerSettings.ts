@@ -163,14 +163,22 @@ const defaultSettings: VisualizerSettings = {
   },
 };
 
-export function useVisualizerSettings() {
-  const [settings, setSettings] = useState<VisualizerSettings>(defaultSettings);
+export function useVisualizerSettings(initialSettings?: Partial<VisualizerSettings>) {
+  const [settings, setSettings] = useState<VisualizerSettings>(() => ({
+    ...defaultSettings,
+    ...initialSettings,
+  }));
 
   const updateSetting = useCallback(<K extends keyof VisualizerSettings>(
     key: K,
     value: VisualizerSettings[K]
   ) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const loadSettings = useCallback((newSettings: VisualizerSettings) => {
+    // Merge with defaults to handle any missing properties from older saves
+    setSettings({ ...defaultSettings, ...newSettings });
   }, []);
 
   const resetSettings = useCallback(() => {
@@ -180,6 +188,7 @@ export function useVisualizerSettings() {
   return {
     settings,
     updateSetting,
+    loadSettings,
     resetSettings,
   };
 }

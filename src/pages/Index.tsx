@@ -1,9 +1,10 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useScreenCapture, CaptureRegion } from '@/hooks/useScreenCapture';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useVisualizerSettings, ANIMATION_MODES, ANIMATION_MODES_3D } from '@/hooks/useVisualizerSettings';
 import { useRegionRandomizer } from '@/hooks/useRegionRandomizer';
 import { usePlayMode } from '@/hooks/usePlayMode';
+import { useSettingsStorage } from '@/hooks/useSettingsStorage';
 import { Onboarding } from '@/components/visualizer/Onboarding';
 import { ScreenPreview } from '@/components/visualizer/ScreenPreview';
 import { VisualizerCanvas } from '@/components/visualizer/VisualizerCanvas';
@@ -22,7 +23,50 @@ export default function Index() {
   const { toast } = useToast();
   const screenCapture = useScreenCapture();
   const audioAnalyzer = useAudioAnalyzer();
-  const { settings, updateSetting, resetSettings } = useVisualizerSettings();
+  
+  // Settings storage for presets and session restore
+  const storage = useSettingsStorage();
+  
+  // Initialize settings with last session if auto-restore is enabled
+  const initialSettings = useMemo(() => {
+    if (storage.autoRestore) {
+      const lastSession = storage.loadLastSession();
+      if (lastSession) return lastSession;
+    }
+    return undefined;
+  }, []); // Only run once on mount
+  
+  const { settings, updateSetting, loadSettings, resetSettings } = useVisualizerSettings(initialSettings);
+
+  // Auto-save session when settings change (debounced)
+  useEffect(() => {
+    if (storage.autoRestore) {
+      const timeout = setTimeout(() => {
+        storage.saveLastSession(settings);
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [settings, storage.autoRestore]);
+
+  // Preset handlers
+  const handleLoadPreset = useCallback((id: string) => {
+    const presetSettings = storage.loadPreset(id);
+    if (presetSettings) {
+      loadSettings(presetSettings);
+      toast({ title: "Preset loaded" });
+    }
+  }, [storage, loadSettings, toast]);
+
+  const handleSavePreset = useCallback((name: string) => {
+    const preset = storage.savePreset(name, settings);
+    toast({ title: `Saved "${preset.name}"` });
+    return preset;
+  }, [storage, settings, toast]);
+
+  const handleDeletePreset = useCallback((id: string) => {
+    storage.deletePreset(id);
+    toast({ title: "Preset deleted" });
+  }, [storage, toast]);
 
   const handleStartCapture = useCallback(async () => {
     const source = await screenCapture.addSource();
@@ -250,6 +294,12 @@ export default function Index() {
           regionCount={regions.length}
           regions={regions}
           onUpdateRegion={handleUpdateRegion}
+          presets={storage.presets}
+          autoRestore={storage.autoRestore}
+          onSavePreset={handleSavePreset}
+          onLoadPreset={handleLoadPreset}
+          onDeletePreset={handleDeletePreset}
+          onToggleAutoRestore={storage.toggleAutoRestore}
         />
       )}
     </div>
