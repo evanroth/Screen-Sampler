@@ -580,6 +580,10 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   const controlsRef = useRef<any>(null);
   const meshGroupRef = useRef<THREE.Group>(null);
   
+  // Track auto-rotate state to handle smooth resume
+  const wasAutoRotatingRef = useRef(settings.autoRotateCamera);
+  const manualRotationAngleRef = useRef(0);
+  
   // Filter visible regions, then separate fullscreen background from normal
   const visibleRegions = regions.filter(r => r.visible !== false);
   const backgroundRegions = visibleRegions.filter(r => r.fullscreenBackground);
@@ -610,8 +614,31 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
     camera.position.set(0, 0, cameraZ);
   }, [camera, regions, settings.regionSpacing3D, settings.panelScaleX]);
 
+  // Handle auto-rotate toggle to prevent jumping
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    
+    const wasAutoRotating = wasAutoRotatingRef.current;
+    const isAutoRotating = settings.autoRotateCamera;
+    
+    if (wasAutoRotating && !isAutoRotating) {
+      // Turning OFF: Save current azimuthal angle
+      manualRotationAngleRef.current = controls.getAzimuthalAngle();
+    } else if (!wasAutoRotating && isAutoRotating) {
+      // Turning ON: Reset the internal auto-rotate time offset
+      // OrbitControls uses performance.now() internally, so we need to 
+      // manually rotate to match current position before enabling
+      // This is done by updating the controls after a microtask
+      const currentAngle = controls.getAzimuthalAngle();
+      manualRotationAngleRef.current = currentAngle;
+    }
+    
+    wasAutoRotatingRef.current = isAutoRotating;
+  }, [settings.autoRotateCamera]);
+
   // Update OrbitControls target to center of all meshes
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!controlsRef.current || !meshGroupRef.current) return;
     
     const children = meshGroupRef.current.children;
@@ -633,6 +660,26 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
       new THREE.Vector3(centerX, centerY, centerZ),
       0.05
     );
+    
+    // Manual auto-rotation to avoid time-based jumping
+    if (settings.autoRotateCamera && controlsRef.current) {
+      // Disable built-in autoRotate and do it manually
+      const rotationSpeed = settings.autoRotateCameraSpeed * delta * 0.5;
+      manualRotationAngleRef.current += rotationSpeed;
+      
+      // Get current distance and polar angle
+      const controls = controlsRef.current;
+      const distance = camera.position.distanceTo(controls.target);
+      const polarAngle = controls.getPolarAngle();
+      
+      // Calculate new position based on accumulated angle
+      const x = controls.target.x + distance * Math.sin(polarAngle) * Math.sin(manualRotationAngleRef.current);
+      const y = controls.target.y + distance * Math.cos(polarAngle);
+      const z = controls.target.z + distance * Math.sin(polarAngle) * Math.cos(manualRotationAngleRef.current);
+      
+      camera.position.set(x, y, z);
+      camera.lookAt(controls.target);
+    }
   });
 
   return (
@@ -675,8 +722,8 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
         zoomSpeed={0.5}
         enablePan={true}
         panSpeed={0.5}
-        autoRotate={settings.autoRotateCamera}
-        autoRotateSpeed={settings.autoRotateCameraSpeed}
+        autoRotate={false}
+        autoRotateSpeed={0}
       />
     </>
   );
