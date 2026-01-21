@@ -11,7 +11,8 @@ import { VisualizerSettings, BackgroundStyle, TileEffect, AnimationMode, Animati
 import { CaptureRegion } from '@/hooks/useScreenCapture';
 import { cn } from '@/lib/utils';
 import { ColorPicker } from '@/components/ui/color-picker';
-
+import { PresetsSection } from './PresetsSection';
+import { SavedPreset } from '@/hooks/useSettingsStorage';
 interface ControlPanelProps {
   isOpen: boolean;
   onToggle: () => void;
@@ -33,6 +34,13 @@ interface ControlPanelProps {
   regionCount: number;
   regions?: CaptureRegion[];
   onUpdateRegion?: (regionId: string, updates: Partial<CaptureRegion>) => void;
+  // Presets
+  presets: SavedPreset[];
+  autoRestore: boolean;
+  onSavePreset: (name: string, settings: VisualizerSettings) => SavedPreset;
+  onLoadPreset: (id: string) => void;
+  onDeletePreset: (id: string) => void;
+  onToggleAutoRestore: (enabled: boolean) => void;
 }
 
 export function ControlPanel({
@@ -51,6 +59,12 @@ export function ControlPanel({
   onToggleFullscreen,
   onReselectRegion,
   onUpdateSetting,
+  presets,
+  autoRestore,
+  onSavePreset,
+  onLoadPreset,
+  onDeletePreset,
+  onToggleAutoRestore,
   onResetSettings,
   hasRegions,
   regionCount,
@@ -1294,6 +1308,19 @@ export function ControlPanel({
               </>
             )}
           </div>
+
+          <Separator className="bg-border" />
+
+          {/* Presets Section */}
+          <PresetsSection
+            presets={presets}
+            autoRestore={autoRestore}
+            onSavePreset={onSavePreset}
+            onLoadPreset={onLoadPreset}
+            onDeletePreset={onDeletePreset}
+            onToggleAutoRestore={onToggleAutoRestore}
+            currentSettings={settings}
+          />
 
           <Separator className="bg-border" />
 
