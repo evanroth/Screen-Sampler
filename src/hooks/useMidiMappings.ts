@@ -10,7 +10,8 @@ export type MidiTargetType =
   | 'regionVisibility' // Toggle region visibility
   | 'regionSetting' // Per-region slider (scale3D)
   | 'regionBounce' // Trigger single bounce on region
-  | 'cameraRotation'; // Horizontal camera rotation
+  | 'cameraRotation' // Horizontal camera rotation
+  | 'modelRotation'; // Per-region model Y rotation (like horizontal mouse drag)
 
 export interface MidiMapping {
   id: string;
@@ -66,6 +67,18 @@ export const MAPPABLE_CONTROLS: MappableControl[] = [
   
   // Camera horizontal rotation (CC - knob controls azimuthal angle)
   { id: 'cameraRotation', name: 'Camera Rotation', targetType: 'cameraRotation', targetKey: 'azimuth', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
+  
+  // Per-region model rotation (CC - knob controls model Y rotation, like horizontal mouse drag)
+  { id: 'region1Rotation', name: 'Rotate Model 1', targetType: 'modelRotation', targetKey: '0', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
+  { id: 'region2Rotation', name: 'Rotate Model 2', targetType: 'modelRotation', targetKey: '1', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
+  { id: 'region3Rotation', name: 'Rotate Model 3', targetType: 'modelRotation', targetKey: '2', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
+  { id: 'region4Rotation', name: 'Rotate Model 4', targetType: 'modelRotation', targetKey: '3', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
+  { id: 'region5Rotation', name: 'Rotate Model 5', targetType: 'modelRotation', targetKey: '4', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
+  { id: 'region6Rotation', name: 'Rotate Model 6', targetType: 'modelRotation', targetKey: '5', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
+  { id: 'region7Rotation', name: 'Rotate Model 7', targetType: 'modelRotation', targetKey: '6', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
+  { id: 'region8Rotation', name: 'Rotate Model 8', targetType: 'modelRotation', targetKey: '7', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
+  { id: 'region9Rotation', name: 'Rotate Model 9', targetType: 'modelRotation', targetKey: '8', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
+  { id: 'allModelsRotation', name: 'Rotate All Models', targetType: 'modelRotation', targetKey: 'all', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
   
   // Global settings - toggles (Note On)
   { id: 'enableRotation', name: 'Enable Rotation', targetType: 'setting', targetKey: 'enableRotation', preferredMessageType: 'noteon' },
@@ -402,6 +415,28 @@ export function useMidiMappings({
           const normalizedValue = message.value / 127;
           const angle = mapping.min + normalizedValue * (mapping.max - mapping.min);
           onCameraRotation(angle);
+        }
+        break;
+      }
+      
+      case 'modelRotation': {
+        // Control per-region model Y rotation via CC (like horizontal mouse drag)
+        if (mapping.messageType === 'cc' && mapping.min !== undefined && mapping.max !== undefined) {
+          const normalizedValue = message.value / 127;
+          const angle = mapping.min + normalizedValue * (mapping.max - mapping.min);
+          
+          if (mapping.targetKey === 'all') {
+            // Rotate all regions
+            currentRegions.forEach(region => {
+              onUpdateRegion(region.id, { midiRotationY: angle });
+            });
+          } else {
+            const regionIndex = parseInt(mapping.targetKey, 10);
+            const region = currentRegions[regionIndex];
+            if (region) {
+              onUpdateRegion(region.id, { midiRotationY: angle });
+            }
+          }
         }
         break;
       }

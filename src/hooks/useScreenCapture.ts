@@ -44,6 +44,7 @@ export interface CaptureRegion {
   transitionFrozen?: boolean; // True when position should be frozen during transition
   customModelId?: string; // ID of custom 3D model to use instead of built-in shapes
   bounceTime?: number; // Timestamp when bounce was triggered (for animation)
+  midiRotationY?: number; // MIDI-controlled Y-axis rotation (like horizontal mouse drag)
 }
 
 export function useScreenCapture() {

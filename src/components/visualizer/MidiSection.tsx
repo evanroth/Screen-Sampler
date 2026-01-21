@@ -178,6 +178,12 @@ export function MidiSection({
       const regionIndex = parseInt(control.targetKey, 10);
       return regionIndex < regionCount;
     }
+    // Filter per-region settings (scale, bounce, rotation) by region count
+    if (control.targetType === 'regionSetting' || control.targetType === 'regionBounce' || control.targetType === 'modelRotation') {
+      if (control.targetKey === 'all') return regionCount > 0;
+      const regionIndex = parseInt(control.targetKey, 10);
+      return regionIndex < regionCount;
+    }
     return true;
   });
   
@@ -190,6 +196,7 @@ export function MidiSection({
   );
   const modeControls = visibleControls.filter(c => c.targetType === 'settingSelect');
   const regionControls = visibleControls.filter(c => c.targetType === 'regionVisibility');
+  const modelRotationControls = visibleControls.filter(c => c.targetType === 'modelRotation');
   
   const hasMappings = visibleControls.some(c => getMappingForControl(c.id));
 
@@ -318,6 +325,27 @@ export function MidiSection({
                   <div className="space-y-1">
                     <div className="text-xs font-medium text-muted-foreground mb-2">Modes (Note/CC)</div>
                     {modeControls.map((control) => (
+                      <MappingRow
+                        key={control.id}
+                        controlId={control.id}
+                        control={control}
+                        mapping={getMappingForControl(control.id)}
+                        isLearning={learnMode === control.id}
+                        lastMessage={learnMode === control.id ? lastMessage : null}
+                        onStartLearn={() => onStartLearn(control.id)}
+                        onCancelLearn={onCancelLearn}
+                        onRemove={() => onRemoveMapping(control.id)}
+                        disabled={!activeDeviceId}
+                      />
+                    ))}
+                  </div>
+                )}
+                
+                {/* Model Rotation */}
+                {modelRotationControls.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Model Rotation (CC)</div>
+                    {modelRotationControls.map((control) => (
                       <MappingRow
                         key={control.id}
                         controlId={control.id}
