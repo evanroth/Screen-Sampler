@@ -13,8 +13,11 @@ import { cn } from '@/lib/utils';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { PresetsSection } from './PresetsSection';
 import { CustomModelsSection } from './CustomModelsSection';
+import { MidiSection } from './MidiSection';
 import { SavedPreset } from '@/hooks/useSettingsStorage';
 import { CustomModel } from '@/hooks/useCustomModels';
+import { MidiDevice, MidiMessage } from '@/hooks/useMidi';
+import { MidiMapping } from '@/hooks/useMidiMappings';
 
 interface ControlPanelProps {
   isOpen: boolean;
@@ -51,6 +54,22 @@ interface ControlPanelProps {
   onAddCustomModel: (file: File) => Promise<CustomModel | null>;
   onDeleteCustomModel: (modelId: string) => void;
   onClearCustomModelsError: () => void;
+  // MIDI
+  midiSupported: boolean;
+  midiEnabled: boolean;
+  midiDevices: MidiDevice[];
+  midiActiveDeviceId: string | null;
+  midiLastMessage: MidiMessage | null;
+  midiError: string | null;
+  onMidiEnable: () => Promise<boolean>;
+  onMidiDisable: () => void;
+  onMidiSelectDevice: (deviceId: string | null) => void;
+  midiLearnMode: string | null;
+  onMidiStartLearn: (controlId: string) => void;
+  onMidiCancelLearn: () => void;
+  onMidiRemoveMapping: (controlId: string) => void;
+  onMidiClearAllMappings: () => void;
+  getMidiMappingForControl: (controlId: string) => MidiMapping | undefined;
 }
 
 export function ControlPanel({
@@ -86,6 +105,21 @@ export function ControlPanel({
   onAddCustomModel,
   onDeleteCustomModel,
   onClearCustomModelsError,
+  midiSupported,
+  midiEnabled,
+  midiDevices,
+  midiActiveDeviceId,
+  midiLastMessage,
+  midiError,
+  onMidiEnable,
+  onMidiDisable,
+  onMidiSelectDevice,
+  midiLearnMode,
+  onMidiStartLearn,
+  onMidiCancelLearn,
+  onMidiRemoveMapping,
+  onMidiClearAllMappings,
+  getMidiMappingForControl,
 }: ControlPanelProps) {
   return (
     <>
@@ -1382,6 +1416,28 @@ export function ControlPanel({
             onDeletePreset={onDeletePreset}
             onToggleAutoRestore={onToggleAutoRestore}
             currentSettings={settings}
+          />
+
+          <Separator className="bg-border" />
+
+          {/* MIDI Control */}
+          <MidiSection
+            isSupported={midiSupported}
+            isEnabled={midiEnabled}
+            devices={midiDevices}
+            activeDeviceId={midiActiveDeviceId}
+            lastMessage={midiLastMessage}
+            error={midiError}
+            onEnable={onMidiEnable}
+            onDisable={onMidiDisable}
+            onSelectDevice={onMidiSelectDevice}
+            learnMode={midiLearnMode}
+            onStartLearn={onMidiStartLearn}
+            onCancelLearn={onMidiCancelLearn}
+            onRemoveMapping={onMidiRemoveMapping}
+            onClearAllMappings={onMidiClearAllMappings}
+            getMappingForControl={getMidiMappingForControl}
+            regionCount={regionCount}
           />
 
           <Separator className="bg-border" />

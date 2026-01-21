@@ -6,6 +6,8 @@ import { useRegionRandomizer } from '@/hooks/useRegionRandomizer';
 import { usePlayMode } from '@/hooks/usePlayMode';
 import { useSettingsStorage } from '@/hooks/useSettingsStorage';
 import { useCustomModels } from '@/hooks/useCustomModels';
+import { useMidi } from '@/hooks/useMidi';
+import { useMidiMappings } from '@/hooks/useMidiMappings';
 import { Onboarding } from '@/components/visualizer/Onboarding';
 import { ScreenPreview } from '@/components/visualizer/ScreenPreview';
 import { VisualizerCanvas } from '@/components/visualizer/VisualizerCanvas';
@@ -39,6 +41,18 @@ export default function Index() {
   }, []); // Only run once on mount
   
   const { settings, updateSetting, loadSettings, resetSettings } = useVisualizerSettings(initialSettings);
+
+  // MIDI control
+  const midiMappings = useMidiMappings({
+    settings,
+    regions,
+    onUpdateSetting: updateSetting,
+    onUpdateRegion: (regionId, updates) => {
+      setRegions(prev => prev.map(r => r.id === regionId ? { ...r, ...updates } : r));
+    },
+  });
+  
+  const midi = useMidi(midiMappings.handleMidiMessage);
 
   // Auto-save session when settings change (debounced)
   useEffect(() => {
@@ -309,6 +323,21 @@ export default function Index() {
           onAddCustomModel={customModels.addModel}
           onDeleteCustomModel={customModels.deleteModel}
           onClearCustomModelsError={customModels.clearError}
+          midiSupported={midi.isSupported}
+          midiEnabled={midi.isEnabled}
+          midiDevices={midi.devices}
+          midiActiveDeviceId={midi.activeDeviceId}
+          midiLastMessage={midi.lastMessage}
+          midiError={midi.error}
+          onMidiEnable={midi.enable}
+          onMidiDisable={midi.disable}
+          onMidiSelectDevice={midi.selectDevice}
+          midiLearnMode={midiMappings.learnMode}
+          onMidiStartLearn={midiMappings.startLearn}
+          onMidiCancelLearn={midiMappings.cancelLearn}
+          onMidiRemoveMapping={midiMappings.removeMapping}
+          onMidiClearAllMappings={midiMappings.clearAllMappings}
+          getMidiMappingForControl={midiMappings.getMappingForControl}
         />
       )}
     </div>
