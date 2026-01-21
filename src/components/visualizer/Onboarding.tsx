@@ -7,7 +7,7 @@ import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 interface OnboardingProps {
   onStartCapture: () => void;
-  onStartCamera?: () => void;
+  onStartCamera?: () => Promise<void>;
 }
 
 // Crop icon component using the image asset
@@ -69,7 +69,9 @@ export function Onboarding({ onStartCapture, onStartCamera }: OnboardingProps) {
                 </Button>
                 {onStartCamera && (
                   <Button
-                    onClick={onStartCamera}
+                    onClick={() => {
+                      onStartCamera().catch(console.error);
+                    }}
                     size="lg"
                     variant="outline"
                     className="flex-1 px-8 py-6 text-lg font-bold uppercase tracking-widest rounded-sm shadow-none gap-2"
