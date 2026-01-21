@@ -5,6 +5,7 @@ import { useVisualizerSettings, ANIMATION_MODES, ANIMATION_MODES_3D } from '@/ho
 import { useRegionRandomizer } from '@/hooks/useRegionRandomizer';
 import { usePlayMode } from '@/hooks/usePlayMode';
 import { useSettingsStorage } from '@/hooks/useSettingsStorage';
+import { useCustomModels } from '@/hooks/useCustomModels';
 import { Onboarding } from '@/components/visualizer/Onboarding';
 import { ScreenPreview } from '@/components/visualizer/ScreenPreview';
 import { VisualizerCanvas } from '@/components/visualizer/VisualizerCanvas';
@@ -23,6 +24,7 @@ export default function Index() {
   const { toast } = useToast();
   const screenCapture = useScreenCapture();
   const audioAnalyzer = useAudioAnalyzer();
+  const customModels = useCustomModels();
   
   // Settings storage for presets and session restore
   const storage = useSettingsStorage();
@@ -261,6 +263,7 @@ export default function Index() {
             isActive={true}
             onUpdateRegion={handleUpdateRegion}
             getVideoElement={screenCapture.getVideoElement}
+            getCustomGeometry={customModels.getGeometry}
           />
         ) : (
           <VisualizerCanvas 
@@ -300,6 +303,12 @@ export default function Index() {
           onLoadPreset={handleLoadPreset}
           onDeletePreset={handleDeletePreset}
           onToggleAutoRestore={storage.toggleAutoRestore}
+          customModels={customModels.models}
+          customModelsLoading={customModels.isLoading}
+          customModelsError={customModels.error}
+          onAddCustomModel={customModels.addModel}
+          onDeleteCustomModel={customModels.deleteModel}
+          onClearCustomModelsError={customModels.clearError}
         />
       )}
     </div>

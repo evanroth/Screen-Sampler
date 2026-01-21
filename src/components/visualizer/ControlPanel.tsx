@@ -12,7 +12,10 @@ import { CaptureRegion } from '@/hooks/useScreenCapture';
 import { cn } from '@/lib/utils';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { PresetsSection } from './PresetsSection';
+import { CustomModelsSection } from './CustomModelsSection';
 import { SavedPreset } from '@/hooks/useSettingsStorage';
+import { CustomModel } from '@/hooks/useCustomModels';
+
 interface ControlPanelProps {
   isOpen: boolean;
   onToggle: () => void;
@@ -41,6 +44,13 @@ interface ControlPanelProps {
   onLoadPreset: (id: string) => void;
   onDeletePreset: (id: string) => void;
   onToggleAutoRestore: (enabled: boolean) => void;
+  // Custom 3D Models
+  customModels: CustomModel[];
+  customModelsLoading: boolean;
+  customModelsError: string | null;
+  onAddCustomModel: (file: File) => Promise<CustomModel | null>;
+  onDeleteCustomModel: (modelId: string) => void;
+  onClearCustomModelsError: () => void;
 }
 
 export function ControlPanel({
@@ -70,6 +80,12 @@ export function ControlPanel({
   regionCount,
   regions = [],
   onUpdateRegion,
+  customModels,
+  customModelsLoading,
+  customModelsError,
+  onAddCustomModel,
+  onDeleteCustomModel,
+  onClearCustomModelsError,
 }: ControlPanelProps) {
   return (
     <>
@@ -929,60 +945,94 @@ export function ControlPanel({
                             <span className="text-xs text-muted-foreground opacity-50">({index + 1})</span>
                           </div>
                         </div>
-                        <Select
-                          value={region.animationMode3D || 'default'}
-                          onValueChange={(v) => {
-                            if (onUpdateRegion) {
-                              onUpdateRegion(region.id, { 
-                                animationMode3D: v === 'default' ? undefined : v as AnimationMode3D 
-                              });
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="bg-secondary border-border">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="default">Default (Use Global)</SelectItem>
-                            <SelectItem value="floating3D">Floating Panels</SelectItem>
-                            <SelectItem value="orbit3D">Orbit Panel</SelectItem>
-                            <SelectItem value="wave3D">Wave Panel</SelectItem>
-                            <SelectItem value="sphere3D">Sphere</SelectItem>
-                            <SelectItem value="cube3D">Cube</SelectItem>
-                            <SelectItem value="cylinder3D">Cylinder</SelectItem>
-                            <SelectItem value="torus3D">Torus</SelectItem>
-                            <SelectItem value="pyramid3D">Pyramid</SelectItem>
-                            <SelectItem value="cone3D">Cone</SelectItem>
-                            <SelectItem value="dodecahedron3D">Dodecahedron</SelectItem>
-                            <SelectItem value="icosahedron3D">Icosahedron</SelectItem>
-                            <SelectItem value="octahedron3D">Octahedron</SelectItem>
-                            <SelectItem value="tetrahedron3D">Tetrahedron</SelectItem>
-                            <SelectItem value="torusKnot3D">Torus Knot</SelectItem>
-                            <SelectItem value="trefoil3D">Trefoil Knot</SelectItem>
-                            <SelectItem value="cinquefoil3D">Cinquefoil Knot</SelectItem>
-                            <SelectItem value="septafoil3D">Septafoil Knot</SelectItem>
-                            <SelectItem value="figure8_3D">Figure-8 Knot</SelectItem>
-                            <SelectItem value="granny3D">Granny Knot</SelectItem>
-                            <SelectItem value="lissajous3D">Lissajous Knot</SelectItem>
-                            <SelectItem value="capsule3D">Capsule</SelectItem>
-                            <SelectItem value="ring3D">Ring</SelectItem>
-                            <SelectItem value="mobius3D">Möbius</SelectItem>
-                            <SelectItem value="greatDodecahedron3D">Great Dodecahedron</SelectItem>
-                            <SelectItem value="greatIcosahedron3D">Great Icosahedron</SelectItem>
-                            <SelectItem value="greatStellatedDodecahedron3D">Great Stellated Dodecahedron</SelectItem>
-                            <SelectItem value="tripleTwistMobius3D">Triple Twist Möbius</SelectItem>
-                            <SelectItem value="verrill3D">Verrill Surface</SelectItem>
-                            <SelectItem value="doubleTrefoil3D">Double Trefoil</SelectItem>
-                            <SelectItem value="schwarzP3D">Schwarz P Surface</SelectItem>
-                            <SelectItem value="enneper3D">Enneper Surface</SelectItem>
-                            <SelectItem value="boysSurface3D">Boy's Surface</SelectItem>
-                            <SelectItem value="cliffordTorus3D">Clifford Torus</SelectItem>
-                            <SelectItem value="hyperbolicParaboloid3D">Hyperbolic Paraboloid</SelectItem>
-                            <SelectItem value="hyperboloidOneSheet3D">Hyperboloid</SelectItem>
-                            <SelectItem value="steiner3D">Steiner Surface</SelectItem>
-                            <SelectItem value="helicoid3D">Helicoid</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {/* Custom Model Selector - Only show when not using animation modes */}
+                        {customModels.length > 0 && (
+                          <div className="space-y-1">
+                            <span className="text-xs text-muted-foreground">Custom Model</span>
+                            <Select
+                              value={region.customModelId || 'none'}
+                              onValueChange={(v) => {
+                                if (onUpdateRegion) {
+                                  onUpdateRegion(region.id, { 
+                                    customModelId: v === 'none' ? undefined : v,
+                                    // When selecting a custom model, set animation to a static shape mode
+                                    animationMode3D: v !== 'none' ? 'cube3D' : region.animationMode3D
+                                  });
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="bg-secondary border-border h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">None (Use Built-in Shape)</SelectItem>
+                                {customModels.map((model) => (
+                                  <SelectItem key={model.id} value={model.id}>
+                                    {model.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        
+                        {/* Only show animation mode if not using custom model */}
+                        {!region.customModelId && (
+                          <Select
+                            value={region.animationMode3D || 'default'}
+                            onValueChange={(v) => {
+                              if (onUpdateRegion) {
+                                onUpdateRegion(region.id, { 
+                                  animationMode3D: v === 'default' ? undefined : v as AnimationMode3D 
+                                });
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="bg-secondary border-border">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="default">Default (Use Global)</SelectItem>
+                              <SelectItem value="floating3D">Floating Panels</SelectItem>
+                              <SelectItem value="orbit3D">Orbit Panel</SelectItem>
+                              <SelectItem value="wave3D">Wave Panel</SelectItem>
+                              <SelectItem value="sphere3D">Sphere</SelectItem>
+                              <SelectItem value="cube3D">Cube</SelectItem>
+                              <SelectItem value="cylinder3D">Cylinder</SelectItem>
+                              <SelectItem value="torus3D">Torus</SelectItem>
+                              <SelectItem value="pyramid3D">Pyramid</SelectItem>
+                              <SelectItem value="cone3D">Cone</SelectItem>
+                              <SelectItem value="dodecahedron3D">Dodecahedron</SelectItem>
+                              <SelectItem value="icosahedron3D">Icosahedron</SelectItem>
+                              <SelectItem value="octahedron3D">Octahedron</SelectItem>
+                              <SelectItem value="tetrahedron3D">Tetrahedron</SelectItem>
+                              <SelectItem value="torusKnot3D">Torus Knot</SelectItem>
+                              <SelectItem value="trefoil3D">Trefoil Knot</SelectItem>
+                              <SelectItem value="cinquefoil3D">Cinquefoil Knot</SelectItem>
+                              <SelectItem value="septafoil3D">Septafoil Knot</SelectItem>
+                              <SelectItem value="figure8_3D">Figure-8 Knot</SelectItem>
+                              <SelectItem value="granny3D">Granny Knot</SelectItem>
+                              <SelectItem value="lissajous3D">Lissajous Knot</SelectItem>
+                              <SelectItem value="capsule3D">Capsule</SelectItem>
+                              <SelectItem value="ring3D">Ring</SelectItem>
+                              <SelectItem value="mobius3D">Möbius</SelectItem>
+                              <SelectItem value="greatDodecahedron3D">Great Dodecahedron</SelectItem>
+                              <SelectItem value="greatIcosahedron3D">Great Icosahedron</SelectItem>
+                              <SelectItem value="greatStellatedDodecahedron3D">Great Stellated Dodecahedron</SelectItem>
+                              <SelectItem value="tripleTwistMobius3D">Triple Twist Möbius</SelectItem>
+                              <SelectItem value="verrill3D">Verrill Surface</SelectItem>
+                              <SelectItem value="doubleTrefoil3D">Double Trefoil</SelectItem>
+                              <SelectItem value="schwarzP3D">Schwarz P Surface</SelectItem>
+                              <SelectItem value="enneper3D">Enneper Surface</SelectItem>
+                              <SelectItem value="boysSurface3D">Boy's Surface</SelectItem>
+                              <SelectItem value="cliffordTorus3D">Clifford Torus</SelectItem>
+                              <SelectItem value="hyperbolicParaboloid3D">Hyperbolic Paraboloid</SelectItem>
+                              <SelectItem value="hyperboloidOneSheet3D">Hyperboloid</SelectItem>
+                              <SelectItem value="steiner3D">Steiner Surface</SelectItem>
+                              <SelectItem value="helicoid3D">Helicoid</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
 
                         {/* Randomize Controls */}
                         <div className="mt-2 space-y-2 pl-2 border-l-2 border-border">
@@ -1301,6 +1351,18 @@ export function ControlPanel({
                     step={0.5}
                   />
                 </div>
+
+                <Separator className="bg-border" />
+
+                {/* Custom 3D Models */}
+                <CustomModelsSection
+                  models={customModels}
+                  isLoading={customModelsLoading}
+                  error={customModelsError}
+                  onAddModel={onAddCustomModel}
+                  onDeleteModel={onDeleteCustomModel}
+                  onClearError={onClearCustomModelsError}
+                />
 
                 <p className="text-xs text-muted-foreground">
                   Tip: Click and drag to rotate view.

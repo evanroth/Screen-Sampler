@@ -30,6 +30,7 @@ interface VisualizerCanvas3DProps {
   isActive: boolean;
   onUpdateRegion?: (regionId: string, updates: Partial<CaptureRegion>) => void;
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
+  getCustomGeometry?: (modelId: string) => THREE.BufferGeometry | null;
 }
 
 interface RegionTextureProps {
@@ -40,6 +41,7 @@ interface RegionTextureProps {
   audioLevel: number;
   defaultMode: AnimationMode3D;
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
+  getCustomGeometry?: (modelId: string) => THREE.BufferGeometry | null;
   overrideMode?: AnimationMode3D; // For morph transitions
   overrideOpacity?: number; // For morph transitions
 }
@@ -52,6 +54,7 @@ function RegionMesh({
   audioLevel, 
   defaultMode,
   getVideoElement,
+  getCustomGeometry,
   overrideMode,
   overrideOpacity
 }: RegionTextureProps) {
@@ -317,8 +320,16 @@ function RegionMesh({
     helicoid: createHelicoid(1.0),
   }), []);
 
-  // Determine geometry based on mode
+  // Determine geometry based on mode or custom model
   const geometry = useMemo(() => {
+    // Check if region has a custom model
+    if (region.customModelId && getCustomGeometry) {
+      const customGeo = getCustomGeometry(region.customModelId);
+      if (customGeo) {
+        return <primitive object={customGeo} attach="geometry" />;
+      }
+    }
+    
     switch (mode) {
       case 'sphere3D':
         return <sphereGeometry args={[1.5, 32, 32]} />;
@@ -395,7 +406,7 @@ function RegionMesh({
       default:
         return <planeGeometry args={[2, 2]} />;
     }
-  }, [mode, customGeometries]);
+  }, [mode, customGeometries, region.customModelId, getCustomGeometry]);
 
   return (
     <mesh ref={meshRef}>
@@ -557,12 +568,13 @@ function FullscreenBackgroundMesh({
   );
 }
 
-function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: {
+function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, getCustomGeometry }: {
   regions: CaptureRegion[];
   settings: VisualizerSettings;
   audioLevel: number;
   defaultMode: AnimationMode3D;
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
+  getCustomGeometry?: (modelId: string) => THREE.BufferGeometry | null;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -650,6 +662,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement }: 
             audioLevel={audioLevel}
             defaultMode={defaultMode}
             getVideoElement={getVideoElement}
+            getCustomGeometry={getCustomGeometry}
           />
         ))}
       </group>
@@ -676,6 +689,7 @@ export function VisualizerCanvas3D({
   isActive,
   onUpdateRegion,
   getVideoElement,
+  getCustomGeometry,
 }: VisualizerCanvas3DProps) {
   const [currentDefaultMode, setCurrentDefaultMode] = useState<AnimationMode3D>(
     settings.animationMode3D === 'random3D' 
@@ -824,6 +838,7 @@ export function VisualizerCanvas3D({
           audioLevel={audioLevel}
           defaultMode={currentDefaultMode}
           getVideoElement={getVideoElement}
+          getCustomGeometry={getCustomGeometry}
         />
       </Canvas>
     </div>
