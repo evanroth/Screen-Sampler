@@ -118,13 +118,15 @@ export function Onboarding({ onStartCapture, onStartCamera }: OnboardingProps) {
               >
                 Beats and Bobbins
               </a>
+
+              <br></br>
+              <br></br>
               <a
                 href="https://shop.evan-roth.com/product/beats-bobbins-tip-jar/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-foreground/70 transition-colors underline underline-offset-4 inline-flex items-center gap-1"
               >
-                <br></br>
                 <img src={tipJarIcon} alt="" width={40} height={40} className="dark:invert" />
                 Support this work
               </a>
