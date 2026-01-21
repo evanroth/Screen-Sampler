@@ -63,6 +63,8 @@ function RegionMesh({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
   const timeRef = useRef(0);
+  // Rotation time that ONLY advances while auto-rotate is enabled (prevents jump on resume)
+  const rotateTimeRef = useRef(0);
   const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
   
   // Use override mode (for morph ghost), region-specific mode, or fall back to default
@@ -94,6 +96,11 @@ function RegionMesh({
     
     timeRef.current += delta;
     const time = timeRef.current;
+
+    if (settings.autoRotateCamera) {
+      rotateTimeRef.current += delta;
+    }
+    const rotateTime = rotateTimeRef.current;
     
     // Update texture from video
     const ctx = canvasRef.current.getContext('2d');
@@ -288,8 +295,8 @@ function RegionMesh({
         }
         // Only rotate shape if autoRotateCamera is enabled
         if (settings.autoRotateCamera) {
-          mesh.rotation.y = time * speed * 0.2;
-          mesh.rotation.x = Math.sin(time * speed * 0.1) * 0.1;
+          mesh.rotation.y = rotateTime * speed * 0.2;
+          mesh.rotation.x = Math.sin(rotateTime * speed * 0.1) * 0.1;
         }
         break;
     }
