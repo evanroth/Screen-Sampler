@@ -32,6 +32,7 @@ interface VisualizerCanvas3DProps {
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
   getCustomGeometry?: (modelId: string) => THREE.BufferGeometry | null;
   midiCameraAngle?: number | null; // MIDI-controlled camera horizontal rotation
+  onTemporaryDisableAutoRotate?: () => void; // Called when user drags to temporarily disable auto-rotate
 }
 
 interface RegionTextureProps {
@@ -611,7 +612,7 @@ function FullscreenBackgroundMesh({
   );
 }
 
-function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, getCustomGeometry, midiCameraAngle }: {
+function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, getCustomGeometry, midiCameraAngle, onTemporaryDisableAutoRotate }: {
   regions: CaptureRegion[];
   settings: VisualizerSettings;
   audioLevel: number;
@@ -619,6 +620,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
   getCustomGeometry?: (modelId: string) => THREE.BufferGeometry | null;
   midiCameraAngle?: number | null;
+  onTemporaryDisableAutoRotate?: () => void;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -631,11 +633,51 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   const lastMidiAngleRef = useRef<number | null>(null);
   // Turntable stop effect - velocity-based camera rotation
   const cameraRotateVelocityRef = useRef(settings.autoRotateCamera ? 1 : 0);
+  // Track if user is currently dragging
+  const isDraggingRef = useRef(false);
   
   // Filter visible regions, then separate fullscreen background from normal
   const visibleRegions = regions.filter(r => r.visible !== false);
   const backgroundRegions = visibleRegions.filter(r => r.fullscreenBackground);
   const normalRegions = visibleRegions.filter(r => !r.fullscreenBackground);
+  
+  // Handle OrbitControls events to temporarily disable auto-rotate during drag
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    
+    const handleStart = () => {
+      isDraggingRef.current = true;
+      if (onTemporaryDisableAutoRotate) {
+        onTemporaryDisableAutoRotate();
+      }
+    };
+    
+    const handleChange = () => {
+      // Keep calling during drag to reset the re-enable timeout
+      if (isDraggingRef.current && onTemporaryDisableAutoRotate) {
+        onTemporaryDisableAutoRotate();
+      }
+    };
+    
+    const handleEnd = () => {
+      isDraggingRef.current = false;
+      // One final call to trigger the re-enable timeout
+      if (onTemporaryDisableAutoRotate) {
+        onTemporaryDisableAutoRotate();
+      }
+    };
+    
+    controls.addEventListener('start', handleStart);
+    controls.addEventListener('change', handleChange);
+    controls.addEventListener('end', handleEnd);
+    
+    return () => {
+      controls.removeEventListener('start', handleStart);
+      controls.removeEventListener('change', handleChange);
+      controls.removeEventListener('end', handleEnd);
+    };
+  }, [onTemporaryDisableAutoRotate]);
   
   useEffect(() => {
     // Calculate camera distance to fit objects at ~85% of screen
@@ -814,6 +856,7 @@ export function VisualizerCanvas3D({
   getVideoElement,
   getCustomGeometry,
   midiCameraAngle,
+  onTemporaryDisableAutoRotate,
 }: VisualizerCanvas3DProps) {
   const [currentDefaultMode, setCurrentDefaultMode] = useState<AnimationMode3D>(
     settings.animationMode3D === 'random3D' 
@@ -840,12 +883,12 @@ export function VisualizerCanvas3D({
 
   // Check if we have any valid video element
   const hasValidSource = regions.some(r => getVideoElement(r.sourceId) !== null);
-
-  if (!isActive || !hasValidSource) {
-    return null;
-  }
   
+  // Background canvas effect - moved before early return to satisfy hooks rules
   useEffect(() => {
+    // Skip if component won't render or doesn't need canvas
+    if (!isActive || !hasValidSource) return;
+    
     const needsCanvas = settings.backgroundStyle === 'blurred' || 
                         settings.backgroundStyle === 'linearGradient' || 
                         settings.backgroundStyle === 'radialGradient';
@@ -920,7 +963,12 @@ export function VisualizerCanvas3D({
     
     updateBackground();
     return () => cancelAnimationFrame(animationId);
-  }, [settings.backgroundStyle, settings.gradientSettings, getVideoElement, regions]);
+  }, [isActive, hasValidSource, settings.backgroundStyle, settings.gradientSettings, getVideoElement, regions]);
+
+  if (!isActive || !hasValidSource) {
+    return null;
+  }
+  
 
   // Determine background color for Canvas
   const getBackgroundColor = () => {
@@ -964,6 +1012,7 @@ export function VisualizerCanvas3D({
           getVideoElement={getVideoElement}
           getCustomGeometry={getCustomGeometry}
           midiCameraAngle={midiCameraAngle}
+          onTemporaryDisableAutoRotate={onTemporaryDisableAutoRotate}
         />
       </Canvas>
     </div>
