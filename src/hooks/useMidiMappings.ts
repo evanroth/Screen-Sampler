@@ -296,6 +296,19 @@ export function useMidiMappings({
     
     if (!mapping) return;
     
+    // Look up the current control definition to use its min/max values
+    // This ensures that if control limits are updated, existing mappings use the new limits
+    const control = MAPPABLE_CONTROLS.find(c => 
+      c.targetType === mapping.targetType && 
+      c.targetKey === mapping.targetKey && 
+      c.subKey === mapping.subKey
+    );
+    
+    // Use control definition's min/max if available, otherwise fall back to stored mapping values
+    const effectiveMin = control?.min ?? mapping.min;
+    const effectiveMax = control?.max ?? mapping.max;
+    const effectiveStep = control?.step ?? mapping.step;
+    
     const currentSettings = settingsRef.current;
     const currentRegions = regionsRef.current;
     
@@ -323,14 +336,14 @@ export function useMidiMappings({
               onUpdateSetting(mapping.targetKey as keyof VisualizerSettings, !currentValue as VisualizerSettings[keyof VisualizerSettings]);
             }
           }
-        } else if (mapping.messageType === 'cc' && mapping.min !== undefined && mapping.max !== undefined) {
+        } else if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
           // Map CC value (0-127) to setting range
           const normalizedValue = message.value / 127;
-          let newValue = mapping.min + normalizedValue * (mapping.max - mapping.min);
+          let newValue = effectiveMin + normalizedValue * (effectiveMax - effectiveMin);
           
           // Apply step if defined
-          if (mapping.step) {
-            newValue = Math.round(newValue / mapping.step) * mapping.step;
+          if (effectiveStep) {
+            newValue = Math.round(newValue / effectiveStep) * effectiveStep;
           }
           
           if (mapping.subKey) {
@@ -381,14 +394,14 @@ export function useMidiMappings({
       
       case 'regionSetting': {
         // Per-region CC control (e.g., scale3D)
-        if (mapping.messageType === 'cc' && mapping.min !== undefined && mapping.max !== undefined) {
+        if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
           const regionIndex = parseInt(mapping.targetKey, 10);
           const region = currentRegions[regionIndex];
           if (region && mapping.subKey) {
             const normalizedValue = message.value / 127;
-            let newValue = mapping.min + normalizedValue * (mapping.max - mapping.min);
-            if (mapping.step) {
-              newValue = Math.round(newValue / mapping.step) * mapping.step;
+            let newValue = effectiveMin + normalizedValue * (effectiveMax - effectiveMin);
+            if (effectiveStep) {
+              newValue = Math.round(newValue / effectiveStep) * effectiveStep;
             }
             onUpdateRegion(region.id, { [mapping.subKey]: newValue });
           }
@@ -411,9 +424,9 @@ export function useMidiMappings({
       
       case 'cameraRotation': {
         // Control camera horizontal rotation via CC
-        if (mapping.messageType === 'cc' && onCameraRotation && mapping.min !== undefined && mapping.max !== undefined) {
+        if (mapping.messageType === 'cc' && onCameraRotation && effectiveMin !== undefined && effectiveMax !== undefined) {
           const normalizedValue = message.value / 127;
-          const angle = mapping.min + normalizedValue * (mapping.max - mapping.min);
+          const angle = effectiveMin + normalizedValue * (effectiveMax - effectiveMin);
           onCameraRotation(angle);
         }
         break;
@@ -421,9 +434,9 @@ export function useMidiMappings({
       
       case 'modelRotation': {
         // Control per-region model Y rotation via CC (like horizontal mouse drag)
-        if (mapping.messageType === 'cc' && mapping.min !== undefined && mapping.max !== undefined) {
+        if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
           const normalizedValue = message.value / 127;
-          const angle = mapping.min + normalizedValue * (mapping.max - mapping.min);
+          const angle = effectiveMin + normalizedValue * (effectiveMax - effectiveMin);
           
           if (mapping.targetKey === 'all') {
             // Rotate all regions
