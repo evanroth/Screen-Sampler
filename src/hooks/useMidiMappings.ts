@@ -29,6 +29,9 @@ export interface MidiMapping {
   min?: number; // Setting min value
   max?: number; // Setting max value
   step?: number; // Setting step
+  
+  // Relative mode for rotation controls
+  relative?: boolean; // If true, MIDI values are treated as incremental
 }
 
 interface StoredMappings {
@@ -148,6 +151,11 @@ export function useMidiMappings({
   const [learnMode, setLearnMode] = useState<string | null>(null); // Control ID being learned
   const [lastLearnedMessage, setLastLearnedMessage] = useState<MidiMessage | null>(null);
   
+  // Track cumulative rotation for relative mode (keyed by region index or 'all')
+  const cumulativeRotationRef = useRef<Record<string, number>>({});
+  // Track last CC value for relative mode delta calculation
+  const lastCCValueRef = useRef<Record<string, number>>({});
+  
   const settingsRef = useRef(settings);
   const regionsRef = useRef(regions);
   
@@ -259,7 +267,38 @@ export function useMidiMappings({
   // Clear all mappings
   const clearAllMappings = useCallback(() => {
     saveMappings([]);
+    // Reset cumulative rotation tracking
+    cumulativeRotationRef.current = {};
+    lastCCValueRef.current = {};
   }, [saveMappings]);
+
+  // Update a mapping's relative flag
+  const setMappingRelative = useCallback((controlId: string, relative: boolean) => {
+    const control = MAPPABLE_CONTROLS.find(c => c.id === controlId);
+    if (!control) return;
+    
+    const updatedMappings = mappings.map(m => {
+      if (m.targetType === control.targetType && 
+          m.targetKey === control.targetKey && 
+          m.subKey === control.subKey) {
+        return { ...m, relative };
+      }
+      return m;
+    });
+    
+    // Reset cumulative tracking for this control when toggling relative mode
+    if (relative) {
+      if (control.targetKey === 'all') {
+        // Reset all region rotations
+        cumulativeRotationRef.current = {};
+      } else {
+        cumulativeRotationRef.current[control.targetKey] = 0;
+      }
+      lastCCValueRef.current[control.targetKey] = 64; // Reset to center
+    }
+    
+    saveMappings(updatedMappings);
+  }, [mappings, saveMappings]);
 
   // Get mapping for a control
   const getMappingForControl = useCallback((controlId: string): MidiMapping | undefined => {
@@ -434,19 +473,56 @@ export function useMidiMappings({
       case 'modelRotation': {
         // Control per-region model Y rotation via CC (like horizontal mouse drag)
         if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
-          const normalizedValue = message.value / 127;
-          const angle = effectiveMin + normalizedValue * (effectiveMax - effectiveMin);
+          const targetKey = mapping.targetKey;
           
-          if (mapping.targetKey === 'all') {
-            // Rotate all regions
-            currentRegions.forEach(region => {
-              onUpdateRegion(region.id, { midiRotationY: angle });
-            });
+          if (mapping.relative) {
+            // Relative mode: treat MIDI value as incremental
+            // For relative encoders, values > 64 mean clockwise, < 64 mean counter-clockwise
+            // Some encoders send 65-127 for CW and 1-63 for CCW
+            // Others send small deltas around 64
+            const lastValue = lastCCValueRef.current[targetKey] ?? 64;
+            const delta = message.value - lastValue;
+            lastCCValueRef.current[targetKey] = message.value;
+            
+            // Scale the delta - full CC range (0-127) maps to full rotation range
+            const sensitivity = (effectiveMax - effectiveMin) / 127;
+            const rotationDelta = delta * sensitivity;
+            
+            if (targetKey === 'all') {
+              // Rotate all regions
+              currentRegions.forEach((region, idx) => {
+                const key = idx.toString();
+                const currentRotation = cumulativeRotationRef.current[key] ?? 0;
+                const newRotation = currentRotation + rotationDelta;
+                cumulativeRotationRef.current[key] = newRotation;
+                onUpdateRegion(region.id, { midiRotationY: newRotation });
+              });
+            } else {
+              const regionIndex = parseInt(targetKey, 10);
+              const region = currentRegions[regionIndex];
+              if (region) {
+                const currentRotation = cumulativeRotationRef.current[targetKey] ?? 0;
+                const newRotation = currentRotation + rotationDelta;
+                cumulativeRotationRef.current[targetKey] = newRotation;
+                onUpdateRegion(region.id, { midiRotationY: newRotation });
+              }
+            }
           } else {
-            const regionIndex = parseInt(mapping.targetKey, 10);
-            const region = currentRegions[regionIndex];
-            if (region) {
-              onUpdateRegion(region.id, { midiRotationY: angle });
+            // Absolute mode: map CC value directly to angle
+            const normalizedValue = message.value / 127;
+            const angle = effectiveMin + normalizedValue * (effectiveMax - effectiveMin);
+            
+            if (targetKey === 'all') {
+              // Rotate all regions
+              currentRegions.forEach(region => {
+                onUpdateRegion(region.id, { midiRotationY: angle });
+              });
+            } else {
+              const regionIndex = parseInt(targetKey, 10);
+              const region = currentRegions[regionIndex];
+              if (region) {
+                onUpdateRegion(region.id, { midiRotationY: angle });
+              }
             }
           }
         }
@@ -464,6 +540,7 @@ export function useMidiMappings({
     removeMapping,
     clearAllMappings,
     getMappingForControl,
+    setMappingRelative,
     handleMidiMessage,
   };
 }

@@ -77,6 +77,7 @@ interface ControlPanelProps {
   onMidiRemoveMapping: (controlId: string) => void;
   onMidiClearAllMappings: () => void;
   getMidiMappingForControl: (controlId: string) => MidiMapping | undefined;
+  onMidiSetMappingRelative: (controlId: string, relative: boolean) => void;
 }
 
 export function ControlPanel({
@@ -132,6 +133,7 @@ export function ControlPanel({
   onMidiRemoveMapping,
   onMidiClearAllMappings,
   getMidiMappingForControl,
+  onMidiSetMappingRelative,
 }: ControlPanelProps) {
   return (
     <>
@@ -1454,6 +1456,7 @@ export function ControlPanel({
             onRemoveMapping={onMidiRemoveMapping}
             onClearAllMappings={onMidiClearAllMappings}
             getMappingForControl={getMidiMappingForControl}
+            onSetMappingRelative={onMidiSetMappingRelative}
             regionCount={regionCount}
           />
 
