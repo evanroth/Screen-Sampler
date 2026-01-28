@@ -100,7 +100,6 @@ export default function Index() {
       updateSetting('animationMode3D', nextFavoriteId as any);
       // Clear custom model from regions
       setRegions(prev => prev.map(r => ({ ...r, customModelId: undefined })));
-      toast({ title: `Shape: ${nextFavoriteId.replace('3D', '')}` });
     } else if (modelType === 'remote') {
       // It's a remote model - need to load it first
       const geometry = await remoteModels.loadModel(nextFavoriteId);
