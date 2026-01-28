@@ -162,7 +162,7 @@ const defaultSettings: VisualizerSettings = {
     interval: 10,
     transition: 'fade',
   },
-  midiRotationSensitivity: 0.05,
+  midiRotationSensitivity: 0.02,
 };
 
 export function useVisualizerSettings(initialSettings?: Partial<VisualizerSettings>) {
