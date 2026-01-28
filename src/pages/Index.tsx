@@ -6,6 +6,7 @@ import { useRegionRandomizer } from '@/hooks/useRegionRandomizer';
 import { usePlayMode } from '@/hooks/usePlayMode';
 import { useSettingsStorage } from '@/hooks/useSettingsStorage';
 import { useCustomModels } from '@/hooks/useCustomModels';
+import { useRemoteModels } from '@/hooks/useRemoteModels';
 import { useMidi } from '@/hooks/useMidi';
 import { useMidiMappings } from '@/hooks/useMidiMappings';
 import { Onboarding } from '@/components/visualizer/Onboarding';
@@ -27,6 +28,7 @@ export default function Index() {
   const screenCapture = useScreenCapture();
   const audioAnalyzer = useAudioAnalyzer();
   const customModels = useCustomModels();
+  const remoteModels = useRemoteModels();
   
   // Settings storage for presets and session restore
   const storage = useSettingsStorage();
@@ -311,7 +313,13 @@ export default function Index() {
             isActive={true}
             onUpdateRegion={handleUpdateRegion}
             getVideoElement={screenCapture.getVideoElement}
-            getCustomGeometry={customModels.getGeometry}
+            getCustomGeometry={(modelId) => {
+              // Check remote models first, then custom models
+              if (remoteModels.isRemoteModel(modelId)) {
+                return remoteModels.getGeometry(modelId);
+              }
+              return customModels.getGeometry(modelId);
+            }}
             midiCameraAngle={midiCameraAngle}
           />
         ) : (
@@ -358,6 +366,22 @@ export default function Index() {
           onAddCustomModel={customModels.addModel}
           onDeleteCustomModel={customModels.deleteModel}
           onClearCustomModelsError={customModels.clearError}
+          remoteModels={remoteModels.models}
+          remoteModelsLoading={remoteModels.isListLoading}
+          remoteModelsError={remoteModels.listError}
+          onSelectRemoteModel={async (modelId) => {
+            toast({ title: "Loading model..." });
+            const geometry = await remoteModels.loadModel(modelId);
+            if (geometry) {
+              // Apply the model to all regions
+              setRegions(prev => prev.map(r => ({ ...r, customModelId: modelId })));
+              const model = remoteModels.models.find(m => m.id === modelId);
+              toast({ title: `Model: ${model?.name}` });
+            } else {
+              toast({ title: "Failed to load model", variant: "destructive" });
+            }
+          }}
+          getRemoteModelLoadingState={remoteModels.getLoadingState}
           midiSupported={midi.isSupported}
           midiEnabled={midi.isEnabled}
           midiDevices={midi.devices}

@@ -1,8 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Trash2, FileBox, Loader2 } from 'lucide-react';
+import { Upload, Trash2, FileBox, Loader2, Globe, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { CustomModel } from '@/hooks/useCustomModels';
+import { RemoteModel, RemoteModelLoadingState } from '@/hooks/useRemoteModels';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +22,12 @@ interface CustomModelsSectionProps {
   onAddModel: (file: File) => Promise<CustomModel | null>;
   onDeleteModel: (modelId: string) => void;
   onClearError: () => void;
+  // Remote models (built-in)
+  remoteModels?: RemoteModel[];
+  remoteModelsLoading?: boolean;
+  remoteModelsError?: string | null;
+  onSelectRemoteModel?: (modelId: string) => void;
+  getRemoteModelLoadingState?: (modelId: string) => RemoteModelLoadingState;
 }
 
 export function CustomModelsSection({
@@ -30,10 +37,16 @@ export function CustomModelsSection({
   onAddModel,
   onDeleteModel,
   onClearError,
+  remoteModels = [],
+  remoteModelsLoading = false,
+  remoteModelsError,
+  onSelectRemoteModel,
+  getRemoteModelLoadingState,
 }: CustomModelsSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showBuiltIn, setShowBuiltIn] = useState(true);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,6 +77,85 @@ export function CustomModelsSection({
 
   return (
     <div className="space-y-3">
+      {/* Built-in Remote Models */}
+      {remoteModels.length > 0 && (
+        <div className="space-y-2">
+          <button
+            onClick={() => setShowBuiltIn(!showBuiltIn)}
+            className="flex items-center justify-between w-full text-left"
+          >
+            <div className="flex items-center gap-2">
+              <Globe className="w-3 h-3 text-muted-foreground" />
+              <Label className="text-muted-foreground font-medium cursor-pointer">
+                Built-in Models ({remoteModels.length})
+              </Label>
+            </div>
+            {showBuiltIn ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </button>
+          
+          {showBuiltIn && (
+            <>
+              {remoteModelsLoading ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading model list...
+                </div>
+              ) : remoteModelsError ? (
+                <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+                  {remoteModelsError}
+                </div>
+              ) : (
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {remoteModels.map((model) => {
+                    const loadingState = getRemoteModelLoadingState?.(model.id) ?? 'idle';
+                    const isLoading = loadingState === 'loading';
+                    const isLoaded = loadingState === 'loaded';
+                    const hasError = loadingState === 'error';
+                    
+                    return (
+                      <button 
+                        key={model.id}
+                        onClick={() => onSelectRemoteModel?.(model.id)}
+                        disabled={isLoading}
+                        className="flex items-center justify-between p-2 bg-secondary/50 rounded text-xs w-full text-left hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {isLoading ? (
+                            <Loader2 className="w-3 h-3 text-primary animate-spin flex-shrink-0" />
+                          ) : (
+                            <FileBox className={`w-3 h-3 flex-shrink-0 ${isLoaded ? 'text-primary' : hasError ? 'text-destructive' : 'text-muted-foreground'}`} />
+                          )}
+                          <span className="truncate">{model.name}</span>
+                          <span className="text-muted-foreground uppercase flex-shrink-0">
+                            .{model.fileType}
+                          </span>
+                        </div>
+                        {isLoading && (
+                          <span className="text-xs text-muted-foreground">Loading...</span>
+                        )}
+                        {hasError && (
+                          <span className="text-xs text-destructive">Failed</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Click to load and apply. Models are downloaded on demand.
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
+      {remoteModels.length > 0 && <div className="border-t border-border" />}
+
+      {/* Custom Uploaded Models */}
       <div className="flex items-center justify-between">
         <Label className="text-muted-foreground font-medium">Custom 3D Models</Label>
         <Button
