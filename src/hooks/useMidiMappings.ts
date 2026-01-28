@@ -476,17 +476,18 @@ export function useMidiMappings({
           const targetKey = mapping.targetKey;
           
           if (mapping.relative) {
-            // Relative mode: treat MIDI value as incremental
-            // For relative encoders, values > 64 mean clockwise, < 64 mean counter-clockwise
-            // Some encoders send 65-127 for CW and 1-63 for CCW
-            // Others send small deltas around 64
-            const lastValue = lastCCValueRef.current[targetKey] ?? 64;
-            const delta = message.value - lastValue;
-            lastCCValueRef.current[targetKey] = message.value;
+            // Relative mode for DJ platters/endless encoders:
+            // CC 64 = center/no movement
+            // CC > 64 (e.g., 65-70) = clockwise, speed = value - 64
+            // CC < 64 (e.g., 58-63) = counter-clockwise, speed = value - 64 (negative)
+            // Each incoming CC message adds its offset to the cumulative rotation
             
-            // Scale the delta - full CC range (0-127) maps to full rotation range
-            const sensitivity = (effectiveMax - effectiveMin) / 127;
-            const rotationDelta = delta * sensitivity;
+            const signedOffset = message.value - 64; // -64 to +63 range
+            
+            // Sensitivity: how much rotation per unit of offset
+            // Full platter spin (roughly 10 units offset) should give noticeable rotation
+            const sensitivity = 0.05; // radians per CC unit offset
+            const rotationDelta = signedOffset * sensitivity;
             
             if (targetKey === 'all') {
               // Rotate all regions
