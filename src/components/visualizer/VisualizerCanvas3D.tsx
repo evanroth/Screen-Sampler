@@ -322,8 +322,9 @@ function RegionMesh({
           mesh.position.y = 0;
           mesh.position.z = 0;
         }
-        // Auto-rotate only (MIDI override applied below)
-        if (settings.autoRotateCamera) {
+        // Auto-rotate with turntable stop effect (velocity-based, MIDI override applied below)
+        // Always apply rotation - velocity decay handles the smooth slowdown
+        if (rotateVelocityRef.current > 0 || settings.autoRotateCamera) {
           mesh.rotation.y = rotateTime * speed * 0.2;
           mesh.rotation.x = Math.sin(rotateTime * speed * 0.1) * 0.1;
         }
