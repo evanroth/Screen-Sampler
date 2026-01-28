@@ -191,9 +191,10 @@ export function useRemoteModels() {
     });
     
     try {
+      console.log(`Loading remote model from: ${model.url}`);
       const response = await fetch(model.url);
       if (!response.ok) {
-        throw new Error(`Failed to fetch model: ${response.status}`);
+        throw new Error(`Failed to fetch model from ${model.url}: ${response.status}`);
       }
       
       const buffer = await response.arrayBuffer();
