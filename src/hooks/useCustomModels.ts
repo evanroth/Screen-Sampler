@@ -104,7 +104,38 @@ function extractGeometry(object: THREE.Object3D): THREE.BufferGeometry | null {
   // Recompute normals for the merged geometry
   geometry.computeVertexNormals();
   
+  // Generate spherical UV mapping for texture support
+  generateSphericalUVs(geometry);
+  
   return geometry;
+}
+
+// Generate spherical UV coordinates for a geometry
+function generateSphericalUVs(geometry: THREE.BufferGeometry): void {
+  const positions = geometry.attributes.position;
+  if (!positions) return;
+  
+  const uvs = new Float32Array(positions.count * 2);
+  const vertex = new THREE.Vector3();
+  
+  // Calculate bounding sphere for normalization
+  geometry.computeBoundingSphere();
+  const center = geometry.boundingSphere?.center || new THREE.Vector3();
+  
+  for (let i = 0; i < positions.count; i++) {
+    vertex.fromBufferAttribute(positions, i);
+    vertex.sub(center);
+    vertex.normalize();
+    
+    // Spherical mapping: convert 3D position to 2D UV
+    const u = 0.5 + Math.atan2(vertex.z, vertex.x) / (2 * Math.PI);
+    const v = 0.5 - Math.asin(Math.max(-1, Math.min(1, vertex.y))) / Math.PI;
+    
+    uvs[i * 2] = u;
+    uvs[i * 2 + 1] = v;
+  }
+  
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
 }
 
 // Load geometry from ArrayBuffer based on file type
