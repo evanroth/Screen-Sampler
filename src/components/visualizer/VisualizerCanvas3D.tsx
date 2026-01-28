@@ -636,6 +636,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
   const meshGroupRef = useRef<THREE.Group>(null);
+  const isPlayMode = settings.playMode.enabled;
   
   // Track auto-rotate state to handle smooth resume
   const wasAutoRotatingRef = useRef(settings.autoRotateCamera);
@@ -685,7 +686,11 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   
   useEffect(() => {
     // Calculate camera distance to fit objects at ~85% of screen
-    const regionCount = regions.filter(r => r.visible !== false && !r.fullscreenBackground).length;
+    // IMPORTANT (Play Mode): During crossfades there are briefly 2 visible meshes.
+    // If we re-fit the camera based on visible count, it causes a perceived "position jump".
+    // In Play Mode we intentionally keep the camera fit stable as if showing a single model.
+    const visibleNormalCount = regions.filter(r => r.visible !== false && !r.fullscreenBackground).length;
+    const regionCount = isPlayMode ? 1 : Math.max(visibleNormalCount, 1);
     const totalWidth = regionCount > 1 ? (regionCount - 1) * settings.regionSpacing3D : 0;
     
     // Object size based on scale and geometry (mobius/torus knot is roughly 2.4 units diameter)
@@ -706,7 +711,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
     const cameraZ = Math.max(distanceForWidth, distanceForHeight, 2);
     
     camera.position.set(0, 0, cameraZ);
-  }, [camera, regions, settings.regionSpacing3D, settings.panelScaleX]);
+  }, [camera, regions, settings.regionSpacing3D, settings.panelScaleX, isPlayMode]);
 
   // Handle auto-rotate toggle to prevent jumping
   useEffect(() => {
@@ -824,8 +829,11 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
       
       <group ref={meshGroupRef}>
         {allNormalRegions.map((region) => {
-          const total = Math.max(layoutInfo.total, 1);
-          const index = layoutInfo.indexMap.get(region.id) ?? 0;
+          // IMPORTANT (Play Mode): Keep per-mesh layout inputs stable during transitions.
+          // If total/index change when a second mesh becomes temporarily visible,
+          // animated modes (orbit/floating/etc.) will "snap" to a new position.
+          const total = isPlayMode ? 1 : Math.max(layoutInfo.total, 1);
+          const index = isPlayMode ? 0 : (layoutInfo.indexMap.get(region.id) ?? 0);
           return (
           <RegionMesh
             key={region.id}
