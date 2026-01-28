@@ -390,9 +390,9 @@ export function MidiSection({
                       <Slider
                         value={[midiRotationSensitivity]}
                         onValueChange={([v]) => onMidiRotationSensitivityChange(v)}
-                        min={0.01}
-                        max={0.2}
-                        step={0.01}
+                        min={0}
+                        max={0.1}
+                        step={0.005}
                         className="w-full"
                       />
                     </div>
