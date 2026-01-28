@@ -66,10 +66,10 @@ function RegionMesh({
   const timeRef = useRef(0);
   // Rotation time that advances based on velocity (for turntable stop effect)
   const rotateTimeRef = useRef(0);
-  // Current rotation velocity (decays when auto-rotate is off)
-  const rotateVelocityRef = useRef(0);
+  // Current rotation velocity (decays when auto-rotate is off) - start at 1 if auto-rotate is on
+  const rotateVelocityRef = useRef(settings.autoRotateCamera ? 1 : 0);
   // Track previous auto-rotate state to detect toggle
-  const wasAutoRotatingRef = useRef(settings.autoRotateCamera);
+  const prevAutoRotateRef = useRef(settings.autoRotateCamera);
   const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
   
   // Use override mode (for morph ghost), region-specific mode, or fall back to default
@@ -116,7 +116,7 @@ function RegionMesh({
     rotateTimeRef.current += delta * rotateVelocityRef.current;
     const rotateTime = rotateTimeRef.current;
     
-    wasAutoRotatingRef.current = settings.autoRotateCamera;
+    prevAutoRotateRef.current = settings.autoRotateCamera;
     
     // Update texture from video
     const ctx = canvasRef.current.getContext('2d');
@@ -629,6 +629,8 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   const manualRotationAngleRef = useRef(0);
   // Track if MIDI is controlling camera (disables auto-rotate when MIDI takes over)
   const lastMidiAngleRef = useRef<number | null>(null);
+  // Turntable stop effect - velocity-based camera rotation
+  const cameraRotateVelocityRef = useRef(settings.autoRotateCamera ? 1 : 0);
   
   // Filter visible regions, then separate fullscreen background from normal
   const visibleRegions = regions.filter(r => r.visible !== false);
@@ -725,10 +727,20 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
       manualRotationAngleRef.current = midiCameraAngle;
       lastMidiAngleRef.current = midiCameraAngle;
     }
-    // Manual auto-rotation to avoid time-based jumping (only if MIDI not controlling)
-    else if (settings.autoRotateCamera && controlsRef.current) {
-      // Disable built-in autoRotate and do it manually
-      const rotationSpeed = settings.autoRotateCameraSpeed * delta * 0.5;
+    // Turntable stop effect: smoothly decelerate camera rotation when auto-rotate is turned off
+    const targetVelocity = settings.autoRotateCamera ? 1 : 0;
+    const friction = settings.autoRotateCamera ? 0.1 : 0.02; // Faster ramp up, slower decay
+    cameraRotateVelocityRef.current += (targetVelocity - cameraRotateVelocityRef.current) * friction;
+    
+    // Stop completely when velocity is negligible
+    if (cameraRotateVelocityRef.current < 0.001) {
+      cameraRotateVelocityRef.current = 0;
+    }
+    
+    // Manual auto-rotation with turntable stop effect (only if MIDI not controlling)
+    if (cameraRotateVelocityRef.current > 0 && controlsRef.current) {
+      // Apply rotation speed scaled by current velocity
+      const rotationSpeed = settings.autoRotateCameraSpeed * delta * 0.5 * cameraRotateVelocityRef.current;
       manualRotationAngleRef.current += rotationSpeed;
       
       // Get current distance and polar angle
