@@ -31,10 +31,12 @@ export default function Index() {
   const customModels = useCustomModels();
   const remoteModels = useRemoteModels();
   
-  // Favorites for 3D models
+  // Favorites for 3D models - memoize ID arrays to prevent infinite loops
+  const customModelIds = useMemo(() => customModels.models.map(m => m.id), [customModels.models]);
+  const remoteModelIds = useMemo(() => remoteModels.models.map(m => m.id), [remoteModels.models]);
   const favorites = useFavorites({
-    customModelIds: customModels.models.map(m => m.id),
-    remoteModelIds: remoteModels.models.map(m => m.id),
+    customModelIds,
+    remoteModelIds,
   });
   
   // Settings storage for presets and session restore
