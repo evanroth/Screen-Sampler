@@ -77,7 +77,7 @@ export default function Index() {
   }, [regions, settings.animationMode3D]);
 
   // Jump to favorite model (next or previous)
-  const handleJumpToFavorite = useCallback((direction: 'next' | 'previous') => {
+  const handleJumpToFavorite = useCallback(async (direction: 'next' | 'previous') => {
     if (settings.visualizerMode !== '3d') {
       toast({ title: "Favorites only work in 3D mode" });
       return;
@@ -101,15 +101,25 @@ export default function Index() {
       // Clear custom model from regions
       setRegions(prev => prev.map(r => ({ ...r, customModelId: undefined })));
       toast({ title: `Shape: ${nextFavoriteId.replace('3D', '')}` });
+    } else if (modelType === 'remote') {
+      // It's a remote model - need to load it first
+      const model = remoteModels.models.find(m => m.id === nextFavoriteId);
+      toast({ title: `Loading: ${model?.name || nextFavoriteId}...` });
+      
+      const geometry = await remoteModels.loadModel(nextFavoriteId);
+      if (geometry) {
+        setRegions(prev => prev.map(r => ({ ...r, customModelId: nextFavoriteId })));
+        toast({ title: `Model: ${model?.name}` });
+      } else {
+        toast({ title: "Failed to load model", variant: "destructive" });
+      }
     } else {
-      // It's a remote or custom model
+      // It's a custom model (already loaded in IndexedDB)
       setRegions(prev => prev.map(r => ({ ...r, customModelId: nextFavoriteId })));
-      // Try to get model name
-      const remoteName = remoteModels.models.find(m => m.id === nextFavoriteId)?.name;
       const customName = customModels.models.find(m => m.id === nextFavoriteId)?.name;
-      toast({ title: `Model: ${remoteName || customName || nextFavoriteId}` });
+      toast({ title: `Model: ${customName || nextFavoriteId}` });
     }
-  }, [settings.visualizerMode, getCurrentModelId, favorites, updateSetting, remoteModels.models, customModels.models, toast]);
+  }, [settings.visualizerMode, getCurrentModelId, favorites, updateSetting, remoteModels, customModels.models, toast]);
 
   // MIDI control
   const midiMappings = useMidiMappings({
