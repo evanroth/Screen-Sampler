@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export interface CustomModel {
   id: string;
@@ -36,37 +37,72 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-// Parse geometry from loaded 3D object
+// Parse geometry from loaded 3D object - merges ALL meshes
 function extractGeometry(object: THREE.Object3D): THREE.BufferGeometry | null {
-  let geometry: THREE.BufferGeometry | null = null;
+  const geometries: THREE.BufferGeometry[] = [];
   
   object.traverse((child) => {
-    if (child instanceof THREE.Mesh && child.geometry && !geometry) {
-      geometry = child.geometry.clone();
+    if (child instanceof THREE.Mesh && child.geometry) {
+      const geo = child.geometry.clone();
       
-      // Center the geometry
-      geometry.computeBoundingBox();
-      if (geometry.boundingBox) {
-        const center = new THREE.Vector3();
-        geometry.boundingBox.getCenter(center);
-        geometry.translate(-center.x, -center.y, -center.z);
-        
-        // Scale to fit roughly in a 3-unit bounding sphere
-        const size = new THREE.Vector3();
-        geometry.boundingBox.getSize(size);
-        const maxDim = Math.max(size.x, size.y, size.z);
-        if (maxDim > 0) {
-          const scale = 3 / maxDim;
-          geometry.scale(scale, scale, scale);
-        }
+      // Apply the mesh's world transform to the geometry
+      child.updateWorldMatrix(true, false);
+      geo.applyMatrix4(child.matrixWorld);
+      
+      // Ensure geometry has normals before merging
+      if (!geo.attributes.normal) {
+        geo.computeVertexNormals();
       }
       
-      // Ensure geometry has normals
-      if (!geometry.attributes.normal) {
-        geometry.computeVertexNormals();
+      // Remove UV attributes if they exist (can cause issues when merging)
+      // We don't need them for solid color rendering
+      if (geo.attributes.uv) {
+        geo.deleteAttribute('uv');
       }
+      
+      geometries.push(geo);
     }
   });
+  
+  if (geometries.length === 0) {
+    return null;
+  }
+  
+  // Merge all geometries into one
+  let geometry: THREE.BufferGeometry;
+  if (geometries.length === 1) {
+    geometry = geometries[0];
+  } else {
+    const merged = mergeGeometries(geometries, false);
+    if (!merged) {
+      console.error('Failed to merge geometries');
+      return geometries[0]; // Fallback to first geometry
+    }
+    geometry = merged;
+    
+    // Dispose individual geometries after merging
+    geometries.forEach(g => g.dispose());
+  }
+  
+  // Center the merged geometry
+  geometry.computeBoundingBox();
+  if (geometry.boundingBox) {
+    const center = new THREE.Vector3();
+    geometry.boundingBox.getCenter(center);
+    geometry.translate(-center.x, -center.y, -center.z);
+    
+    // Scale to fit roughly in a 3-unit bounding sphere
+    const size = new THREE.Vector3();
+    geometry.boundingBox.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (maxDim > 0) {
+      const scale = 3 / maxDim;
+      geometry.scale(scale, scale, scale);
+    }
+  }
+  
+  // Recompute normals for the merged geometry
+  geometry.computeVertexNormals();
   
   return geometry;
 }
