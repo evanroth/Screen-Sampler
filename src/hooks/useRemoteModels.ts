@@ -215,15 +215,12 @@ export function useRemoteModels() {
             reject(err);
           }
         } else {
-          // GLB/GLTF
+          // GLB/GLTF - use parse() method which handles ArrayBuffer directly
           const loader = new GLTFLoader();
-          const blob = new Blob([buffer], { type: 'model/gltf-binary' });
-          const url = URL.createObjectURL(blob);
-          
-          loader.load(
-            url,
+          loader.parse(
+            buffer,
+            '', // path for resolving relative URIs (not needed for self-contained files)
             (gltf) => {
-              URL.revokeObjectURL(url);
               const geo = extractGeometry(gltf.scene);
               if (geo) {
                 resolve(geo);
@@ -231,10 +228,8 @@ export function useRemoteModels() {
                 reject(new Error('No geometry found in GLB/GLTF file'));
               }
             },
-            undefined,
             (err) => {
-              URL.revokeObjectURL(url);
-              reject(err);
+              reject(err instanceof Error ? err : new Error(String(err)));
             }
           );
         }
