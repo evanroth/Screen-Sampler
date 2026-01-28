@@ -397,6 +397,7 @@ export default function Index() {
           onMidiRemoveMapping={midiMappings.removeMapping}
           onMidiClearAllMappings={midiMappings.clearAllMappings}
           getMidiMappingForControl={midiMappings.getMappingForControl}
+          onMidiSetMappingRelative={midiMappings.setMappingRelative}
         />
       )}
     </div>
