@@ -108,7 +108,7 @@ function RegionMesh({
     // When dragging, immediately stop (target velocity 0, high friction for instant stop)
     const isUserDragging = isDraggingRef?.current ?? false;
     const targetVelocity = (settings.autoRotateCamera && !isUserDragging) ? 1 : 0;
-    const friction = isUserDragging ? 0.5 : (settings.autoRotateCamera ? 0.1 : 0.02); // Instant stop when dragging
+    const friction = isUserDragging ? 0.5 : (settings.autoRotateCamera ? 0.1 : 0.04); // Instant stop when dragging, faster decay when off
     rotateVelocityRef.current += (targetVelocity - rotateVelocityRef.current) * friction;
     
     // Stop completely when velocity is negligible
@@ -758,7 +758,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
     // Turntable stop effect: smoothly decelerate camera rotation when auto-rotate is off or user is dragging
     const isUserDragging = isDraggingRef.current;
     const targetVelocity = (settings.autoRotateCamera && !isUserDragging) ? 1 : 0;
-    const friction = isUserDragging ? 0.5 : (settings.autoRotateCamera ? 0.1 : 0.02); // Instant stop when dragging
+    const friction = isUserDragging ? 0.5 : (settings.autoRotateCamera ? 0.1 : 0.04); // Instant stop when dragging, faster decay when off
     cameraRotateVelocityRef.current += (targetVelocity - cameraRotateVelocityRef.current) * friction;
     
     // Stop completely when velocity is negligible
