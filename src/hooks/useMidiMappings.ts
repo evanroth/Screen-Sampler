@@ -484,9 +484,8 @@ export function useMidiMappings({
             
             const signedOffset = message.value - 64; // -64 to +63 range
             
-            // Sensitivity: how much rotation per unit of offset
-            // Full platter spin (roughly 10 units offset) should give noticeable rotation
-            const sensitivity = 0.05; // radians per CC unit offset
+            // Use sensitivity from settings (default 0.05 radians per CC unit offset)
+            const sensitivity = currentSettings.midiRotationSensitivity ?? 0.05;
             const rotationDelta = signedOffset * sensitivity;
             
             if (targetKey === 'all') {

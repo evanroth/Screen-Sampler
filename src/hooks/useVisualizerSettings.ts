@@ -127,6 +127,7 @@ export interface VisualizerSettings {
   textureQuality: TextureQuality;
   textureSmoothing: boolean;
   playMode: PlayModeSettings;
+  midiRotationSensitivity: number; // 0.01 to 0.2, controls DJ platter rotation speed
 }
 
 const defaultSettings: VisualizerSettings = {
@@ -161,6 +162,7 @@ const defaultSettings: VisualizerSettings = {
     interval: 10,
     transition: 'fade',
   },
+  midiRotationSensitivity: 0.05,
 };
 
 export function useVisualizerSettings(initialSettings?: Partial<VisualizerSettings>) {

@@ -1458,6 +1458,8 @@ export function ControlPanel({
             getMappingForControl={getMidiMappingForControl}
             onSetMappingRelative={onMidiSetMappingRelative}
             regionCount={regionCount}
+            midiRotationSensitivity={settings.midiRotationSensitivity}
+            onMidiRotationSensitivityChange={(v) => onUpdateSetting('midiRotationSensitivity', v)}
           />
 
           <Separator className="bg-border" />
