@@ -103,21 +103,13 @@ export default function Index() {
       toast({ title: `Shape: ${nextFavoriteId.replace('3D', '')}` });
     } else if (modelType === 'remote') {
       // It's a remote model - need to load it first
-      const model = remoteModels.models.find(m => m.id === nextFavoriteId);
-      toast({ title: `Loading: ${model?.name || nextFavoriteId}...` });
-      
       const geometry = await remoteModels.loadModel(nextFavoriteId);
       if (geometry) {
         setRegions(prev => prev.map(r => ({ ...r, customModelId: nextFavoriteId })));
-        toast({ title: `Model: ${model?.name}` });
-      } else {
-        toast({ title: "Failed to load model", variant: "destructive" });
       }
     } else {
       // It's a custom model (already loaded in IndexedDB)
       setRegions(prev => prev.map(r => ({ ...r, customModelId: nextFavoriteId })));
-      const customName = customModels.models.find(m => m.id === nextFavoriteId)?.name;
-      toast({ title: `Model: ${customName || nextFavoriteId}` });
     }
   }, [settings.visualizerMode, getCurrentModelId, favorites, updateSetting, remoteModels, customModels.models, toast]);
 
@@ -301,9 +293,6 @@ export default function Index() {
           
           // Apply the model to all regions
           setRegions(prev => prev.map(r => ({ ...r, customModelId: nextModelId })));
-          
-          const modelName = customModels.models[nextIndex]?.name;
-          toast({ title: `Model: ${modelName}` });
         } else if (settings.visualizerMode === '3d') {
           // 3D mode: cycle through 3D animations (default shapes)
           // Clear any custom model so the default shape shows
@@ -448,15 +437,10 @@ export default function Index() {
           remoteModelsLoading={remoteModels.isListLoading}
           remoteModelsError={remoteModels.listError}
           onSelectRemoteModel={async (modelId) => {
-            toast({ title: "Loading model..." });
             const geometry = await remoteModels.loadModel(modelId);
             if (geometry) {
               // Apply the model to all regions
               setRegions(prev => prev.map(r => ({ ...r, customModelId: modelId })));
-              const model = remoteModels.models.find(m => m.id === modelId);
-              toast({ title: `Model: ${model?.name}` });
-            } else {
-              toast({ title: "Failed to load model", variant: "destructive" });
             }
           }}
           getRemoteModelLoadingState={remoteModels.getLoadingState}
