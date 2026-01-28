@@ -156,6 +156,11 @@ export function useMidiMappings({
   // Track last CC value for relative mode delta calculation
   const lastCCValueRef = useRef<Record<string, number>>({});
   
+  // Track auto-rotate camera state for MIDI rotation override
+  const autoRotateWasEnabledRef = useRef<boolean | null>(null); // null = not overriding
+  const midiRotationTimeoutRef = useRef<number | null>(null);
+  const MIDI_ROTATION_TIMEOUT = 150; // ms to wait before restoring auto-rotate
+  
   const settingsRef = useRef(settings);
   const regionsRef = useRef(regions);
   
@@ -474,6 +479,26 @@ export function useMidiMappings({
         // Control per-region model Y rotation via CC (like horizontal mouse drag)
         if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
           const targetKey = mapping.targetKey;
+          
+          // Temporarily disable auto-rotate camera while receiving MIDI rotation data
+          if (autoRotateWasEnabledRef.current === null && currentSettings.autoRotateCamera) {
+            // First rotation message: store current state and disable auto-rotate
+            autoRotateWasEnabledRef.current = true;
+            onUpdateSetting('autoRotateCamera', false);
+          }
+          
+          // Clear existing timeout and set a new one
+          if (midiRotationTimeoutRef.current !== null) {
+            window.clearTimeout(midiRotationTimeoutRef.current);
+          }
+          midiRotationTimeoutRef.current = window.setTimeout(() => {
+            // MIDI rotation data stopped - restore auto-rotate if it was enabled
+            if (autoRotateWasEnabledRef.current === true) {
+              onUpdateSetting('autoRotateCamera', true);
+            }
+            autoRotateWasEnabledRef.current = null;
+            midiRotationTimeoutRef.current = null;
+          }, MIDI_ROTATION_TIMEOUT);
           
           if (mapping.relative) {
             // Relative mode for DJ platters/endless encoders:
