@@ -7,6 +7,7 @@ import { usePlayMode } from '@/hooks/usePlayMode';
 import { useSettingsStorage } from '@/hooks/useSettingsStorage';
 import { useCustomModels } from '@/hooks/useCustomModels';
 import { useRemoteModels } from '@/hooks/useRemoteModels';
+import { useFavorites } from '@/hooks/useFavorites';
 import { useMidi } from '@/hooks/useMidi';
 import { useMidiMappings } from '@/hooks/useMidiMappings';
 import { Onboarding } from '@/components/visualizer/Onboarding';
@@ -29,6 +30,12 @@ export default function Index() {
   const audioAnalyzer = useAudioAnalyzer();
   const customModels = useCustomModels();
   const remoteModels = useRemoteModels();
+  
+  // Favorites for 3D models
+  const favorites = useFavorites({
+    customModelIds: customModels.models.map(m => m.id),
+    remoteModelIds: remoteModels.models.map(m => m.id),
+  });
   
   // Settings storage for presets and session restore
   const storage = useSettingsStorage();
@@ -58,6 +65,50 @@ export default function Index() {
     }));
   }, []);
 
+  // Helper to get current model ID for favorite navigation
+  const getCurrentModelId = useCallback((): string | null => {
+    // First check if regions have a custom model assigned
+    const customModelId = regions[0]?.customModelId;
+    if (customModelId) return customModelId;
+    // Otherwise return the current default animation mode
+    return settings.animationMode3D;
+  }, [regions, settings.animationMode3D]);
+
+  // Jump to favorite model (next or previous)
+  const handleJumpToFavorite = useCallback((direction: 'next' | 'previous') => {
+    if (settings.visualizerMode !== '3d') {
+      toast({ title: "Favorites only work in 3D mode" });
+      return;
+    }
+    
+    const currentModelId = getCurrentModelId();
+    const nextFavoriteId = direction === 'next' 
+      ? favorites.getNextFavorite(currentModelId)
+      : favorites.getPreviousFavorite(currentModelId);
+    
+    if (!nextFavoriteId) {
+      toast({ title: "No favorites yet" });
+      return;
+    }
+    
+    const modelType = favorites.getModelType(nextFavoriteId);
+    
+    if (modelType === 'default') {
+      // It's a default shape - update the animation mode
+      updateSetting('animationMode3D', nextFavoriteId as any);
+      // Clear custom model from regions
+      setRegions(prev => prev.map(r => ({ ...r, customModelId: undefined })));
+      toast({ title: `Shape: ${nextFavoriteId.replace('3D', '')}` });
+    } else {
+      // It's a remote or custom model
+      setRegions(prev => prev.map(r => ({ ...r, customModelId: nextFavoriteId })));
+      // Try to get model name
+      const remoteName = remoteModels.models.find(m => m.id === nextFavoriteId)?.name;
+      const customName = customModels.models.find(m => m.id === nextFavoriteId)?.name;
+      toast({ title: `Model: ${remoteName || customName || nextFavoriteId}` });
+    }
+  }, [settings.visualizerMode, getCurrentModelId, favorites, updateSetting, remoteModels.models, customModels.models, toast]);
+
   // MIDI control
   const midiMappings = useMidiMappings({
     settings,
@@ -68,6 +119,7 @@ export default function Index() {
     },
     onCameraRotation: setMidiCameraAngle,
     onTriggerBounce: handleTriggerBounce,
+    onJumpToFavorite: handleJumpToFavorite,
   });
   
   const midi = useMidi(midiMappings.handleMidiMessage);
@@ -84,18 +136,21 @@ export default function Index() {
 
   // Preset handlers
   const handleLoadPreset = useCallback((id: string) => {
-    const presetSettings = storage.loadPreset(id);
-    if (presetSettings) {
-      loadSettings(presetSettings);
+    const presetData = storage.loadPreset(id);
+    if (presetData) {
+      loadSettings(presetData.settings);
+      if (presetData.favorites) {
+        favorites.setFavoritesFromPreset(presetData.favorites);
+      }
       toast({ title: "Preset loaded" });
     }
-  }, [storage, loadSettings, toast]);
+  }, [storage, loadSettings, favorites, toast]);
 
   const handleSavePreset = useCallback((name: string) => {
-    const preset = storage.savePreset(name, settings);
+    const preset = storage.savePreset(name, settings, favorites.getFavorites());
     toast({ title: `Saved "${preset.name}"` });
     return preset;
-  }, [storage, settings, toast]);
+  }, [storage, settings, favorites, toast]);
 
   const handleDeletePreset = useCallback((id: string) => {
     storage.deletePreset(id);
@@ -252,6 +307,15 @@ export default function Index() {
         }
       }
       
+      // < and > keys for favorite navigation
+      if (e.key === ',' || e.key === '<') {
+        e.preventDefault();
+        handleJumpToFavorite('previous');
+      }
+      if (e.key === '.' || e.key === '>') {
+        e.preventDefault();
+        handleJumpToFavorite('next');
+      }
       // 'f' key to test fade out on first region
       if ((e.key === 'f' || e.key === 'F') && regions.length > 0) {
         const startTime = performance.now();
@@ -284,7 +348,7 @@ export default function Index() {
     }; 
     window.addEventListener('keydown', h, true); // Use capture phase to intercept before Select components
     return () => window.removeEventListener('keydown', h, true);
-  }, [appState, regions, settings, updateSetting, customModels.models, toast]);
+  }, [appState, regions, settings, updateSetting, customModels.models, toast, handleJumpToFavorite]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -398,6 +462,9 @@ export default function Index() {
           onMidiClearAllMappings={midiMappings.clearAllMappings}
           getMidiMappingForControl={midiMappings.getMappingForControl}
           onMidiSetMappingRelative={midiMappings.setMappingRelative}
+          // Favorites
+          isFavorite={favorites.isFavorite}
+          onToggleFavorite={favorites.toggleFavorite}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers, ListOrdered } from 'lucide-react';
+import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers, ListOrdered, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -78,6 +78,9 @@ interface ControlPanelProps {
   onMidiClearAllMappings: () => void;
   getMidiMappingForControl: (controlId: string) => MidiMapping | undefined;
   onMidiSetMappingRelative: (controlId: string, relative: boolean) => void;
+  // Favorites
+  isFavorite: (modelId: string) => boolean;
+  onToggleFavorite: (modelId: string) => void;
 }
 
 export function ControlPanel({
@@ -134,6 +137,8 @@ export function ControlPanel({
   onMidiClearAllMappings,
   getMidiMappingForControl,
   onMidiSetMappingRelative,
+  isFavorite,
+  onToggleFavorite,
 }: ControlPanelProps) {
   return (
     <>
@@ -950,6 +955,18 @@ export function ControlPanel({
                       <SelectItem value="helicoid3D">Helicoid</SelectItem>
                     </SelectContent>
                   </Select>
+                  
+                  {/* Favorite toggle for current default shape */}
+                  <button
+                    type="button"
+                    onClick={() => onToggleFavorite(settings.animationMode3D)}
+                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Star 
+                      className={`w-3 h-3 ${isFavorite(settings.animationMode3D) ? 'text-yellow-500 fill-yellow-500' : ''}`}
+                    />
+                    {isFavorite(settings.animationMode3D) ? 'Remove from favorites' : 'Add to favorites'}
+                  </button>
                 </div>
 
                 {settings.animationMode3D === 'random3D' && (
@@ -1415,6 +1432,8 @@ export function ControlPanel({
                   remoteModelsError={remoteModelsError}
                   onSelectRemoteModel={onSelectRemoteModel}
                   getRemoteModelLoadingState={getRemoteModelLoadingState}
+                  isFavorite={isFavorite}
+                  onToggleFavorite={onToggleFavorite}
                 />
 
                 <p className="text-xs text-muted-foreground">
