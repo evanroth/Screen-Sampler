@@ -69,9 +69,12 @@ export function usePlayMode({
       onUpdateRegion(nextRegion.id, { visible: true });
       currentIndexRef.current = nextIdx;
     } else if (currentSettings.transition === 'fade') {
-      // Fade transition - both regions visible throughout, controlled by opacity
-      // Make incoming region visible immediately at 0 opacity
-      onUpdateRegion(nextRegion.id, { visible: true, fadeOpacity: 0 });
+      // Fade transition - ensure opacity is set BEFORE enabling visibility.
+      // This prevents a single-frame flash at full opacity when the mesh becomes visible.
+      onUpdateRegion(nextRegion.id, { fadeOpacity: 0 });
+      requestAnimationFrame(() => {
+        onUpdateRegion(nextRegion.id, { visible: true });
+      });
       
       const startTime = performance.now();
       

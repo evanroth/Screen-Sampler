@@ -77,6 +77,14 @@ function RegionMesh({
   // Use override mode (for morph ghost), region-specific mode, or fall back to default
   const mode = overrideMode || region.animationMode3D || defaultMode;
 
+  // IMPORTANT: Initialize material opacity from the current region fade state.
+  // Otherwise, newly-mounted meshes will render 1 frame at the JSX default (0.95)
+  // before the first useFrame() tick applies fadeOpacity.
+  const initialMaterialOpacity = useMemo(() => {
+    if (overrideOpacity !== undefined) return overrideOpacity * 0.95;
+    return (region.fadeOpacity ?? 1) * 0.95;
+  }, [overrideOpacity, region.fadeOpacity]);
+
   // Create offscreen canvas for region capture
   useEffect(() => {
     const quality = settings.textureQuality;
@@ -180,13 +188,9 @@ function RegionMesh({
       if (overrideOpacity !== undefined) {
         targetOpacity = overrideOpacity * 0.95;
       } else {
-        // Handle opacity based on transition type
+        // Default: opacity follows fadeOpacity when provided; otherwise stays at 0.95
+        // (This prevents a single-frame flash when a region becomes visible mid-transition.)
         targetOpacity = (region.fadeOpacity ?? 1) * 0.95;
-        
-        // For zoom transitions, don't change opacity
-        if (region.morphProgress !== undefined && region.transitionType === 'zoom') {
-          targetOpacity = 0.95;
-        }
       }
       
       const currentOpacity = materialRef.current.opacity;
@@ -456,13 +460,18 @@ function RegionMesh({
   }, [mode, customGeometries, region.customModelId, getCustomGeometry]);
 
   return (
-    <mesh ref={meshRef}>
+    <mesh
+      ref={meshRef}
+      // Keep meshes mounted even when hidden so they don't reset animation time (prevents position "jump")
+      // but mark them invisible at the Three.js level so camera-target centering can ignore them.
+      visible={region.visible !== false}
+    >
       {geometry}
       <meshBasicMaterial 
         ref={materialRef} 
         side={THREE.DoubleSide}
         transparent
-        opacity={0.95}
+        opacity={initialMaterialOpacity}
       />
     </mesh>
   );
@@ -639,9 +648,18 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   const isDraggingRef = useRef(false);
   
   // Filter visible regions, then separate fullscreen background from normal
-  const visibleRegions = regions.filter(r => r.visible !== false);
-  const backgroundRegions = visibleRegions.filter(r => r.fullscreenBackground);
-  const normalRegions = visibleRegions.filter(r => !r.fullscreenBackground);
+  const backgroundRegions = regions.filter(r => r.fullscreenBackground && r.visible !== false);
+  const layoutNormalRegions = regions.filter(r => !r.fullscreenBackground && r.visible !== false);
+  const allNormalRegions = regions.filter(r => !r.fullscreenBackground);
+
+  const layoutInfo = useMemo(() => {
+    const indexMap = new Map<string, number>();
+    layoutNormalRegions.forEach((r, i) => indexMap.set(r.id, i));
+    return {
+      indexMap,
+      total: layoutNormalRegions.length,
+    };
+  }, [layoutNormalRegions]);
   
   // Handle OrbitControls events to track drag state (ref-based, no React state updates)
   useEffect(() => {
@@ -718,18 +736,19 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
     if (!controlsRef.current || !meshGroupRef.current) return;
     
     const children = meshGroupRef.current.children;
-    if (children.length === 0) return;
+    const visibleChildren = children.filter((c) => (c as any).visible !== false);
+    if (visibleChildren.length === 0) return;
     
     // Calculate center point of all meshes
     let centerX = 0, centerY = 0, centerZ = 0;
-    children.forEach((child) => {
+    visibleChildren.forEach((child) => {
       centerX += child.position.x;
       centerY += child.position.y;
       centerZ += child.position.z;
     });
-    centerX /= children.length;
-    centerY /= children.length;
-    centerZ /= children.length;
+    centerX /= visibleChildren.length;
+    centerY /= visibleChildren.length;
+    centerZ /= visibleChildren.length;
     
     // Smoothly interpolate target to center
     controlsRef.current.target.lerp(
@@ -804,12 +823,15 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
       ))}
       
       <group ref={meshGroupRef}>
-        {normalRegions.map((region, index) => (
+        {allNormalRegions.map((region) => {
+          const total = Math.max(layoutInfo.total, 1);
+          const index = layoutInfo.indexMap.get(region.id) ?? 0;
+          return (
           <RegionMesh
             key={region.id}
             region={region}
             index={index}
-            totalRegions={normalRegions.length}
+            totalRegions={total}
             settings={settings}
             audioLevel={audioLevel}
             defaultMode={defaultMode}
@@ -817,7 +839,8 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
             getCustomGeometry={getCustomGeometry}
             isDraggingRef={isDraggingRef}
           />
-        ))}
+        );
+        })}
       </group>
       
       <OrbitControls 
