@@ -217,6 +217,24 @@ export default function Index() {
           const visibleIndex = regions.findIndex(r => r.visible !== false);
           const nextIndex = (visibleIndex + direction + regions.length) % regions.length;
           setRegions(prev => prev.map((r, i) => ({ ...r, visible: i === nextIndex })));
+        } else if (customModels.models.length > 1 && settings.visualizerMode === '3d') {
+          // Custom models mode: cycle through custom 3D models
+          // Find which model is currently assigned to the first region (or none)
+          const currentModelId = regions[0]?.customModelId;
+          const modelIds = customModels.models.map(m => m.id);
+          
+          let currentIndex = currentModelId ? modelIds.indexOf(currentModelId) : -1;
+          // If no model assigned yet or model not found, start from beginning
+          if (currentIndex === -1) currentIndex = direction === 1 ? -1 : modelIds.length;
+          
+          const nextIndex = (currentIndex + direction + modelIds.length) % modelIds.length;
+          const nextModelId = modelIds[nextIndex];
+          
+          // Apply the model to all regions
+          setRegions(prev => prev.map(r => ({ ...r, customModelId: nextModelId })));
+          
+          const modelName = customModels.models[nextIndex]?.name;
+          toast({ title: `Model: ${modelName}` });
         } else if (settings.visualizerMode === '3d') {
           // 3D mode: cycle through 3D animations
           const modes = ANIMATION_MODES_3D;
@@ -264,7 +282,7 @@ export default function Index() {
     }; 
     window.addEventListener('keydown', h, true); // Use capture phase to intercept before Select components
     return () => window.removeEventListener('keydown', h, true);
-  }, [appState, regions, settings, updateSetting]);
+  }, [appState, regions, settings, updateSetting, customModels.models, toast]);
 
   return (
     <div className="min-h-screen bg-background">
