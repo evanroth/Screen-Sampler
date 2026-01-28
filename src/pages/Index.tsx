@@ -55,32 +55,6 @@ export default function Index() {
 
   // Camera rotation ref for MIDI control (passed to VisualizerCanvas3D)
   const [midiCameraAngle, setMidiCameraAngle] = useState<number | null>(null);
-  
-  // Auto-rotate temporary disable state for mouse drag
-  const autoRotateResumeTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  const wasAutoRotatingRef = React.useRef(false);
-  
-  // Handler to temporarily disable auto-rotate when user drags
-  const handleTemporaryDisableAutoRotate = useCallback(() => {
-    if (settings.autoRotateCamera) {
-      // Save that we were auto-rotating and disable
-      wasAutoRotatingRef.current = true;
-      updateSetting('autoRotateCamera', false);
-      
-      // Clear any existing timeout
-      if (autoRotateResumeTimeoutRef.current) {
-        clearTimeout(autoRotateResumeTimeoutRef.current);
-      }
-      
-      // Re-enable after 150ms of no drag activity
-      autoRotateResumeTimeoutRef.current = setTimeout(() => {
-        if (wasAutoRotatingRef.current) {
-          updateSetting('autoRotateCamera', true);
-          wasAutoRotatingRef.current = false;
-        }
-      }, 150);
-    }
-  }, [settings.autoRotateCamera, updateSetting]);
 
   // Bounce trigger handler
   const handleTriggerBounce = useCallback((regionIndex: number | 'all') => {
@@ -413,7 +387,6 @@ export default function Index() {
               return customModels.getGeometry(modelId);
             }}
             midiCameraAngle={midiCameraAngle}
-            onTemporaryDisableAutoRotate={handleTemporaryDisableAutoRotate}
           />
         ) : (
           <VisualizerCanvas 

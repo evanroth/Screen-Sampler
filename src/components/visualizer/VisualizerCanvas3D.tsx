@@ -32,7 +32,6 @@ interface VisualizerCanvas3DProps {
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
   getCustomGeometry?: (modelId: string) => THREE.BufferGeometry | null;
   midiCameraAngle?: number | null; // MIDI-controlled camera horizontal rotation
-  onTemporaryDisableAutoRotate?: () => void; // Called when user drags to temporarily disable auto-rotate
 }
 
 interface RegionTextureProps {
@@ -46,6 +45,7 @@ interface RegionTextureProps {
   getCustomGeometry?: (modelId: string) => THREE.BufferGeometry | null;
   overrideMode?: AnimationMode3D; // For morph transitions
   overrideOpacity?: number; // For morph transitions
+  isDraggingRef?: React.MutableRefObject<boolean>; // Shared ref for drag state
 }
 
 function RegionMesh({ 
@@ -58,7 +58,8 @@ function RegionMesh({
   getVideoElement,
   getCustomGeometry,
   overrideMode,
-  overrideOpacity
+  overrideOpacity,
+  isDraggingRef
 }: RegionTextureProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
@@ -103,9 +104,11 @@ function RegionMesh({
     timeRef.current += delta;
     const time = timeRef.current;
 
-    // Turntable stop effect: smoothly decelerate when auto-rotate is turned off
-    const targetVelocity = settings.autoRotateCamera ? 1 : 0;
-    const friction = settings.autoRotateCamera ? 0.1 : 0.02; // Faster ramp up, slower decay
+    // Turntable stop effect: smoothly decelerate when auto-rotate is turned off or user is dragging
+    // When dragging, immediately stop (target velocity 0, high friction for instant stop)
+    const isUserDragging = isDraggingRef?.current ?? false;
+    const targetVelocity = (settings.autoRotateCamera && !isUserDragging) ? 1 : 0;
+    const friction = isUserDragging ? 0.5 : (settings.autoRotateCamera ? 0.1 : 0.02); // Instant stop when dragging
     rotateVelocityRef.current += (targetVelocity - rotateVelocityRef.current) * friction;
     
     // Stop completely when velocity is negligible
@@ -612,7 +615,7 @@ function FullscreenBackgroundMesh({
   );
 }
 
-function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, getCustomGeometry, midiCameraAngle, onTemporaryDisableAutoRotate }: {
+function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, getCustomGeometry, midiCameraAngle }: {
   regions: CaptureRegion[];
   settings: VisualizerSettings;
   audioLevel: number;
@@ -620,7 +623,6 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   getVideoElement: (sourceId: string) => HTMLVideoElement | null;
   getCustomGeometry?: (modelId: string) => THREE.BufferGeometry | null;
   midiCameraAngle?: number | null;
-  onTemporaryDisableAutoRotate?: () => void;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -641,43 +643,27 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   const backgroundRegions = visibleRegions.filter(r => r.fullscreenBackground);
   const normalRegions = visibleRegions.filter(r => !r.fullscreenBackground);
   
-  // Handle OrbitControls events to temporarily disable auto-rotate during drag
+  // Handle OrbitControls events to track drag state (ref-based, no React state updates)
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
     
     const handleStart = () => {
       isDraggingRef.current = true;
-      if (onTemporaryDisableAutoRotate) {
-        onTemporaryDisableAutoRotate();
-      }
-    };
-    
-    const handleChange = () => {
-      // Keep calling during drag to reset the re-enable timeout
-      if (isDraggingRef.current && onTemporaryDisableAutoRotate) {
-        onTemporaryDisableAutoRotate();
-      }
     };
     
     const handleEnd = () => {
       isDraggingRef.current = false;
-      // One final call to trigger the re-enable timeout
-      if (onTemporaryDisableAutoRotate) {
-        onTemporaryDisableAutoRotate();
-      }
     };
     
     controls.addEventListener('start', handleStart);
-    controls.addEventListener('change', handleChange);
     controls.addEventListener('end', handleEnd);
     
     return () => {
       controls.removeEventListener('start', handleStart);
-      controls.removeEventListener('change', handleChange);
       controls.removeEventListener('end', handleEnd);
     };
-  }, [onTemporaryDisableAutoRotate]);
+  }, []);
   
   useEffect(() => {
     // Calculate camera distance to fit objects at ~85% of screen
@@ -769,9 +755,10 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
       manualRotationAngleRef.current = midiCameraAngle;
       lastMidiAngleRef.current = midiCameraAngle;
     }
-    // Turntable stop effect: smoothly decelerate camera rotation when auto-rotate is turned off
-    const targetVelocity = settings.autoRotateCamera ? 1 : 0;
-    const friction = settings.autoRotateCamera ? 0.1 : 0.02; // Faster ramp up, slower decay
+    // Turntable stop effect: smoothly decelerate camera rotation when auto-rotate is off or user is dragging
+    const isUserDragging = isDraggingRef.current;
+    const targetVelocity = (settings.autoRotateCamera && !isUserDragging) ? 1 : 0;
+    const friction = isUserDragging ? 0.5 : (settings.autoRotateCamera ? 0.1 : 0.02); // Instant stop when dragging
     cameraRotateVelocityRef.current += (targetVelocity - cameraRotateVelocityRef.current) * friction;
     
     // Stop completely when velocity is negligible
@@ -828,6 +815,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
             defaultMode={defaultMode}
             getVideoElement={getVideoElement}
             getCustomGeometry={getCustomGeometry}
+            isDraggingRef={isDraggingRef}
           />
         ))}
       </group>
@@ -856,7 +844,6 @@ export function VisualizerCanvas3D({
   getVideoElement,
   getCustomGeometry,
   midiCameraAngle,
-  onTemporaryDisableAutoRotate,
 }: VisualizerCanvas3DProps) {
   const [currentDefaultMode, setCurrentDefaultMode] = useState<AnimationMode3D>(
     settings.animationMode3D === 'random3D' 
@@ -1012,7 +999,6 @@ export function VisualizerCanvas3D({
           getVideoElement={getVideoElement}
           getCustomGeometry={getCustomGeometry}
           midiCameraAngle={midiCameraAngle}
-          onTemporaryDisableAutoRotate={onTemporaryDisableAutoRotate}
         />
       </Canvas>
     </div>
