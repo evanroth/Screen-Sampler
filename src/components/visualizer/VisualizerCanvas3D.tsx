@@ -64,8 +64,12 @@ function RegionMesh({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
   const timeRef = useRef(0);
-  // Rotation time that ONLY advances while auto-rotate is enabled (prevents jump on resume)
+  // Rotation time that advances based on velocity (for turntable stop effect)
   const rotateTimeRef = useRef(0);
+  // Current rotation velocity (decays when auto-rotate is off)
+  const rotateVelocityRef = useRef(0);
+  // Track previous auto-rotate state to detect toggle
+  const wasAutoRotatingRef = useRef(settings.autoRotateCamera);
   const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
   
   // Use override mode (for morph ghost), region-specific mode, or fall back to default
@@ -98,10 +102,21 @@ function RegionMesh({
     timeRef.current += delta;
     const time = timeRef.current;
 
-    if (settings.autoRotateCamera) {
-      rotateTimeRef.current += delta;
+    // Turntable stop effect: smoothly decelerate when auto-rotate is turned off
+    const targetVelocity = settings.autoRotateCamera ? 1 : 0;
+    const friction = settings.autoRotateCamera ? 0.1 : 0.02; // Faster ramp up, slower decay
+    rotateVelocityRef.current += (targetVelocity - rotateVelocityRef.current) * friction;
+    
+    // Stop completely when velocity is negligible
+    if (rotateVelocityRef.current < 0.001) {
+      rotateVelocityRef.current = 0;
     }
+    
+    // Advance rotation time based on current velocity
+    rotateTimeRef.current += delta * rotateVelocityRef.current;
     const rotateTime = rotateTimeRef.current;
+    
+    wasAutoRotatingRef.current = settings.autoRotateCamera;
     
     // Update texture from video
     const ctx = canvasRef.current.getContext('2d');
