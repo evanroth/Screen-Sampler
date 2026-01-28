@@ -72,16 +72,22 @@ export function usePlayMode({
       // Crossfade transition - both regions visible during transition
       const startTime = performance.now();
       
-      // Make next region visible at start (but with 0 opacity)
+      // Set initial states before animation starts
+      onUpdateRegion(currentRegion.id, { fadeOpacity: 1 });
       onUpdateRegion(nextRegion.id, { visible: true, fadeOpacity: 0 });
       
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / TRANSITION_DURATION, 1);
         
+        // Apply easing for smoother visual
+        const eased = progress < 0.5
+          ? 2 * progress * progress  // ease in
+          : 1 - Math.pow(-2 * progress + 2, 2) / 2; // ease out
+        
         // Crossfade: current fades out while next fades in simultaneously
-        const outOpacity = 1 - progress;
-        const inOpacity = progress;
+        const outOpacity = 1 - eased;
+        const inOpacity = eased;
         
         onUpdateRegion(currentRegion.id, { fadeOpacity: outOpacity });
         onUpdateRegion(nextRegion.id, { fadeOpacity: inOpacity });
@@ -101,18 +107,22 @@ export function usePlayMode({
       // Zoom transition - both regions visible during transition
       const startTime = performance.now();
       
-      // Make next region visible at start (but at scale 0)
+      // Make next region visible at start but at scale 0 (morphProgress 0 = scale 0)
       onUpdateRegion(nextRegion.id, { visible: true, morphProgress: 0, transitionType: 'zoom' });
+      // Ensure current region has zoom transition type set
+      onUpdateRegion(currentRegion.id, { morphProgress: 1, transitionType: 'zoom' });
       
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / TRANSITION_DURATION, 1);
         
-        // Both animate simultaneously - current shrinks out, next grows in
-        // For the outgoing region, progress goes 0->1 (shrinks to minimum at 0.5, then disappears)
-        // For the incoming region, we invert so it starts at minimum and grows
-        onUpdateRegion(currentRegion.id, { morphProgress: progress * 0.5, transitionType: 'zoom' });
-        onUpdateRegion(nextRegion.id, { morphProgress: 0.5 + progress * 0.5, transitionType: 'zoom' });
+        // Current region: scale goes from 1 to 0 (morphProgress 1 -> 0)
+        // Next region: scale goes from 0 to 1 (morphProgress 0 -> 1)
+        const outProgress = 1 - progress;
+        const inProgress = progress;
+        
+        onUpdateRegion(currentRegion.id, { morphProgress: outProgress, transitionType: 'zoom' });
+        onUpdateRegion(nextRegion.id, { morphProgress: inProgress, transitionType: 'zoom' });
         
         if (progress < 1) {
           animationRef.current = requestAnimationFrame(animate);

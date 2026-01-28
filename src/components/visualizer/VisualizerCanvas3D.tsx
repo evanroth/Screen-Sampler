@@ -189,16 +189,27 @@ function RegionMesh({
         }
       }
       
-      const currentOpacity = materialRef.current.opacity;
-      materialRef.current.opacity = currentOpacity + (targetOpacity - currentOpacity) * 0.15;
+      // Apply opacity directly without interpolation to prevent lag during transitions
+      // Only interpolate when not in a transition (fadeOpacity undefined)
+      if (region.fadeOpacity !== undefined) {
+        // During fade transition - apply directly
+        materialRef.current.opacity = targetOpacity;
+      } else {
+        // Normal state - smooth interpolation
+        const currentOpacity = materialRef.current.opacity;
+        materialRef.current.opacity = currentOpacity + (targetOpacity - currentOpacity) * 0.15;
+      }
     }
 
-    // Calculate zoom scale modifier (shrinks at midpoint, grows back) - only for zoom transitions
+    // Calculate zoom scale modifier - only for zoom transitions
     let morphScale = 1;
     if (region.morphProgress !== undefined && region.transitionType === 'zoom') {
-      // At progress 0.5, scale is at minimum (0.1), at 0 and 1 it's at maximum (1)
-      const distFromMid = Math.abs(region.morphProgress - 0.5) * 2; // 0 at midpoint, 1 at ends
-      morphScale = 0.1 + distFromMid * 0.9;
+      // morphProgress 0 = start (scale 0), morphProgress 1 = end (scale 1)
+      // Use smooth easing for better visual
+      const eased = region.morphProgress < 0.5
+        ? 2 * region.morphProgress * region.morphProgress  // ease in
+        : 1 - Math.pow(-2 * region.morphProgress + 2, 2) / 2; // ease out
+      morphScale = eased;
     }
 
     // Calculate MIDI bounce scale (triggered by button press, decays over 300ms)
