@@ -305,7 +305,9 @@ export default function Index() {
           const modelName = customModels.models[nextIndex]?.name;
           toast({ title: `Model: ${modelName}` });
         } else if (settings.visualizerMode === '3d') {
-          // 3D mode: cycle through 3D animations
+          // 3D mode: cycle through 3D animations (default shapes)
+          // Clear any custom model so the default shape shows
+          setRegions(prev => prev.map(r => ({ ...r, customModelId: undefined })));
           const modes = ANIMATION_MODES_3D;
           const currentIndex = modes.indexOf(settings.animationMode3D);
           const nextIndex = (currentIndex + direction + modes.length) % modes.length;
