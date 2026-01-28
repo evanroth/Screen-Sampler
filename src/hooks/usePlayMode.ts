@@ -69,41 +69,29 @@ export function usePlayMode({
       onUpdateRegion(nextRegion.id, { visible: true });
       currentIndexRef.current = nextIdx;
     } else if (currentSettings.transition === 'fade') {
-      // Fade transition
+      // Fade transition - both regions visible throughout, controlled by opacity
+      // Make incoming region visible immediately at 0 opacity
+      onUpdateRegion(nextRegion.id, { visible: true, fadeOpacity: 0 });
+      
       const startTime = performance.now();
       
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / TRANSITION_DURATION, 1);
         
-        // Fade out current, fade in next
-        let outOpacity: number;
-        let inOpacity: number;
+        // Crossfade: current fades out while next fades in
+        const outOpacity = 1 - progress;
+        const inOpacity = progress;
         
-        if (progress < 0.5) {
-          // First half: fade out current
-          outOpacity = 1 - (progress * 2);
-          inOpacity = 0;
-        } else {
-          // Second half: fade in next
-          outOpacity = 0;
-          inOpacity = (progress - 0.5) * 2;
-        }
-        
-        // At midpoint, switch visibility
-        if (progress >= 0.5 && progress < 0.55) {
-          onUpdateRegion(currentRegion.id, { visible: false, fadeOpacity: undefined });
-          onUpdateRegion(nextRegion.id, { visible: true, fadeOpacity: inOpacity });
-        } else if (progress < 0.5) {
-          onUpdateRegion(currentRegion.id, { fadeOpacity: outOpacity });
-        } else {
-          onUpdateRegion(nextRegion.id, { fadeOpacity: inOpacity });
-        }
+        // Update both regions' opacity simultaneously
+        onUpdateRegion(currentRegion.id, { fadeOpacity: outOpacity });
+        onUpdateRegion(nextRegion.id, { fadeOpacity: inOpacity });
         
         if (progress < 1) {
           animationRef.current = requestAnimationFrame(animate);
         } else {
-          // Complete
+          // Complete - hide outgoing, clear opacity on incoming
+          onUpdateRegion(currentRegion.id, { visible: false, fadeOpacity: undefined });
           onUpdateRegion(nextRegion.id, { fadeOpacity: undefined });
           currentIndexRef.current = nextIdx;
         }
@@ -111,27 +99,27 @@ export function usePlayMode({
       
       animationRef.current = requestAnimationFrame(animate);
     } else if (currentSettings.transition === 'zoom') {
-      // Zoom transition
+      // Zoom transition - both regions visible throughout, controlled by morphProgress
+      // Make incoming region visible immediately with morphProgress starting at 0
+      onUpdateRegion(nextRegion.id, { visible: true, morphProgress: 0, transitionType: 'zoom' });
+      
       const startTime = performance.now();
       
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / TRANSITION_DURATION, 1);
         
-        // At midpoint, switch visibility
-        if (progress >= 0.5 && progress < 0.55) {
-          onUpdateRegion(currentRegion.id, { visible: false, morphProgress: undefined });
-          onUpdateRegion(nextRegion.id, { visible: true, morphProgress: progress, transitionType: 'zoom' });
-        } else if (progress < 0.5) {
-          onUpdateRegion(currentRegion.id, { morphProgress: progress, transitionType: 'zoom' });
-        } else {
-          onUpdateRegion(nextRegion.id, { morphProgress: progress, transitionType: 'zoom' });
-        }
+        // Update both regions' morph progress simultaneously
+        // Current zooms out (progress 0->1 means scale 1->0)
+        // Next zooms in (progress 0->1 means scale 0->1)
+        onUpdateRegion(currentRegion.id, { morphProgress: progress, transitionType: 'zoom' });
+        onUpdateRegion(nextRegion.id, { morphProgress: progress, transitionType: 'zoom' });
         
         if (progress < 1) {
           animationRef.current = requestAnimationFrame(animate);
         } else {
-          // Complete
+          // Complete - hide outgoing, clear morph on incoming
+          onUpdateRegion(currentRegion.id, { visible: false, morphProgress: undefined, transitionType: undefined });
           onUpdateRegion(nextRegion.id, { morphProgress: undefined, transitionType: undefined });
           currentIndexRef.current = nextIdx;
         }
