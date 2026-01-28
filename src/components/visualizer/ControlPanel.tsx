@@ -16,6 +16,7 @@ import { CustomModelsSection } from './CustomModelsSection';
 import { MidiSection } from './MidiSection';
 import { SavedPreset } from '@/hooks/useSettingsStorage';
 import { CustomModel } from '@/hooks/useCustomModels';
+import { RemoteModel, RemoteModelLoadingState } from '@/hooks/useRemoteModels';
 import { MidiDevice, MidiMessage } from '@/hooks/useMidi';
 import { MidiMapping } from '@/hooks/useMidiMappings';
 
@@ -54,6 +55,12 @@ interface ControlPanelProps {
   onAddCustomModel: (file: File) => Promise<CustomModel | null>;
   onDeleteCustomModel: (modelId: string) => void;
   onClearCustomModelsError: () => void;
+  // Remote (built-in) 3D Models
+  remoteModels?: RemoteModel[];
+  remoteModelsLoading?: boolean;
+  remoteModelsError?: string | null;
+  onSelectRemoteModel?: (modelId: string) => void;
+  getRemoteModelLoadingState?: (modelId: string) => RemoteModelLoadingState;
   // MIDI
   midiSupported: boolean;
   midiEnabled: boolean;
@@ -105,6 +112,11 @@ export function ControlPanel({
   onAddCustomModel,
   onDeleteCustomModel,
   onClearCustomModelsError,
+  remoteModels,
+  remoteModelsLoading,
+  remoteModelsError,
+  onSelectRemoteModel,
+  getRemoteModelLoadingState,
   midiSupported,
   midiEnabled,
   midiDevices,
@@ -1396,6 +1408,11 @@ export function ControlPanel({
                   onAddModel={onAddCustomModel}
                   onDeleteModel={onDeleteCustomModel}
                   onClearError={onClearCustomModelsError}
+                  remoteModels={remoteModels}
+                  remoteModelsLoading={remoteModelsLoading}
+                  remoteModelsError={remoteModelsError}
+                  onSelectRemoteModel={onSelectRemoteModel}
+                  getRemoteModelLoadingState={getRemoteModelLoadingState}
                 />
 
                 <p className="text-xs text-muted-foreground">
