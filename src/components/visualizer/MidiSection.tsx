@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -39,6 +40,8 @@ interface MidiSectionProps {
   getMappingForControl: (controlId: string) => MidiMapping | undefined;
   onSetMappingRelative: (controlId: string, relative: boolean) => void;
   regionCount: number;
+  midiRotationSensitivity: number;
+  onMidiRotationSensitivityChange: (value: number) => void;
 }
 
 function formatMidiMessage(message: MidiMessage): string {
@@ -182,6 +185,8 @@ export function MidiSection({
   getMappingForControl,
   onSetMappingRelative,
   regionCount,
+  midiRotationSensitivity,
+  onMidiRotationSensitivityChange,
 }: MidiSectionProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   
@@ -373,6 +378,25 @@ export function MidiSection({
                 {modelRotationControls.length > 0 && (
                   <div className="space-y-1">
                     <div className="text-xs font-medium text-muted-foreground mb-2">Model Rotation (CC)</div>
+                    
+                    {/* Sensitivity Slider */}
+                    <div className="bg-secondary/30 p-2 rounded mb-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-muted-foreground">Platter Sensitivity</span>
+                        <span className="text-xs font-mono text-muted-foreground">
+                          {(midiRotationSensitivity * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <Slider
+                        value={[midiRotationSensitivity]}
+                        onValueChange={([v]) => onMidiRotationSensitivityChange(v)}
+                        min={0.01}
+                        max={0.2}
+                        step={0.01}
+                        className="w-full"
+                      />
+                    </div>
+                    
                     {modelRotationControls.map((control) => (
                       <MappingRow
                         key={control.id}
