@@ -11,7 +11,8 @@ export type MidiTargetType =
   | 'regionSetting' // Per-region slider (scale3D)
   | 'regionBounce' // Trigger single bounce on region
   | 'cameraRotation' // Horizontal camera rotation
-  | 'modelRotation'; // Per-region model Y rotation (like horizontal mouse drag)
+  | 'modelRotation' // Per-region model Y rotation (like horizontal mouse drag)
+  | 'favoriteNavigation'; // Jump to next/previous favorite model
 
 export interface MidiMapping {
   id: string;
@@ -118,6 +119,10 @@ export const MAPPABLE_CONTROLS: MappableControl[] = [
   { id: 'region9Bounce', name: 'Region 9 Bounce', targetType: 'regionBounce', targetKey: '8', preferredMessageType: 'noteon' },
   { id: 'allRegionsBounce', name: 'All Regions Bounce', targetType: 'regionBounce', targetKey: 'all', preferredMessageType: 'noteon' },
   
+  // Favorite navigation (Note On - triggers jump to next/previous favorite)
+  { id: 'jumpToNextFavorite', name: 'Jump to Next Favorite', targetType: 'favoriteNavigation', targetKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'jumpToPreviousFavorite', name: 'Jump to Previous Favorite', targetType: 'favoriteNavigation', targetKey: 'previous', preferredMessageType: 'noteon' },
+  
   // Region visibility (dynamic - generated based on region count)
   { id: 'region1', name: 'Region 1 Visibility', targetType: 'regionVisibility', targetKey: '0', preferredMessageType: 'noteon' },
   { id: 'region2', name: 'Region 2 Visibility', targetType: 'regionVisibility', targetKey: '1', preferredMessageType: 'noteon' },
@@ -137,6 +142,7 @@ interface UseMidiMappingsOptions {
   onUpdateRegion: (regionId: string, updates: Partial<CaptureRegion>) => void;
   onCameraRotation?: (angle: number) => void; // Set camera azimuthal angle
   onTriggerBounce?: (regionIndex: number | 'all') => void; // Trigger bounce animation
+  onJumpToFavorite?: (direction: 'next' | 'previous') => void; // Jump to next/previous favorite
 }
 
 export function useMidiMappings({
@@ -146,6 +152,7 @@ export function useMidiMappings({
   onUpdateRegion,
   onCameraRotation,
   onTriggerBounce,
+  onJumpToFavorite,
 }: UseMidiMappingsOptions) {
   const [mappings, setMappings] = useState<MidiMapping[]>([]);
   const [learnMode, setLearnMode] = useState<string | null>(null); // Control ID being learned
@@ -553,8 +560,16 @@ export function useMidiMappings({
         }
         break;
       }
+      
+      case 'favoriteNavigation': {
+        // Trigger jump to next/previous favorite model
+        if (onJumpToFavorite) {
+          onJumpToFavorite(mapping.targetKey as 'next' | 'previous');
+        }
+        break;
+      }
     }
-  }, [learnMode, mappings, completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce]);
+  }, [learnMode, mappings, completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce, onJumpToFavorite]);
 
   return {
     mappings,

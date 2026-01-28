@@ -9,6 +9,7 @@ export interface SavedPreset {
   id: string;
   name: string;
   settings: VisualizerSettings;
+  favorites?: string[]; // Favorited model IDs
   createdAt: number;
 }
 
@@ -59,20 +60,25 @@ export function useSettingsStorage() {
     }
   }, [autoRestore]);
 
-  const savePreset = useCallback((name: string, settings: VisualizerSettings): SavedPreset => {
+  const savePreset = useCallback((name: string, settings: VisualizerSettings, favorites?: string[]): SavedPreset => {
     const preset: SavedPreset = {
       id: generateId(),
       name: name.trim() || 'Untitled Preset',
       settings: { ...settings },
+      favorites: favorites ? [...favorites] : undefined,
       createdAt: Date.now(),
     };
     setPresets((prev) => [preset, ...prev]);
     return preset;
   }, []);
 
-  const loadPreset = useCallback((id: string): VisualizerSettings | null => {
+  const loadPreset = useCallback((id: string): { settings: VisualizerSettings; favorites?: string[] } | null => {
     const preset = presets.find((p) => p.id === id);
-    return preset ? { ...preset.settings } : null;
+    if (!preset) return null;
+    return { 
+      settings: { ...preset.settings },
+      favorites: preset.favorites ? [...preset.favorites] : undefined,
+    };
   }, [presets]);
 
   const deletePreset = useCallback((id: string): void => {

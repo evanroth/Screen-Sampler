@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Trash2, FileBox, Loader2, Globe, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, Trash2, FileBox, Loader2, Globe, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { CustomModel } from '@/hooks/useCustomModels';
@@ -28,6 +28,9 @@ interface CustomModelsSectionProps {
   remoteModelsError?: string | null;
   onSelectRemoteModel?: (modelId: string) => void;
   getRemoteModelLoadingState?: (modelId: string) => RemoteModelLoadingState;
+  // Favorites
+  isFavorite?: (modelId: string) => boolean;
+  onToggleFavorite?: (modelId: string) => void;
 }
 
 export function CustomModelsSection({
@@ -42,6 +45,8 @@ export function CustomModelsSection({
   remoteModelsError,
   onSelectRemoteModel,
   getRemoteModelLoadingState,
+  isFavorite,
+  onToggleFavorite,
 }: CustomModelsSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -112,35 +117,53 @@ export function CustomModelsSection({
                 <div className="space-y-1 max-h-48 overflow-y-auto">
                   {remoteModels.map((model) => {
                     const loadingState = getRemoteModelLoadingState?.(model.id) ?? 'idle';
-                    const isLoading = loadingState === 'loading';
+                    const isModelLoading = loadingState === 'loading';
                     const isLoaded = loadingState === 'loaded';
                     const hasError = loadingState === 'error';
+                    const favorited = isFavorite?.(model.id) ?? false;
                     
                     return (
-                      <button 
+                      <div 
                         key={model.id}
-                        onClick={() => onSelectRemoteModel?.(model.id)}
-                        disabled={isLoading}
-                        className="flex items-center justify-between p-2 bg-secondary/50 rounded text-xs w-full text-left hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-between p-2 bg-secondary/50 rounded text-xs group"
                       >
-                        <div className="flex items-center gap-2 min-w-0">
-                          {isLoading ? (
-                            <Loader2 className="w-3 h-3 text-primary animate-spin flex-shrink-0" />
-                          ) : (
-                            <FileBox className={`w-3 h-3 flex-shrink-0 ${isLoaded ? 'text-primary' : hasError ? 'text-destructive' : 'text-muted-foreground'}`} />
-                          )}
-                          <span className="truncate">{model.name}</span>
-                          <span className="text-muted-foreground uppercase flex-shrink-0">
-                            .{model.fileType}
-                          </span>
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleFavorite?.(model.id);
+                            }}
+                            className="flex-shrink-0 hover:scale-110 transition-transform"
+                            title={favorited ? "Remove from favorites" : "Add to favorites"}
+                          >
+                            <Star 
+                              className={`w-3 h-3 ${favorited ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground'}`}
+                            />
+                          </button>
+                          <button
+                            onClick={() => onSelectRemoteModel?.(model.id)}
+                            disabled={isModelLoading}
+                            className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-primary transition-colors disabled:opacity-50"
+                          >
+                            {isModelLoading ? (
+                              <Loader2 className="w-3 h-3 text-primary animate-spin flex-shrink-0" />
+                            ) : (
+                              <FileBox className={`w-3 h-3 flex-shrink-0 ${isLoaded ? 'text-primary' : hasError ? 'text-destructive' : 'text-muted-foreground'}`} />
+                            )}
+                            <span className="truncate">{model.name}</span>
+                            <span className="text-muted-foreground uppercase flex-shrink-0">
+                              .{model.fileType}
+                            </span>
+                          </button>
                         </div>
-                        {isLoading && (
+                        {isModelLoading && (
                           <span className="text-xs text-muted-foreground">Loading...</span>
                         )}
                         {hasError && (
                           <span className="text-xs text-destructive">Failed</span>
                         )}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -209,28 +232,44 @@ export function CustomModelsSection({
         </div>
       ) : (
         <div className="space-y-1">
-          {models.map((model) => (
-            <div 
-              key={model.id}
-              className="flex items-center justify-between p-2 bg-secondary/50 rounded text-xs group"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <FileBox className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                <span className="truncate">{model.name}</span>
-                <span className="text-muted-foreground uppercase flex-shrink-0">
-                  .{model.fileType}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDeleteConfirmId(model.id)}
-                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          {models.map((model) => {
+            const favorited = isFavorite?.(model.id) ?? false;
+            return (
+              <div 
+                key={model.id}
+                className="flex items-center justify-between p-2 bg-secondary/50 rounded text-xs group"
               >
-                <Trash2 className="w-3 h-3 text-destructive" />
-              </Button>
-            </div>
-          ))}
+                <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFavorite?.(model.id);
+                    }}
+                    className="flex-shrink-0 hover:scale-110 transition-transform"
+                    title={favorited ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <Star 
+                      className={`w-3 h-3 ${favorited ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground'}`}
+                    />
+                  </button>
+                  <FileBox className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                  <span className="truncate">{model.name}</span>
+                  <span className="text-muted-foreground uppercase flex-shrink-0">
+                    .{model.fileType}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDeleteConfirmId(model.id)}
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="w-3 h-3 text-destructive" />
+                </Button>
+              </div>
+            );
+          })}
         </div>
       )}
 
