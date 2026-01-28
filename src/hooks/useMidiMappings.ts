@@ -55,8 +55,7 @@ export interface MappableControl {
 
 export const MAPPABLE_CONTROLS: MappableControl[] = [
   // Global settings - sliders (CC)
-  { id: 'panelScaleX', name: 'Panel Scale X', targetType: 'setting', targetKey: 'panelScaleX', preferredMessageType: 'cc', min: 0, max: 1, step: 0.05 },
-  { id: 'panelScaleY', name: 'Panel Scale Y', targetType: 'setting', targetKey: 'panelScaleY', preferredMessageType: 'cc', min: 0, max: 1, step: 0.05 },
+  { id: 'panelScaleX', name: 'Object Scale', targetType: 'setting', targetKey: 'panelScaleX', preferredMessageType: 'cc', min: 0, max: 1, step: 0.05 },
   { id: 'movementSpeed', name: 'Movement Speed', targetType: 'setting', targetKey: 'movementSpeed', preferredMessageType: 'cc', min: 0, max: 2, step: 0.1 },
   { id: 'bounceStrength', name: 'Bounce Strength', targetType: 'setting', targetKey: 'bounceStrength', preferredMessageType: 'cc', min: 0, max: 0.3, step: 0.01 },
   { id: 'trailAmount', name: 'Trail Amount', targetType: 'setting', targetKey: 'trailAmount', preferredMessageType: 'cc', min: 0, max: 1, step: 0.05 },
