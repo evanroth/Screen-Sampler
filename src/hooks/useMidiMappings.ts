@@ -12,7 +12,8 @@ export type MidiTargetType =
   | 'regionBounce' // Trigger single bounce on region
   | 'cameraRotation' // Horizontal camera rotation
   | 'modelRotation' // Per-region model Y rotation (like horizontal mouse drag)
-  | 'favoriteNavigation'; // Jump to next/previous favorite model
+  | 'favoriteNavigation' // Jump to next/previous favorite model (global)
+  | 'regionFavoriteNavigation'; // Jump to next/previous favorite model (per-region)
 
 export interface MidiMapping {
   id: string;
@@ -131,9 +132,29 @@ export const MAPPABLE_CONTROLS: MappableControl[] = [
   { id: 'region9Bounce', name: 'Region 9 Bounce', targetType: 'regionBounce', targetKey: '8', preferredMessageType: 'noteon' },
   { id: 'allRegionsBounce', name: 'All Regions Bounce', targetType: 'regionBounce', targetKey: 'all', preferredMessageType: 'noteon' },
   
-  // Favorite navigation (Note On - triggers jump to next/previous favorite)
+  // Favorite navigation - global (Note On - triggers jump to next/previous favorite for all regions)
   { id: 'jumpToNextFavorite', name: 'Jump to Next Favorite', targetType: 'favoriteNavigation', targetKey: 'next', preferredMessageType: 'noteon' },
   { id: 'jumpToPreviousFavorite', name: 'Jump to Previous Favorite', targetType: 'favoriteNavigation', targetKey: 'previous', preferredMessageType: 'noteon' },
+  
+  // Favorite navigation - per region (Note On - triggers jump to next/previous favorite for specific region)
+  { id: 'region1NextFavorite', name: 'Region 1 Next Favorite', targetType: 'regionFavoriteNavigation', targetKey: '0', subKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'region1PrevFavorite', name: 'Region 1 Prev Favorite', targetType: 'regionFavoriteNavigation', targetKey: '0', subKey: 'previous', preferredMessageType: 'noteon' },
+  { id: 'region2NextFavorite', name: 'Region 2 Next Favorite', targetType: 'regionFavoriteNavigation', targetKey: '1', subKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'region2PrevFavorite', name: 'Region 2 Prev Favorite', targetType: 'regionFavoriteNavigation', targetKey: '1', subKey: 'previous', preferredMessageType: 'noteon' },
+  { id: 'region3NextFavorite', name: 'Region 3 Next Favorite', targetType: 'regionFavoriteNavigation', targetKey: '2', subKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'region3PrevFavorite', name: 'Region 3 Prev Favorite', targetType: 'regionFavoriteNavigation', targetKey: '2', subKey: 'previous', preferredMessageType: 'noteon' },
+  { id: 'region4NextFavorite', name: 'Region 4 Next Favorite', targetType: 'regionFavoriteNavigation', targetKey: '3', subKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'region4PrevFavorite', name: 'Region 4 Prev Favorite', targetType: 'regionFavoriteNavigation', targetKey: '3', subKey: 'previous', preferredMessageType: 'noteon' },
+  { id: 'region5NextFavorite', name: 'Region 5 Next Favorite', targetType: 'regionFavoriteNavigation', targetKey: '4', subKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'region5PrevFavorite', name: 'Region 5 Prev Favorite', targetType: 'regionFavoriteNavigation', targetKey: '4', subKey: 'previous', preferredMessageType: 'noteon' },
+  { id: 'region6NextFavorite', name: 'Region 6 Next Favorite', targetType: 'regionFavoriteNavigation', targetKey: '5', subKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'region6PrevFavorite', name: 'Region 6 Prev Favorite', targetType: 'regionFavoriteNavigation', targetKey: '5', subKey: 'previous', preferredMessageType: 'noteon' },
+  { id: 'region7NextFavorite', name: 'Region 7 Next Favorite', targetType: 'regionFavoriteNavigation', targetKey: '6', subKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'region7PrevFavorite', name: 'Region 7 Prev Favorite', targetType: 'regionFavoriteNavigation', targetKey: '6', subKey: 'previous', preferredMessageType: 'noteon' },
+  { id: 'region8NextFavorite', name: 'Region 8 Next Favorite', targetType: 'regionFavoriteNavigation', targetKey: '7', subKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'region8PrevFavorite', name: 'Region 8 Prev Favorite', targetType: 'regionFavoriteNavigation', targetKey: '7', subKey: 'previous', preferredMessageType: 'noteon' },
+  { id: 'region9NextFavorite', name: 'Region 9 Next Favorite', targetType: 'regionFavoriteNavigation', targetKey: '8', subKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'region9PrevFavorite', name: 'Region 9 Prev Favorite', targetType: 'regionFavoriteNavigation', targetKey: '8', subKey: 'previous', preferredMessageType: 'noteon' },
   
   // Region visibility (dynamic - generated based on region count)
   { id: 'region1', name: 'Region 1 Visibility', targetType: 'regionVisibility', targetKey: '0', preferredMessageType: 'noteon' },
@@ -154,7 +175,7 @@ interface UseMidiMappingsOptions {
   onUpdateRegion: (regionId: string, updates: Partial<CaptureRegion>) => void;
   onCameraRotation?: (angle: number) => void; // Set camera azimuthal angle
   onTriggerBounce?: (regionIndex: number | 'all') => void; // Trigger bounce animation
-  onJumpToFavorite?: (direction: 'next' | 'previous') => void; // Jump to next/previous favorite
+  onJumpToFavorite?: (direction: 'next' | 'previous', regionIndex?: number) => void; // Jump to next/previous favorite (global or per-region)
 }
 
 export function useMidiMappings({
@@ -679,9 +700,18 @@ export function useMidiMappings({
       }
       
       case 'favoriteNavigation': {
-        // Trigger jump to next/previous favorite model
+        // Trigger jump to next/previous favorite model (global - all regions)
         if (onJumpToFavorite) {
           onJumpToFavorite(mapping.targetKey as 'next' | 'previous');
+        }
+        break;
+      }
+      
+      case 'regionFavoriteNavigation': {
+        // Trigger jump to next/previous favorite model for a specific region
+        if (onJumpToFavorite && mapping.subKey) {
+          const regionIndex = parseInt(mapping.targetKey, 10);
+          onJumpToFavorite(mapping.subKey as 'next' | 'previous', regionIndex);
         }
         break;
       }
