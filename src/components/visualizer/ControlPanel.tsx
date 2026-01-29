@@ -1590,10 +1590,6 @@ export function ControlPanel({
                 <span className="text-muted-foreground">Toggle Region 1-9</span>
                 <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">1-9</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Fade Test (Region 1)</span>
-                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">F</kbd>
-              </div>
             </div>
           </div>
         </div>
