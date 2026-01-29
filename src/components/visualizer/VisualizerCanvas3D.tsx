@@ -66,12 +66,14 @@ function RegionMesh({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
   const timeRef = useRef(0);
-  // Rotation time that advances based on velocity (for turntable stop effect)
-  const rotateTimeRef = useRef(0);
-  // Current rotation velocity (decays when auto-rotate is off) - start at 1 if auto-rotate is on
-  const rotateVelocityRef = useRef(settings.autoRotateCamera ? 1 : 0);
-  // Track previous auto-rotate state to detect toggle
-  const prevAutoRotateRef = useRef(settings.autoRotateCamera);
+  // Per-region turntable state for Individual Rotation mode.
+  // We keep an explicit angle accumulator so that:
+  // - turning Auto-Rotate Region off/on never "jumps" (angle is continuous)
+  // - MIDI rotation can "write" the angle, and auto-rotate will resume from that exact angle
+  // - turning auto-rotate off decelerates smoothly (friction)
+  const rotationAngleRef = useRef(0);
+  // Current rotation velocity (decays when auto-rotate is off)
+  const rotateVelocityRef = useRef(0);
   const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
   
   // Use override mode (for morph ghost), region-specific mode, or fall back to default
@@ -112,29 +114,27 @@ function RegionMesh({
     timeRef.current += delta;
     const time = timeRef.current;
 
-    // Turntable stop effect (per-region):
-    // - Prevents "jumping" when a region auto-rotate is re-enabled (we freeze its phase while off)
-    // - Restores gradual stop when a region auto-rotate is disabled
-    // - Still instantly stops when the user is dragging
+    // Turntable stop effect (per-region) for Individual Rotation mode.
+    // NOTE: In non-individual mode the camera rotates (not the mesh), so we avoid advancing
+    // any per-mesh phase there (otherwise disabling rotation can appear to "jump").
     const isUserDragging = isDraggingRef?.current ?? false;
-    const regionAutoRotateEnabled = region.autoRotate3D !== false; // default true
-    const shouldSpinThisRegion = settings.individualRotation ? regionAutoRotateEnabled : true;
-    const shouldAutoRotate = settings.autoRotateCamera && shouldSpinThisRegion && !isUserDragging;
+    if (settings.individualRotation) {
+      const regionAutoRotateEnabled = region.autoRotate3D !== false; // default true
+      const shouldAutoRotate = settings.autoRotateCamera && regionAutoRotateEnabled && !isUserDragging;
 
-    const targetVelocity = shouldAutoRotate ? 1 : 0;
-    const friction = isUserDragging ? 0.5 : (targetVelocity > 0 ? 0.1 : 0.04);
-    rotateVelocityRef.current += (targetVelocity - rotateVelocityRef.current) * friction;
-    
-    // Stop completely when velocity is negligible
-    if (rotateVelocityRef.current < 0.001) {
-      rotateVelocityRef.current = 0;
+      const targetVelocity = shouldAutoRotate ? 1 : 0;
+      const friction = isUserDragging ? 0.5 : (targetVelocity > 0 ? 0.1 : 0.04);
+      rotateVelocityRef.current += (targetVelocity - rotateVelocityRef.current) * friction;
+
+      // Stop completely when velocity is negligible
+      if (rotateVelocityRef.current < 0.001) {
+        rotateVelocityRef.current = 0;
+      }
+
+      // Advance rotation angle based on current velocity
+      const angularSpeed = settings.autoRotateCameraSpeed * 0.5; // matches previous behavior
+      rotationAngleRef.current += delta * rotateVelocityRef.current * angularSpeed;
     }
-    
-    // Advance rotation time based on current velocity
-    rotateTimeRef.current += delta * rotateVelocityRef.current;
-    const rotateTime = rotateTimeRef.current;
-    
-    prevAutoRotateRef.current = settings.autoRotateCamera;
     
     // Update texture from video
     const ctx = canvasRef.current.getContext('2d');
@@ -346,14 +346,9 @@ function RegionMesh({
           const regionWantsAutoRotate = region.autoRotate3D !== false;
           const hasSpinVelocity = rotateVelocityRef.current > 0;
           if ((regionWantsAutoRotate && settings.autoRotateCamera) || hasSpinVelocity) {
-            mesh.rotation.y = rotateTime * settings.autoRotateCameraSpeed * 0.5;
-            mesh.rotation.x = Math.sin(rotateTime * settings.autoRotateCameraSpeed * 0.25) * 0.1;
-          }
-        } else if (!settings.autoRotateCamera) {
-          // Camera not rotating and not individual - still apply turntable decay on mesh
-          if (rotateVelocityRef.current > 0) {
-            mesh.rotation.y = rotateTime * speed * 0.2;
-            mesh.rotation.x = Math.sin(rotateTime * speed * 0.1) * 0.1;
+            const y = rotationAngleRef.current;
+            mesh.rotation.y = y;
+            mesh.rotation.x = Math.sin(y * 0.5) * 0.1;
           }
         }
         // When camera is rotating (not individual mode), don't rotate mesh - camera does it
@@ -363,6 +358,8 @@ function RegionMesh({
     // MIDI model rotation overrides all animation mode rotations
     // This should work regardless of auto-rotate camera settings
     if (region.midiRotationY !== undefined) {
+      // Keep the auto-rotate accumulator synced so when MIDI releases we continue smoothly
+      rotationAngleRef.current = region.midiRotationY;
       mesh.rotation.y = region.midiRotationY;
       // Add subtle X tilt based on Y rotation for visual interest
       mesh.rotation.x = Math.sin(region.midiRotationY * 0.5) * 0.1;

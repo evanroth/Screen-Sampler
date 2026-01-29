@@ -179,6 +179,14 @@ export function useMidiMappings({
   const autoRotateWasEnabledRef = useRef<boolean | null>(null); // null = not overriding
   const midiRotationTimeoutRef = useRef<number | null>(null);
   const MIDI_ROTATION_TIMEOUT = 150; // ms to wait before restoring auto-rotate
+
+  // Track per-region auto-rotate state while MIDI model rotation is active.
+  // Requirement: when Rotate Model X is receiving MIDI, temporarily toggle Auto-Rotate Region X off;
+  // when MIDI stops, restore the previous value.
+  const regionAutoRotateOverrideRef = useRef(
+    new Map<string, { prevAutoRotate3D: boolean | undefined }>()
+  );
+  const regionAutoRotateTimeoutRef = useRef(new Map<string, number>());
   
   const settingsRef = useRef(settings);
   const regionsRef = useRef(regions);
@@ -191,6 +199,49 @@ export function useMidiMappings({
   useEffect(() => {
     regionsRef.current = regions;
   }, [regions]);
+
+  const beginTemporaryRegionAutoRotateDisable = useCallback(
+    (region: CaptureRegion) => {
+      const currentSettings = settingsRef.current;
+      if (!currentSettings.individualRotation) return;
+
+      // Store previous value (including undefined) once per active MIDI-rotation session.
+      if (!regionAutoRotateOverrideRef.current.has(region.id)) {
+        regionAutoRotateOverrideRef.current.set(region.id, {
+          prevAutoRotate3D: region.autoRotate3D,
+        });
+
+        // If region was effectively auto-rotating (true or undefined), disable it.
+        if (region.autoRotate3D !== false) {
+          onUpdateRegion(region.id, { autoRotate3D: false });
+        }
+      }
+
+      // Debounced restore for this region.
+      const existingTimeout = regionAutoRotateTimeoutRef.current.get(region.id);
+      if (existingTimeout !== undefined) {
+        window.clearTimeout(existingTimeout);
+      }
+
+      const timeoutId = window.setTimeout(() => {
+        const saved = regionAutoRotateOverrideRef.current.get(region.id);
+        if (saved) {
+          // Restore the *exact* previous value (including undefined).
+          onUpdateRegion(region.id, {
+            autoRotate3D: saved.prevAutoRotate3D,
+            // Release MIDI override so auto-rotate can take over again.
+            midiRotationY: undefined,
+          });
+        }
+
+        regionAutoRotateOverrideRef.current.delete(region.id);
+        regionAutoRotateTimeoutRef.current.delete(region.id);
+      }, MIDI_ROTATION_TIMEOUT);
+
+      regionAutoRotateTimeoutRef.current.set(region.id, timeoutId);
+    },
+    [onUpdateRegion]
+  );
 
   // Load mappings from localStorage
   useEffect(() => {
@@ -529,7 +580,7 @@ export function useMidiMappings({
       
       case 'modelRotation': {
         // Control per-region model Y rotation via CC (like horizontal mouse drag)
-        if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
+        if (mapping.messageType === 'cc') {
           const targetKey = mapping.targetKey;
           
           // Temporarily disable *camera* auto-rotate while receiving MIDI rotation data.
@@ -575,6 +626,7 @@ export function useMidiMappings({
             if (targetKey === 'all') {
               // Rotate all regions
               currentRegions.forEach((region, idx) => {
+                beginTemporaryRegionAutoRotateDisable(region);
                 const key = idx.toString();
                 const currentRotation = cumulativeRotationRef.current[key] ?? 0;
                 const newRotation = currentRotation + rotationDelta;
@@ -585,6 +637,7 @@ export function useMidiMappings({
               const regionIndex = parseInt(targetKey, 10);
               const region = currentRegions[regionIndex];
               if (region) {
+                beginTemporaryRegionAutoRotateDisable(region);
                 const currentRotation = cumulativeRotationRef.current[targetKey] ?? 0;
                 const newRotation = currentRotation + rotationDelta;
                 cumulativeRotationRef.current[targetKey] = newRotation;
@@ -593,18 +646,23 @@ export function useMidiMappings({
             }
           } else {
             // Absolute mode: map CC value directly to angle
+            // NOTE: Some older saved mappings may not have min/max; fall back to [-PI, PI].
+            const min = effectiveMin ?? -Math.PI;
+            const max = effectiveMax ?? Math.PI;
             const normalizedValue = message.value / 127;
-            const angle = effectiveMin + normalizedValue * (effectiveMax - effectiveMin);
+            const angle = min + normalizedValue * (max - min);
             
             if (targetKey === 'all') {
               // Rotate all regions
               currentRegions.forEach(region => {
+                beginTemporaryRegionAutoRotateDisable(region);
                 onUpdateRegion(region.id, { midiRotationY: angle });
               });
             } else {
               const regionIndex = parseInt(targetKey, 10);
               const region = currentRegions[regionIndex];
               if (region) {
+                beginTemporaryRegionAutoRotateDisable(region);
                 onUpdateRegion(region.id, { midiRotationY: angle });
               }
             }
@@ -622,7 +680,7 @@ export function useMidiMappings({
       }
       }
     }
-  }, [learnMode, mappings, completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce, onJumpToFavorite]);
+  }, [learnMode, mappings, completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce, onJumpToFavorite, beginTemporaryRegionAutoRotateDisable]);
 
   return {
     mappings,
