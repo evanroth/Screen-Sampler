@@ -1388,6 +1388,10 @@ export function ControlPanel({
                                 onCheckedChange={(checked) => {
                                   if (onUpdateRegion) {
                                     onUpdateRegion(region.id, { autoRotate3D: checked });
+                                    // If enabling region auto-rotate, ensure global auto-rotate is on
+                                    if (checked && !settings.autoRotateCamera) {
+                                      onUpdateSetting('autoRotateCamera', true);
+                                    }
                                   }
                                 }}
                               />

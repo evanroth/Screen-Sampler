@@ -352,8 +352,10 @@ function RegionMesh({
     }
 
     // MIDI model rotation overrides all animation mode rotations
+    // This should work regardless of auto-rotate camera settings
     if (region.midiRotationY !== undefined) {
       mesh.rotation.y = region.midiRotationY;
+      // Add subtle X tilt based on Y rotation for visual interest
       mesh.rotation.x = Math.sin(region.midiRotationY * 0.5) * 0.1;
     }
 
