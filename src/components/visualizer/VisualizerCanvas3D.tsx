@@ -663,6 +663,18 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   const controlsRef = useRef<any>(null);
   const meshGroupRef = useRef<THREE.Group>(null);
   const isPlayMode = settings.playMode.enabled;
+
+  // IMPORTANT: Avoid re-fitting the camera on *any* regions array change.
+  // Changing a per-region setting like Scale updates `regions`, and if we
+  // reset the camera position here it feels like the scene "jumps" back to
+  // its initial rotation.
+  const visibleNormalCount = useMemo(() => {
+    let count = 0;
+    for (const r of regions) {
+      if (r.visible !== false && !r.fullscreenBackground) count += 1;
+    }
+    return count;
+  }, [regions]);
   
   // Track auto-rotate state to handle smooth resume
   const wasAutoRotatingRef = useRef(settings.autoRotateCamera);
@@ -715,7 +727,6 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
     // IMPORTANT (Play Mode): During crossfades there are briefly 2 visible meshes.
     // If we re-fit the camera based on visible count, it causes a perceived "position jump".
     // In Play Mode we intentionally keep the camera fit stable as if showing a single model.
-    const visibleNormalCount = regions.filter(r => r.visible !== false && !r.fullscreenBackground).length;
     const regionCount = isPlayMode ? 1 : Math.max(visibleNormalCount, 1);
     const totalWidth = regionCount > 1 ? (regionCount - 1) * settings.regionSpacing3D : 0;
     
@@ -737,7 +748,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
     const cameraZ = Math.max(distanceForWidth, distanceForHeight, 2);
     
     camera.position.set(0, 0, cameraZ);
-  }, [camera, regions, settings.regionSpacing3D, settings.panelScaleX, isPlayMode]);
+  }, [camera, visibleNormalCount, settings.regionSpacing3D, settings.panelScaleX, isPlayMode]);
 
   // Handle auto-rotate toggle to prevent jumping
   useEffect(() => {
