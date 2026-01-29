@@ -123,6 +123,7 @@ export interface VisualizerSettings {
   randomModeInterval: number;
   autoRotateCamera: boolean;
   autoRotateCameraSpeed: number;
+  individualRotation: boolean; // When true, models rotate around their own center instead of camera orbiting
   regionSpacing3D: number;
   textureQuality: TextureQuality;
   textureSmoothing: boolean;
@@ -154,6 +155,7 @@ const defaultSettings: VisualizerSettings = {
   randomModeInterval: 10,
   autoRotateCamera: true,
   autoRotateCameraSpeed: 0.2,
+  individualRotation: false,
   regionSpacing3D: 1.5,
   textureQuality: 2048,
   textureSmoothing: false,

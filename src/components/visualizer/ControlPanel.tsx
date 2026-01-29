@@ -1347,19 +1347,34 @@ export function ControlPanel({
                   </div>
 
                   {settings.autoRotateCamera && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label className="text-xs text-muted-foreground">Rotation Speed</Label>
-                        <span className="text-xs text-foreground">{settings.autoRotateCameraSpeed.toFixed(1)}</span>
+                    <>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <Label className="text-xs text-muted-foreground">Rotation Speed</Label>
+                          <span className="text-xs text-foreground">{settings.autoRotateCameraSpeed.toFixed(1)}</span>
+                        </div>
+                        <Slider
+                          value={[settings.autoRotateCameraSpeed]}
+                          onValueChange={([v]) => onUpdateSetting('autoRotateCameraSpeed', v)}
+                          min={0.1}
+                          max={10}
+                          step={0.1}
+                        />
                       </div>
-                      <Slider
-                        value={[settings.autoRotateCameraSpeed]}
-                        onValueChange={([v]) => onUpdateSetting('autoRotateCameraSpeed', v)}
-                        min={0.1}
-                        max={10}
-                        step={0.1}
-                      />
-                    </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">Individual Rotation</Label>
+                        <Switch
+                          checked={settings.individualRotation}
+                          onCheckedChange={(v) => onUpdateSetting('individualRotation', v)}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {settings.individualRotation 
+                          ? "Each model rotates around its own center" 
+                          : "Camera orbits around all models"}
+                      </p>
+                    </>
                   )}
                 </div>
 
