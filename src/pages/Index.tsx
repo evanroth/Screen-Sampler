@@ -76,14 +76,24 @@ export default function Index() {
     return settings.animationMode3D;
   }, [regions, settings.animationMode3D]);
 
-  // Jump to favorite model (next or previous)
-  const handleJumpToFavorite = useCallback(async (direction: 'next' | 'previous') => {
+  // Jump to favorite model (next or previous), optionally for a specific region
+  const handleJumpToFavorite = useCallback(async (direction: 'next' | 'previous', regionIndex?: number) => {
     if (settings.visualizerMode !== '3d') {
       toast({ title: "Favorites only work in 3D mode" });
       return;
     }
     
-    const currentModelId = getCurrentModelId();
+    // For per-region navigation, get the current model for that specific region
+    const getCurrentModelForRegion = (idx: number): string | null => {
+      const region = regions[idx];
+      if (region?.customModelId) return region.customModelId;
+      return settings.animationMode3D;
+    };
+    
+    const currentModelId = regionIndex !== undefined 
+      ? getCurrentModelForRegion(regionIndex)
+      : getCurrentModelId();
+      
     const nextFavoriteId = direction === 'next' 
       ? favorites.getNextFavorite(currentModelId)
       : favorites.getPreviousFavorite(currentModelId);
@@ -95,22 +105,38 @@ export default function Index() {
     
     const modelType = favorites.getModelType(nextFavoriteId);
     
+    // Helper to apply model to specific region or all regions
+    const applyModel = (customModelId: string | undefined) => {
+      if (regionIndex !== undefined) {
+        // Apply to specific region only
+        const region = regions[regionIndex];
+        if (region) {
+          setRegions(prev => prev.map((r, i) => 
+            i === regionIndex ? { ...r, customModelId } : r
+          ));
+        }
+      } else {
+        // Apply to all regions (global)
+        setRegions(prev => prev.map(r => ({ ...r, customModelId })));
+      }
+    };
+    
     if (modelType === 'default') {
       // It's a default shape - update the animation mode
       updateSetting('animationMode3D', nextFavoriteId as any);
-      // Clear custom model from regions
-      setRegions(prev => prev.map(r => ({ ...r, customModelId: undefined })));
+      // Clear custom model from regions (or specific region)
+      applyModel(undefined);
     } else if (modelType === 'remote') {
       // It's a remote model - need to load it first
       const geometry = await remoteModels.loadModel(nextFavoriteId);
       if (geometry) {
-        setRegions(prev => prev.map(r => ({ ...r, customModelId: nextFavoriteId })));
+        applyModel(nextFavoriteId);
       }
     } else {
       // It's a custom model (already loaded in IndexedDB)
-      setRegions(prev => prev.map(r => ({ ...r, customModelId: nextFavoriteId })));
+      applyModel(nextFavoriteId);
     }
-  }, [settings.visualizerMode, getCurrentModelId, favorites, updateSetting, remoteModels, customModels.models, toast]);
+  }, [settings.visualizerMode, getCurrentModelId, favorites, updateSetting, remoteModels, regions, toast]);
 
   // MIDI control
   const midiMappings = useMidiMappings({
