@@ -13,7 +13,8 @@ export type MidiTargetType =
   | 'cameraRotation' // Horizontal camera rotation
   | 'modelRotation' // Per-region model Y rotation (like horizontal mouse drag)
   | 'favoriteNavigation' // Jump to next/previous favorite model (global)
-  | 'regionFavoriteNavigation'; // Jump to next/previous favorite model (per-region)
+  | 'regionFavoriteNavigation' // Jump to next/previous favorite model (per-region)
+  | 'crossfade'; // Crossfade between Region 1 and Region 2 scales
 
 export interface MidiMapping {
   id: string;
@@ -68,6 +69,9 @@ export const MAPPABLE_CONTROLS: MappableControl[] = [
   { id: 'regionSpacing3D', name: 'Region Spacing (3D)', targetType: 'setting', targetKey: 'regionSpacing3D', preferredMessageType: 'cc', min: 0.5, max: 5, step: 0.1 },
   { id: 'randomModeInterval', name: 'Random Mode Interval', targetType: 'setting', targetKey: 'randomModeInterval', preferredMessageType: 'cc', min: 1, max: 60, step: 1 },
   { id: 'playModeInterval', name: 'Play Mode Interval', targetType: 'setting', targetKey: 'playMode', subKey: 'interval', preferredMessageType: 'cc', min: 1, max: 120, step: 1 },
+  
+  // Crossfade between Region 1 and Region 2 (CC)
+  { id: 'crossfade12', name: 'Crossfade 1 and 2', targetType: 'crossfade', targetKey: '0-1', preferredMessageType: 'cc', min: 0, max: 127 },
   
   // Camera horizontal rotation (CC - knob controls azimuthal angle)
   { id: 'cameraRotation', name: 'Camera Rotation', targetType: 'cameraRotation', targetKey: 'azimuth', preferredMessageType: 'cc', min: -Math.PI, max: Math.PI },
@@ -732,6 +736,50 @@ export function useMidiMappings({
         if (onJumpToFavorite && mapping.subKey) {
           const regionIndex = parseInt(mapping.targetKey, 10);
           onJumpToFavorite(mapping.subKey as 'next' | 'previous', regionIndex);
+        }
+        break;
+      }
+      
+      case 'crossfade': {
+        // Crossfade between Region 1 and Region 2 scales
+        // MIDI 0-90: Region 1 = 100%, Region 2 fades in from 0% to 100%
+        // MIDI 90-127: Region 1 fades out from 100% to 0%, Region 2 = 100%
+        if (mapping.messageType === 'cc') {
+          const ccValue = message.value; // 0-127
+          
+          let region1Scale: number;
+          let region2Scale: number;
+          
+          // Region 1: 100% from 0-90, then fades to 0% from 90-127
+          if (ccValue <= 90) {
+            region1Scale = 1.0;
+          } else {
+            // Map 90-127 to 1.0-0.0
+            region1Scale = 1.0 - ((ccValue - 90) / 37);
+          }
+          
+          // Region 2: fades in from 0% to 100% from 0-40, then 100% from 40-127
+          if (ccValue >= 40) {
+            region2Scale = 1.0;
+          } else {
+            // Map 0-40 to 0.0-1.0
+            region2Scale = ccValue / 40;
+          }
+          
+          // Clamp values
+          region1Scale = Math.max(0, Math.min(1, region1Scale));
+          region2Scale = Math.max(0, Math.min(1, region2Scale));
+          
+          // Apply to regions
+          const region1 = currentRegions[0];
+          const region2 = currentRegions[1];
+          
+          if (region1) {
+            onUpdateRegion(region1.id, { scale3D: region1Scale });
+          }
+          if (region2) {
+            onUpdateRegion(region2.id, { scale3D: region2Scale });
+          }
         }
         break;
       }

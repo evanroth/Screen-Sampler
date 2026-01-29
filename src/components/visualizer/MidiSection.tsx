@@ -253,6 +253,12 @@ function categorizeControls(controls: MappableControl[], regionCount: number) {
       return;
     }
     
+    // Crossfade controls go to global parameters
+    if (control.targetType === 'crossfade') {
+      global.parameters.push(control);
+      return;
+    }
+    
     // Global settings - toggles (Note On)
     if (control.targetType === 'setting' && control.preferredMessageType === 'noteon') {
       global.toggles.push(control);
