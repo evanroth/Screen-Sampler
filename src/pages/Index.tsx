@@ -391,6 +391,36 @@ export default function Index() {
         requestAnimationFrame(animate);
       }
       
+      // 'k' cycles through Built-in Models for Region 1
+      if ((e.key === 'k' || e.key === 'K') && regions.length > 0 && remoteModels.models.length > 0 && settings.visualizerMode === '3d') {
+        e.preventDefault();
+        const currentModelId = regions[0]?.customModelId;
+        const modelIds = remoteModels.models.map(m => m.id);
+        let currentIndex = currentModelId ? modelIds.indexOf(currentModelId) : -1;
+        const nextIndex = (currentIndex + 1) % modelIds.length;
+        const nextModelId = modelIds[nextIndex];
+        remoteModels.loadModel(nextModelId).then(geometry => {
+          if (geometry) {
+            setRegions(prev => prev.map((r, i) => i === 0 ? { ...r, customModelId: nextModelId } : r));
+          }
+        });
+      }
+      
+      // 'l' cycles through Built-in Models for Region 2
+      if ((e.key === 'l' || e.key === 'L') && regions.length > 1 && remoteModels.models.length > 0 && settings.visualizerMode === '3d') {
+        e.preventDefault();
+        const currentModelId = regions[1]?.customModelId;
+        const modelIds = remoteModels.models.map(m => m.id);
+        let currentIndex = currentModelId ? modelIds.indexOf(currentModelId) : -1;
+        const nextIndex = (currentIndex + 1) % modelIds.length;
+        const nextModelId = modelIds[nextIndex];
+        remoteModels.loadModel(nextModelId).then(geometry => {
+          if (geometry) {
+            setRegions(prev => prev.map((r, i) => i === 1 ? { ...r, customModelId: nextModelId } : r));
+          }
+        });
+      }
+      
       // Number keys 1-9 toggle region visibility
       const num = parseInt(e.key, 10);
       if (num >= 1 && num <= 9 && regions.length >= num) {
