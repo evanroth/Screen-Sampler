@@ -813,11 +813,10 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
       manualRotationAngleRef.current = midiCameraAngle;
       lastMidiAngleRef.current = midiCameraAngle;
     }
-    // Turntable stop effect: smoothly decelerate camera rotation when auto-rotate is off, 
-    // individual rotation is enabled, or user is dragging
+    // Turntable stop effect: smoothly decelerate camera rotation when auto-rotate is off or user is dragging.
+    // Camera rotation is now INDEPENDENT of individual rotation - both can work simultaneously.
     const isUserDragging = isDraggingRef.current;
-    // Camera should NOT rotate when individual rotation is enabled - models rotate instead
-    const shouldCameraRotate = settings.autoRotateCamera && !settings.individualRotation && !isUserDragging;
+    const shouldCameraRotate = settings.autoRotateCamera && !isUserDragging;
     const targetVelocity = shouldCameraRotate ? 1 : 0;
     const friction = isUserDragging ? 0.5 : (shouldCameraRotate ? 0.1 : 0.04); // Instant stop when dragging, faster decay when off
     cameraRotateVelocityRef.current += (targetVelocity - cameraRotateVelocityRef.current) * friction;
