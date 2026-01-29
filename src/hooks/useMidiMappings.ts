@@ -583,6 +583,9 @@ export function useMidiMappings({
         if (mapping.messageType === 'cc') {
           const targetKey = mapping.targetKey;
           
+          // Debug logging for troubleshooting
+          console.log(`[MIDI ModelRotation] targetKey=${targetKey}, regions.length=${currentRegions.length}, value=${message.value}`);
+          
           // Temporarily disable *camera* auto-rotate while receiving MIDI rotation data.
           // IMPORTANT: In Individual Rotation mode, autoRotateCamera is used as the master
           // clock/enable for per-region spins, so we must NOT toggle it off here.
@@ -636,12 +639,16 @@ export function useMidiMappings({
             } else {
               const regionIndex = parseInt(targetKey, 10);
               const region = currentRegions[regionIndex];
+              console.log(`[MIDI ModelRotation] regionIndex=${regionIndex}, region exists=${!!region}, regionId=${region?.id}`);
               if (region) {
                 beginTemporaryRegionAutoRotateDisable(region);
                 const currentRotation = cumulativeRotationRef.current[targetKey] ?? 0;
                 const newRotation = currentRotation + rotationDelta;
                 cumulativeRotationRef.current[targetKey] = newRotation;
+                console.log(`[MIDI ModelRotation] Setting midiRotationY=${newRotation} on region ${region.id}`);
                 onUpdateRegion(region.id, { midiRotationY: newRotation });
+              } else {
+                console.warn(`[MIDI ModelRotation] No region at index ${regionIndex}! Available regions: ${currentRegions.map((r, i) => `${i}:${r.id}`).join(', ')}`);
               }
             }
           } else {
