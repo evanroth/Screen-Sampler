@@ -1347,36 +1347,57 @@ export function ControlPanel({
                   </div>
 
                   {settings.autoRotateCamera && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <Label className="text-xs text-muted-foreground">Camera Speed</Label>
+                        <span className="text-xs text-foreground">{settings.autoRotateCameraSpeed.toFixed(1)}</span>
+                      </div>
+                      <Slider
+                        value={[settings.autoRotateCameraSpeed]}
+                        onValueChange={([v]) => onUpdateSetting('autoRotateCameraSpeed', v)}
+                        min={0.1}
+                        max={10}
+                        step={0.1}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <Separator className="bg-border" />
+
+                {/* Individual Rotation - Now Independent */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-muted-foreground">Individual Rotation</Label>
+                    <Switch
+                      checked={settings.individualRotation}
+                      onCheckedChange={(v) => onUpdateSetting('individualRotation', v)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {settings.individualRotation 
+                      ? "Each model rotates around its own center" 
+                      : "Models stay fixed, camera orbits"}
+                  </p>
+
+                  {settings.individualRotation && (
                     <>
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <Label className="text-xs text-muted-foreground">Rotation Speed</Label>
-                          <span className="text-xs text-foreground">{settings.autoRotateCameraSpeed.toFixed(1)}</span>
+                          <span className="text-xs text-foreground">{settings.individualRotationSpeed.toFixed(1)}</span>
                         </div>
                         <Slider
-                          value={[settings.autoRotateCameraSpeed]}
-                          onValueChange={([v]) => onUpdateSetting('autoRotateCameraSpeed', v)}
+                          value={[settings.individualRotationSpeed]}
+                          onValueChange={([v]) => onUpdateSetting('individualRotationSpeed', v)}
                           min={0.1}
                           max={10}
                           step={0.1}
                         />
                       </div>
                       
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs text-muted-foreground">Individual Rotation</Label>
-                        <Switch
-                          checked={settings.individualRotation}
-                          onCheckedChange={(v) => onUpdateSetting('individualRotation', v)}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {settings.individualRotation 
-                          ? "Each model rotates around its own center" 
-                          : "Camera orbits around all models"}
-                      </p>
-                      
-                      {/* Per-region auto-rotate toggles (only shown in individual rotation mode) */}
-                      {settings.individualRotation && regions.length > 0 && (
+                      {/* Per-region auto-rotate toggles */}
+                      {regions.length > 0 && (
                         <div className="space-y-2 pl-2 border-l-2 border-border mt-2">
                           {regions.map((region, index) => (
                             <div key={region.id} className="flex items-center justify-between">
@@ -1388,10 +1409,6 @@ export function ControlPanel({
                                 onCheckedChange={(checked) => {
                                   if (onUpdateRegion) {
                                     onUpdateRegion(region.id, { autoRotate3D: checked });
-                                    // If enabling region auto-rotate, ensure global auto-rotate is on
-                                    if (checked && !settings.autoRotateCamera) {
-                                      onUpdateSetting('autoRotateCamera', true);
-                                    }
                                   }
                                 }}
                               />
