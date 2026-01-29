@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Disc3, Trash2, X, AlertCircle, ChevronDown } from 'lucide-react';
+import { Disc3, Trash2, X, AlertCircle, ChevronDown, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -42,10 +42,10 @@ interface MidiSectionProps {
   learnMode: string | null;
   onStartLearn: (controlId: string) => void;
   onCancelLearn: () => void;
-  onRemoveMapping: (controlId: string) => void;
+  onRemoveMapping: (mappingId: string) => void;
   onClearAllMappings: () => void;
-  getMappingForControl: (controlId: string) => MidiMapping | undefined;
-  onSetMappingRelative: (controlId: string, relative: boolean) => void;
+  getMappingsForControl: (controlId: string) => MidiMapping[];
+  onSetMappingRelative: (mappingId: string, relative: boolean) => void;
   regionCount: number;
   midiRotationSensitivity: number;
   onMidiRotationSensitivityChange: (value: number) => void;
@@ -60,28 +60,87 @@ function formatMidiMessage(message: MidiMessage): string {
   return 'Unknown';
 }
 
+// Single mapping item within a control (one MIDI input)
+function MappingItem({
+  mapping,
+  onRemove,
+  onSetRelative,
+  disabled,
+  showRelativeOption,
+}: {
+  mapping: MidiMapping;
+  onRemove: () => void;
+  onSetRelative?: (relative: boolean) => void;
+  disabled?: boolean;
+  showRelativeOption?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between bg-secondary/40 rounded px-2 py-1 text-xs">
+      <div className="text-muted-foreground">
+        {formatMidiMessage({ 
+          type: mapping.messageType, 
+          channel: mapping.channel, 
+          note: mapping.messageType === 'noteon' ? mapping.noteOrCC : undefined,
+          cc: mapping.messageType === 'cc' ? mapping.noteOrCC : undefined,
+          value: 0,
+          timestamp: 0,
+        })}
+      </div>
+      <div className="flex items-center gap-1">
+        {showRelativeOption && (
+          <div className="flex items-center gap-1 mr-1">
+            <Checkbox
+              id={`relative-${mapping.id}`}
+              checked={mapping.relative ?? false}
+              onCheckedChange={(checked) => onSetRelative?.(checked === true)}
+              disabled={disabled}
+              className="h-3 w-3"
+            />
+            <label 
+              htmlFor={`relative-${mapping.id}`}
+              className="text-xs text-muted-foreground cursor-pointer"
+            >
+              Rel
+            </label>
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onRemove}
+          disabled={disabled}
+          className="h-5 w-5 p-0 text-destructive hover:text-destructive"
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Row for a control that can have multiple MIDI inputs
 function MappingRow({ 
   controlId, 
   control, 
-  mapping, 
+  mappings, 
   isLearning, 
   lastMessage,
   onStartLearn, 
   onCancelLearn,
-  onRemove,
+  onRemoveMapping,
   onSetRelative,
   disabled,
   showRelativeOption,
 }: {
   controlId: string;
   control: MappableControl;
-  mapping?: MidiMapping;
+  mappings: MidiMapping[];
   isLearning: boolean;
   lastMessage: MidiMessage | null;
   onStartLearn: () => void;
   onCancelLearn: () => void;
-  onRemove: () => void;
-  onSetRelative?: (relative: boolean) => void;
+  onRemoveMapping: (mappingId: string) => void;
+  onSetRelative?: (mappingId: string, relative: boolean) => void;
   disabled?: boolean;
   showRelativeOption?: boolean;
 }) {
@@ -94,18 +153,7 @@ function MappingRow({
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
           <div className="font-medium truncate">{control.name}</div>
-          {mapping ? (
-            <div className="text-muted-foreground">
-              {formatMidiMessage({ 
-                type: mapping.messageType, 
-                channel: mapping.channel, 
-                note: mapping.messageType === 'noteon' ? mapping.noteOrCC : undefined,
-                cc: mapping.messageType === 'cc' ? mapping.noteOrCC : undefined,
-                value: 0,
-                timestamp: 0,
-              })}
-            </div>
-          ) : (
+          {mappings.length === 0 && !isLearning && (
             <div className="text-muted-foreground italic">Not mapped</div>
           )}
         </div>
@@ -126,48 +174,33 @@ function MappingRow({
               </Button>
             </>
           ) : (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onStartLearn}
-                disabled={disabled}
-                className="h-6 px-2 text-xs"
-              >
-                Learn
-              </Button>
-              {mapping && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onRemove}
-                  disabled={disabled}
-                  className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              )}
-            </>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onStartLearn}
+              disabled={disabled}
+              className="h-6 px-2 text-xs"
+              title={mappings.length > 0 ? "Add another MIDI input" : "Learn MIDI input"}
+            >
+              {mappings.length > 0 ? <Plus className="w-3 h-3" /> : 'Learn'}
+            </Button>
           )}
         </div>
       </div>
       
-      {/* Relative checkbox for rotation controls */}
-      {showRelativeOption && mapping && (
-        <div className="flex items-center gap-2 mt-1 pl-1">
-          <Checkbox
-            id={`relative-${controlId}`}
-            checked={mapping.relative ?? false}
-            onCheckedChange={(checked) => onSetRelative?.(checked === true)}
-            disabled={disabled}
-            className="h-3 w-3"
-          />
-          <label 
-            htmlFor={`relative-${controlId}`}
-            className="text-xs text-muted-foreground cursor-pointer"
-          >
-            Relative
-          </label>
+      {/* List of mapped MIDI inputs */}
+      {mappings.length > 0 && (
+        <div className="space-y-1 mt-1">
+          {mappings.map((mapping) => (
+            <MappingItem
+              key={mapping.id}
+              mapping={mapping}
+              onRemove={() => onRemoveMapping(mapping.id)}
+              onSetRelative={onSetRelative ? (rel) => onSetRelative(mapping.id, rel) : undefined}
+              disabled={disabled}
+              showRelativeOption={showRelativeOption}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -282,9 +315,9 @@ interface ControlGroupProps {
   lastMessage: MidiMessage | null;
   onStartLearn: (controlId: string) => void;
   onCancelLearn: () => void;
-  onRemoveMapping: (controlId: string) => void;
-  getMappingForControl: (controlId: string) => MidiMapping | undefined;
-  onSetMappingRelative: (controlId: string, relative: boolean) => void;
+  onRemoveMapping: (mappingId: string) => void;
+  getMappingsForControl: (controlId: string) => MidiMapping[];
+  onSetMappingRelative: (mappingId: string, relative: boolean) => void;
   disabled: boolean;
   showRelativeOption?: boolean;
 }
@@ -297,7 +330,7 @@ function ControlGroup({
   onStartLearn,
   onCancelLearn,
   onRemoveMapping,
-  getMappingForControl,
+  getMappingsForControl,
   onSetMappingRelative,
   disabled,
   showRelativeOption = false,
@@ -312,13 +345,13 @@ function ControlGroup({
           key={control.id}
           controlId={control.id}
           control={control}
-          mapping={getMappingForControl(control.id)}
+          mappings={getMappingsForControl(control.id)}
           isLearning={learnMode === control.id}
           lastMessage={learnMode === control.id ? lastMessage : null}
           onStartLearn={() => onStartLearn(control.id)}
           onCancelLearn={onCancelLearn}
-          onRemove={() => onRemoveMapping(control.id)}
-          onSetRelative={(relative) => onSetMappingRelative(control.id, relative)}
+          onRemoveMapping={onRemoveMapping}
+          onSetRelative={onSetMappingRelative}
           disabled={disabled}
           showRelativeOption={showRelativeOption}
         />
@@ -342,7 +375,7 @@ export function MidiSection({
   onCancelLearn,
   onRemoveMapping,
   onClearAllMappings,
-  getMappingForControl,
+  getMappingsForControl,
   onSetMappingRelative,
   regionCount,
   midiRotationSensitivity,
@@ -356,14 +389,14 @@ export function MidiSection({
     [regionCount]
   );
   
-  // Count mappings per section
+  // Count mappings per section (count total number of mappings, not just controls with mappings)
   const globalMappingCount = useMemo(() => {
     let count = 0;
     [...global.parameters, ...global.toggles, ...global.modes, ...global.camera, ...global.allModels, ...global.favorites].forEach(c => {
-      if (getMappingForControl(c.id)) count++;
+      count += getMappingsForControl(c.id).length;
     });
     return count;
-  }, [global, getMappingForControl]);
+  }, [global, getMappingsForControl]);
   
   const regionMappingCounts = useMemo(() => {
     const counts: number[] = [];
@@ -375,12 +408,12 @@ export function MidiSection({
       }
       let count = 0;
       [...bucket.visibility, ...bucket.scale, ...bucket.rotation, ...bucket.autoRotate, ...bucket.bounce, ...bucket.favorites].forEach(c => {
-        if (getMappingForControl(c.id)) count++;
+        count += getMappingsForControl(c.id).length;
       });
       counts.push(count);
     }
     return counts;
-  }, [perRegion, regionCount, getMappingForControl]);
+  }, [perRegion, regionCount, getMappingsForControl]);
   
   const hasMappings = globalMappingCount > 0 || regionMappingCounts.some(c => c > 0);
   
@@ -516,7 +549,7 @@ export function MidiSection({
                       onStartLearn={onStartLearn}
                       onCancelLearn={onCancelLearn}
                       onRemoveMapping={onRemoveMapping}
-                      getMappingForControl={getMappingForControl}
+                      getMappingsForControl={getMappingsForControl}
                       onSetMappingRelative={onSetMappingRelative}
                       disabled={!activeDeviceId}
                     />
@@ -529,7 +562,7 @@ export function MidiSection({
                       onStartLearn={onStartLearn}
                       onCancelLearn={onCancelLearn}
                       onRemoveMapping={onRemoveMapping}
-                      getMappingForControl={getMappingForControl}
+                      getMappingsForControl={getMappingsForControl}
                       onSetMappingRelative={onSetMappingRelative}
                       disabled={!activeDeviceId}
                     />
@@ -542,7 +575,7 @@ export function MidiSection({
                       onStartLearn={onStartLearn}
                       onCancelLearn={onCancelLearn}
                       onRemoveMapping={onRemoveMapping}
-                      getMappingForControl={getMappingForControl}
+                      getMappingsForControl={getMappingsForControl}
                       onSetMappingRelative={onSetMappingRelative}
                       disabled={!activeDeviceId}
                     />
@@ -555,7 +588,7 @@ export function MidiSection({
                       onStartLearn={onStartLearn}
                       onCancelLearn={onCancelLearn}
                       onRemoveMapping={onRemoveMapping}
-                      getMappingForControl={getMappingForControl}
+                      getMappingsForControl={getMappingsForControl}
                       onSetMappingRelative={onSetMappingRelative}
                       disabled={!activeDeviceId}
                       showRelativeOption
@@ -569,7 +602,7 @@ export function MidiSection({
                       onStartLearn={onStartLearn}
                       onCancelLearn={onCancelLearn}
                       onRemoveMapping={onRemoveMapping}
-                      getMappingForControl={getMappingForControl}
+                      getMappingsForControl={getMappingsForControl}
                       onSetMappingRelative={onSetMappingRelative}
                       disabled={!activeDeviceId}
                       showRelativeOption
@@ -583,7 +616,7 @@ export function MidiSection({
                       onStartLearn={onStartLearn}
                       onCancelLearn={onCancelLearn}
                       onRemoveMapping={onRemoveMapping}
-                      getMappingForControl={getMappingForControl}
+                      getMappingsForControl={getMappingsForControl}
                       onSetMappingRelative={onSetMappingRelative}
                       disabled={!activeDeviceId}
                     />
@@ -627,7 +660,7 @@ export function MidiSection({
                           onStartLearn={onStartLearn}
                           onCancelLearn={onCancelLearn}
                           onRemoveMapping={onRemoveMapping}
-                          getMappingForControl={getMappingForControl}
+                          getMappingsForControl={getMappingsForControl}
                           onSetMappingRelative={onSetMappingRelative}
                           disabled={!activeDeviceId}
                         />
@@ -640,7 +673,7 @@ export function MidiSection({
                           onStartLearn={onStartLearn}
                           onCancelLearn={onCancelLearn}
                           onRemoveMapping={onRemoveMapping}
-                          getMappingForControl={getMappingForControl}
+                          getMappingsForControl={getMappingsForControl}
                           onSetMappingRelative={onSetMappingRelative}
                           disabled={!activeDeviceId}
                         />
@@ -653,7 +686,7 @@ export function MidiSection({
                           onStartLearn={onStartLearn}
                           onCancelLearn={onCancelLearn}
                           onRemoveMapping={onRemoveMapping}
-                          getMappingForControl={getMappingForControl}
+                          getMappingsForControl={getMappingsForControl}
                           onSetMappingRelative={onSetMappingRelative}
                           disabled={!activeDeviceId}
                           showRelativeOption
@@ -667,7 +700,7 @@ export function MidiSection({
                           onStartLearn={onStartLearn}
                           onCancelLearn={onCancelLearn}
                           onRemoveMapping={onRemoveMapping}
-                          getMappingForControl={getMappingForControl}
+                          getMappingsForControl={getMappingsForControl}
                           onSetMappingRelative={onSetMappingRelative}
                           disabled={!activeDeviceId}
                         />
@@ -680,7 +713,7 @@ export function MidiSection({
                           onStartLearn={onStartLearn}
                           onCancelLearn={onCancelLearn}
                           onRemoveMapping={onRemoveMapping}
-                          getMappingForControl={getMappingForControl}
+                          getMappingsForControl={getMappingsForControl}
                           onSetMappingRelative={onSetMappingRelative}
                           disabled={!activeDeviceId}
                         />
@@ -693,7 +726,7 @@ export function MidiSection({
                           onStartLearn={onStartLearn}
                           onCancelLearn={onCancelLearn}
                           onRemoveMapping={onRemoveMapping}
-                          getMappingForControl={getMappingForControl}
+                          getMappingsForControl={getMappingsForControl}
                           onSetMappingRelative={onSetMappingRelative}
                           disabled={!activeDeviceId}
                         />

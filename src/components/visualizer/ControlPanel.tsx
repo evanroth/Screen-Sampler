@@ -74,10 +74,10 @@ interface ControlPanelProps {
   midiLearnMode: string | null;
   onMidiStartLearn: (controlId: string) => void;
   onMidiCancelLearn: () => void;
-  onMidiRemoveMapping: (controlId: string) => void;
+  onMidiRemoveMapping: (mappingId: string) => void;
   onMidiClearAllMappings: () => void;
-  getMidiMappingForControl: (controlId: string) => MidiMapping | undefined;
-  onMidiSetMappingRelative: (controlId: string, relative: boolean) => void;
+  getMidiMappingsForControl: (controlId: string) => MidiMapping[];
+  onMidiSetMappingRelative: (mappingId: string, relative: boolean) => void;
   // Favorites
   isFavorite: (modelId: string) => boolean;
   onToggleFavorite: (modelId: string) => void;
@@ -135,7 +135,7 @@ export function ControlPanel({
   onMidiCancelLearn,
   onMidiRemoveMapping,
   onMidiClearAllMappings,
-  getMidiMappingForControl,
+  getMidiMappingsForControl,
   onMidiSetMappingRelative,
   isFavorite,
   onToggleFavorite,
@@ -1514,7 +1514,7 @@ export function ControlPanel({
             onCancelLearn={onMidiCancelLearn}
             onRemoveMapping={onMidiRemoveMapping}
             onClearAllMappings={onMidiClearAllMappings}
-            getMappingForControl={getMidiMappingForControl}
+            getMappingsForControl={getMidiMappingsForControl}
             onSetMappingRelative={onMidiSetMappingRelative}
             regionCount={regionCount}
             midiRotationSensitivity={settings.midiRotationSensitivity}

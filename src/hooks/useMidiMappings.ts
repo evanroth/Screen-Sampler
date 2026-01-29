@@ -320,7 +320,24 @@ export function useMidiMappings({
       return;
     }
     
-    // Create new mapping
+    // Check if this exact MIDI signal is already mapped to this control
+    const alreadyMapped = mappings.some(m => 
+      m.targetType === control.targetType &&
+      m.targetKey === control.targetKey &&
+      m.subKey === control.subKey &&
+      m.messageType === message.type &&
+      m.channel === message.channel &&
+      m.noteOrCC === (message.type === 'cc' ? message.cc! : message.note!)
+    );
+    
+    if (alreadyMapped) {
+      // Don't add duplicate, just close learn mode
+      setLastLearnedMessage(message);
+      setLearnMode(null);
+      return;
+    }
+    
+    // Create new mapping (allow multiple mappings per control)
     const newMapping: MidiMapping = {
       id: crypto.randomUUID(),
       name: control.name,
@@ -338,20 +355,20 @@ export function useMidiMappings({
       relative: control.targetType === 'modelRotation' ? true : undefined,
     };
     
-    // Remove any existing mapping for this control
-    const filtered = mappings.filter(m => 
-      !(m.targetType === control.targetType && 
-        m.targetKey === control.targetKey && 
-        m.subKey === control.subKey)
-    );
-    
-    saveMappings([...filtered, newMapping]);
+    // Add new mapping without removing existing ones (supports multiple inputs per control)
+    saveMappings([...mappings, newMapping]);
     setLastLearnedMessage(message);
     setLearnMode(null);
   }, [learnMode, mappings, saveMappings, cancelLearn]);
 
-  // Remove a mapping
-  const removeMapping = useCallback((controlId: string) => {
+  // Remove a specific mapping by its ID
+  const removeMapping = useCallback((mappingId: string) => {
+    const filtered = mappings.filter(m => m.id !== mappingId);
+    saveMappings(filtered);
+  }, [mappings, saveMappings]);
+
+  // Remove all mappings for a control
+  const removeAllMappingsForControl = useCallback((controlId: string) => {
     const control = MAPPABLE_CONTROLS.find(c => c.id === controlId);
     if (!control) return;
     
@@ -371,15 +388,13 @@ export function useMidiMappings({
     lastCCValueRef.current = {};
   }, [saveMappings]);
 
-  // Update a mapping's relative flag
-  const setMappingRelative = useCallback((controlId: string, relative: boolean) => {
-    const control = MAPPABLE_CONTROLS.find(c => c.id === controlId);
-    if (!control) return;
+  // Update a mapping's relative flag (by mapping ID)
+  const setMappingRelative = useCallback((mappingId: string, relative: boolean) => {
+    const mapping = mappings.find(m => m.id === mappingId);
+    if (!mapping) return;
     
     const updatedMappings = mappings.map(m => {
-      if (m.targetType === control.targetType && 
-          m.targetKey === control.targetKey && 
-          m.subKey === control.subKey) {
+      if (m.id === mappingId) {
         return { ...m, relative };
       }
       return m;
@@ -387,29 +402,34 @@ export function useMidiMappings({
     
     // Reset cumulative tracking for this control when toggling relative mode
     if (relative) {
-      if (control.targetKey === 'all') {
+      if (mapping.targetKey === 'all') {
         // Reset all region rotations
         cumulativeRotationRef.current = {};
       } else {
-        cumulativeRotationRef.current[control.targetKey] = 0;
+        cumulativeRotationRef.current[mapping.targetKey] = 0;
       }
-      lastCCValueRef.current[control.targetKey] = 64; // Reset to center
+      lastCCValueRef.current[mapping.targetKey] = 64; // Reset to center
     }
     
     saveMappings(updatedMappings);
   }, [mappings, saveMappings]);
 
-  // Get mapping for a control
-  const getMappingForControl = useCallback((controlId: string): MidiMapping | undefined => {
+  // Get all mappings for a control (supports multiple MIDI inputs)
+  const getMappingsForControl = useCallback((controlId: string): MidiMapping[] => {
     const control = MAPPABLE_CONTROLS.find(c => c.id === controlId);
-    if (!control) return undefined;
+    if (!control) return [];
     
-    return mappings.find(m => 
+    return mappings.filter(m => 
       m.targetType === control.targetType && 
       m.targetKey === control.targetKey && 
       m.subKey === control.subKey
     );
   }, [mappings]);
+
+  // Legacy: Get first mapping for a control (for backward compatibility)
+  const getMappingForControl = useCallback((controlId: string): MidiMapping | undefined => {
+    return getMappingsForControl(controlId)[0];
+  }, [getMappingsForControl]);
 
   // Handle incoming MIDI message
   const handleMidiMessage = useCallback((message: MidiMessage) => {
@@ -726,8 +746,10 @@ export function useMidiMappings({
     startLearn,
     cancelLearn,
     removeMapping,
+    removeAllMappingsForControl,
     clearAllMappings,
     getMappingForControl,
+    getMappingsForControl,
     setMappingRelative,
     handleMidiMessage,
   };
