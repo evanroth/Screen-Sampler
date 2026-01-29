@@ -501,7 +501,7 @@ export default function Index() {
           onMidiCancelLearn={midiMappings.cancelLearn}
           onMidiRemoveMapping={midiMappings.removeMapping}
           onMidiClearAllMappings={midiMappings.clearAllMappings}
-          getMidiMappingForControl={midiMappings.getMappingForControl}
+          getMidiMappingsForControl={midiMappings.getMappingsForControl}
           onMidiSetMappingRelative={midiMappings.setMappingRelative}
           // Favorites
           isFavorite={favorites.isFavorite}
