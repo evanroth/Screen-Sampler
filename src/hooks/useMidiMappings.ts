@@ -108,16 +108,16 @@ export const MAPPABLE_CONTROLS: MappableControl[] = [
   // Visualizer mode toggle
   { id: 'visualizerMode', name: 'Toggle 2D/3D Mode', targetType: 'settingSelect', targetKey: 'visualizerMode', preferredMessageType: 'noteon', selectOptions: ['2d', '3d'] },
   
-  // Per-region scale controls (CC - faders control individual region scale)
-  { id: 'region1Scale', name: 'Region 1 Scale', targetType: 'regionSetting', targetKey: '0', subKey: 'scale3D', preferredMessageType: 'cc', min: 0.1, max: 3, step: 0.05 },
-  { id: 'region2Scale', name: 'Region 2 Scale', targetType: 'regionSetting', targetKey: '1', subKey: 'scale3D', preferredMessageType: 'cc', min: 0.1, max: 3, step: 0.05 },
-  { id: 'region3Scale', name: 'Region 3 Scale', targetType: 'regionSetting', targetKey: '2', subKey: 'scale3D', preferredMessageType: 'cc', min: 0.1, max: 3, step: 0.05 },
-  { id: 'region4Scale', name: 'Region 4 Scale', targetType: 'regionSetting', targetKey: '3', subKey: 'scale3D', preferredMessageType: 'cc', min: 0.1, max: 3, step: 0.05 },
-  { id: 'region5Scale', name: 'Region 5 Scale', targetType: 'regionSetting', targetKey: '4', subKey: 'scale3D', preferredMessageType: 'cc', min: 0.1, max: 3, step: 0.05 },
-  { id: 'region6Scale', name: 'Region 6 Scale', targetType: 'regionSetting', targetKey: '5', subKey: 'scale3D', preferredMessageType: 'cc', min: 0.1, max: 3, step: 0.05 },
-  { id: 'region7Scale', name: 'Region 7 Scale', targetType: 'regionSetting', targetKey: '6', subKey: 'scale3D', preferredMessageType: 'cc', min: 0.1, max: 3, step: 0.05 },
-  { id: 'region8Scale', name: 'Region 8 Scale', targetType: 'regionSetting', targetKey: '7', subKey: 'scale3D', preferredMessageType: 'cc', min: 0.1, max: 3, step: 0.05 },
-  { id: 'region9Scale', name: 'Region 9 Scale', targetType: 'regionSetting', targetKey: '8', subKey: 'scale3D', preferredMessageType: 'cc', min: 0.1, max: 3, step: 0.05 },
+  // Per-region scale controls (CC - faders control individual region scale, 0-100%)
+  { id: 'region1Scale', name: 'Region 1 Scale', targetType: 'regionSetting', targetKey: '0', subKey: 'scale3D', preferredMessageType: 'cc', min: 0, max: 1, step: 0.01 },
+  { id: 'region2Scale', name: 'Region 2 Scale', targetType: 'regionSetting', targetKey: '1', subKey: 'scale3D', preferredMessageType: 'cc', min: 0, max: 1, step: 0.01 },
+  { id: 'region3Scale', name: 'Region 3 Scale', targetType: 'regionSetting', targetKey: '2', subKey: 'scale3D', preferredMessageType: 'cc', min: 0, max: 1, step: 0.01 },
+  { id: 'region4Scale', name: 'Region 4 Scale', targetType: 'regionSetting', targetKey: '3', subKey: 'scale3D', preferredMessageType: 'cc', min: 0, max: 1, step: 0.01 },
+  { id: 'region5Scale', name: 'Region 5 Scale', targetType: 'regionSetting', targetKey: '4', subKey: 'scale3D', preferredMessageType: 'cc', min: 0, max: 1, step: 0.01 },
+  { id: 'region6Scale', name: 'Region 6 Scale', targetType: 'regionSetting', targetKey: '5', subKey: 'scale3D', preferredMessageType: 'cc', min: 0, max: 1, step: 0.01 },
+  { id: 'region7Scale', name: 'Region 7 Scale', targetType: 'regionSetting', targetKey: '6', subKey: 'scale3D', preferredMessageType: 'cc', min: 0, max: 1, step: 0.01 },
+  { id: 'region8Scale', name: 'Region 8 Scale', targetType: 'regionSetting', targetKey: '7', subKey: 'scale3D', preferredMessageType: 'cc', min: 0, max: 1, step: 0.01 },
+  { id: 'region9Scale', name: 'Region 9 Scale', targetType: 'regionSetting', targetKey: '8', subKey: 'scale3D', preferredMessageType: 'cc', min: 0, max: 1, step: 0.01 },
   
   // Per-region bounce triggers (Note On - triggers single bounce animation)
   { id: 'region1Bounce', name: 'Region 1 Bounce', targetType: 'regionBounce', targetKey: '0', preferredMessageType: 'noteon' },
