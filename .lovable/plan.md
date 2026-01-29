@@ -1,147 +1,123 @@
-# ✅ IMPLEMENTED
 
-## Favoriting System for 3D Models
 
-This plan adds a favoriting feature to all 3D models (Default shapes, Built-in remote models, and Custom uploaded models). Favorites can be saved with presets and navigated using the `<` and `>` keys.
+# MIDI Mapping Reorganization Plan
 
----
+## Overview
 
-### Overview
+Reorganize the MIDI Mappings section into collapsible dropdown menus that separate global controls from per-region controls. This will allow you to map one MIDI control to affect all objects globally, or map different MIDI controls to individual objects on screen.
 
-1. **Star Icons**: Display outline star icons next to each 3D model name. Clicking toggles the favorite state (filled star = favorited).
+## New Structure
 
-2. **Favorites Storage**: Store favorites in a dedicated localStorage key and include them in saved presets.
+The "MIDI Mappings" section will be reorganized as follows:
 
-3. **Keyboard Navigation**: `<` and `>` keys cycle through only favorited models, while arrow keys continue cycling through all models.
-
-4. **MIDI Mapping**: Add "Jump to Next Favorite" and "Jump to Previous Favorite" to the MIDI mapping section.
-
----
-
-### Files to Create/Modify
-
-#### 1. Create: `src/hooks/useFavorites.ts`
-New hook to manage favorite model IDs:
-
-- Store favorites in localStorage under `screen-sampler-favorites`
-- Track favorited model IDs (both default shapes and custom/remote model IDs)
-- Provide `toggleFavorite`, `isFavorite`, `getFavorites` functions
-- Provide `getNextFavorite` and `getPreviousFavorite` navigation helpers
-
-#### 2. Modify: `src/hooks/useSettingsStorage.ts`
-Extend preset storage to include favorites:
-
-- Add `favorites?: string[]` to `SavedPreset` interface
-- Update `savePreset` to accept and store favorites
-- Update `loadPreset` to return favorites
-
-#### 3. Modify: `src/hooks/useVisualizerSettings.ts`
-Add default shape identifiers:
-
-- Create `DEFAULT_SHAPES` constant array with all built-in 3D animation mode IDs
-- Export helper to get shape display name
-
-#### 4. Modify: `src/components/visualizer/CustomModelsSection.tsx`
-Add star icons to Built-in and Custom models:
-
-- Import `Star` icon from lucide-react
-- Add `onToggleFavorite` and `isFavorite` props
-- Display clickable star icons next to each model name
-- Show outline star for non-favorites, filled star for favorites
-
-#### 5. Modify: `src/components/visualizer/ControlPanel.tsx`
-Add star icons to Default 3D Animation dropdown and pass favorite props:
-
-- Add star icons to the Default 3D Animation `<Select>` items
-- Pass favorite handlers to `CustomModelsSection`
-- Create a new section showing favorited models list with stars
-
-#### 6. Modify: `src/pages/Index.tsx`
-Integrate favorites system:
-
-- Import and use `useFavorites` hook
-- Handle `<` and `>` key presses for favorite navigation
-- Pass favorite state/handlers to ControlPanel
-- Update preset save/load to include favorites
-
-#### 7. Modify: `src/hooks/useMidiMappings.ts`
-Add MIDI mapping controls for favorite navigation:
-
-- Add `jumpToNextFavorite` and `jumpToPreviousFavorite` to `MAPPABLE_CONTROLS`
-- Add new target type `favoriteNavigation` 
-- Handle triggering favorite model navigation via MIDI Note On
-
----
-
-### Technical Details
-
-#### Model Identification System
-
-Models are identified by unique IDs:
-- **Default shapes**: Use the `AnimationMode3D` string (e.g., `"sphere3D"`, `"mobius3D"`)
-- **Remote models**: Use existing ID format `"remote-filename.glb"`
-- **Custom models**: Use existing UUID format
-
-#### Favorites Data Structure
-
-```typescript
-interface FavoritesState {
-  modelIds: string[]; // Array of favorited model IDs
-}
+```text
+MIDI Mappings
+├── Global Settings (collapsible)
+│   ├── Parameters (CC): Object Scale, Speed, Bounce, Trails, etc.
+│   ├── Toggles (Note): Enable Rotation, Enable Trails, Auto Rotate, etc.
+│   ├── Modes: 2D/3D Animation Mode, Visualizer Mode
+│   ├── Camera Rotation
+│   └── All Models: Rotate All, Bounce All
+│
+├── Region 1 (collapsible) - only shows if region exists
+│   ├── Visibility (toggle on/off)
+│   ├── Scale
+│   ├── Rotation
+│   ├── Auto-Rotate
+│   └── Bounce
+│
+├── Region 2 (collapsible) - only shows if region exists
+│   └── ... same controls as Region 1
+│
+└── ... up to Region 9
 ```
 
-#### Keyboard Shortcuts
+## Key Features
 
-| Key | Action |
-|-----|--------|
-| `<` | Jump to previous favorited model |
-| `>` | Jump to next favorited model |
-| Arrow Left/Right | Cycle through all models (unchanged) |
+- **Collapsible Sections**: Each section (Global, Region 1, Region 2, etc.) can be expanded/collapsed independently
+- **Dynamic Regions**: Region sections only appear when those regions exist
+- **Duplicate Controls per Region**: Each region gets its own mappable controls for Scale, Rotation, Auto-Rotate, Bounce, and Visibility
+- **Global Controls**: Controls that affect all regions at once (like "Rotate All Models", "Bounce All") stay in the Global section
+- **Visual Indicator**: Show how many mappings exist in each section (e.g., "Global Settings (3 mapped)")
 
-#### MIDI Controls
+## User Experience
 
-New mappable controls:
-- `jumpToNextFavorite` - Note On triggers jump to next favorite
-- `jumpToPreviousFavorite` - Note On triggers jump to previous favorite
+1. When you have 2 objects on screen, you'll see:
+   - "Global Settings" dropdown
+   - "Region 1" dropdown  
+   - "Region 2" dropdown
+
+2. To map a fader to just Object 1's scale:
+   - Open "Region 1" dropdown
+   - Click "Learn" next to "Scale"
+   - Move your MIDI fader
+
+3. To map a different fader to Object 2's scale:
+   - Open "Region 2" dropdown
+   - Click "Learn" next to "Scale"
+   - Move a different MIDI fader
 
 ---
 
-### UI Changes
+## Technical Details
 
-#### Star Icon Placement
+### Files to Modify
 
-For each model row:
+1. **`src/components/visualizer/MidiSection.tsx`**
+   - Replace the flat list of controls with an Accordion component
+   - Create a "Global Settings" accordion item containing global parameters, toggles, modes, camera rotation, and "all" controls
+   - Create dynamic "Region X" accordion items for each visible region
+   - Move per-region controls (scale, rotation, auto-rotate, bounce, visibility) into their respective region sections
+   - Add a badge showing mapped count per section
+
+2. **`src/hooks/useMidiMappings.ts`** (minor updates)
+   - Add a helper function to categorize controls by region or global scope
+   - No changes to the core mapping logic - the existing `targetKey` and `targetType` already differentiate per-region controls
+
+### Control Categorization
+
+**Global Controls** (in Global Settings section):
+- All `targetType: 'setting'` controls (Object Scale, Speed, Bounce, Trails, Camera Speed, etc.)
+- All `targetType: 'settingSelect'` controls (Animation modes)
+- `targetType: 'cameraRotation'`
+- `targetType: 'favoriteNavigation'`
+- Per-region controls with `targetKey: 'all'` (Rotate All, Bounce All)
+
+**Per-Region Controls** (in Region X sections):
+- `targetType: 'regionVisibility'` with matching region index
+- `targetType: 'regionSetting'` with matching region index (scale, auto-rotate)
+- `targetType: 'modelRotation'` with matching region index
+- `targetType: 'regionBounce'` with matching region index
+
+### UI Component Structure
+
+```text
+<Accordion type="multiple" defaultValue={["global"]}>
+  
+  <AccordionItem value="global">
+    <AccordionTrigger>
+      Global Settings <Badge>3 mapped</Badge>
+    </AccordionTrigger>
+    <AccordionContent>
+      <!-- Parameters, Toggles, Modes, Camera, All-region controls -->
+    </AccordionContent>
+  </AccordionItem>
+
+  {regions.map((region, index) => (
+    <AccordionItem value={`region-${index}`}>
+      <AccordionTrigger>
+        Region {index + 1} <Badge>2 mapped</Badge>
+      </AccordionTrigger>
+      <AccordionContent>
+        <!-- Visibility, Scale, Rotation, Auto-Rotate, Bounce -->
+      </AccordionContent>
+    </AccordionItem>
+  ))}
+
+</Accordion>
 ```
-[Star Icon] [FileBox Icon] Model Name .glb
-```
 
-- Outline star (`Star` icon with no fill): Not favorited
-- Filled star (`Star` icon with fill="currentColor"): Favorited
-- Clicking the star toggles favorite state
+### Platter Sensitivity Placement
 
-#### Default 3D Animation Dropdown
-
-Add star icons inline with each animation mode option, allowing users to favorite built-in shapes directly from the dropdown.
-
----
-
-### Implementation Order
-
-1. Create `useFavorites.ts` hook with all core logic
-2. Update `useSettingsStorage.ts` to include favorites in presets
-3. Update `useVisualizerSettings.ts` with DEFAULT_SHAPES constant
-4. Update `CustomModelsSection.tsx` with star icons
-5. Update `ControlPanel.tsx` to pass favorite props
-6. Update `useMidiMappings.ts` with favorite navigation controls
-7. Update `Index.tsx` with keyboard handlers and integration
-
----
-
-### Edge Cases
-
-- If no models are favorited, `<` and `>` keys do nothing (show toast: "No favorites yet")
-- If only one model is favorited, navigation stays on that model
-- Favorites persist across sessions via localStorage
-- Loading a preset restores that preset's favorites
-- Deleted custom models are automatically removed from favorites
+The "Platter Sensitivity" slider will move to the Global Settings section since it affects all rotation mappings uniformly.
 
