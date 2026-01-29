@@ -112,11 +112,17 @@ function RegionMesh({
     timeRef.current += delta;
     const time = timeRef.current;
 
-    // Turntable stop effect: smoothly decelerate when auto-rotate is turned off or user is dragging
-    // When dragging, immediately stop (target velocity 0, high friction for instant stop)
+    // Turntable stop effect (per-region):
+    // - Prevents "jumping" when a region auto-rotate is re-enabled (we freeze its phase while off)
+    // - Restores gradual stop when a region auto-rotate is disabled
+    // - Still instantly stops when the user is dragging
     const isUserDragging = isDraggingRef?.current ?? false;
-    const targetVelocity = (settings.autoRotateCamera && !isUserDragging) ? 1 : 0;
-    const friction = isUserDragging ? 0.5 : (settings.autoRotateCamera ? 0.1 : 0.04); // Instant stop when dragging, faster decay when off
+    const regionAutoRotateEnabled = region.autoRotate3D !== false; // default true
+    const shouldSpinThisRegion = settings.individualRotation ? regionAutoRotateEnabled : true;
+    const shouldAutoRotate = settings.autoRotateCamera && shouldSpinThisRegion && !isUserDragging;
+
+    const targetVelocity = shouldAutoRotate ? 1 : 0;
+    const friction = isUserDragging ? 0.5 : (targetVelocity > 0 ? 0.1 : 0.04);
     rotateVelocityRef.current += (targetVelocity - rotateVelocityRef.current) * friction;
     
     // Stop completely when velocity is negligible
@@ -334,9 +340,12 @@ function RegionMesh({
         // In individual rotation mode, models rotate around their own center (if per-region toggle is on)
         // In camera rotation mode, this is handled by camera controls
         if (settings.individualRotation) {
-          // Individual rotation: models rotate around their own center (respecting per-region toggle)
-          const shouldRotate = region.autoRotate3D !== false; // Default to true if undefined
-          if (shouldRotate && (rotateVelocityRef.current > 0 || settings.autoRotateCamera)) {
+          // Individual rotation: models rotate around their own center.
+          // If a region is toggled off, we still apply the velocity-based decay (gradual stop)
+          // until rotateVelocity reaches ~0.
+          const regionWantsAutoRotate = region.autoRotate3D !== false;
+          const hasSpinVelocity = rotateVelocityRef.current > 0;
+          if ((regionWantsAutoRotate && settings.autoRotateCamera) || hasSpinVelocity) {
             mesh.rotation.y = rotateTime * settings.autoRotateCameraSpeed * 0.5;
             mesh.rotation.x = Math.sin(rotateTime * settings.autoRotateCameraSpeed * 0.25) * 0.1;
           }
