@@ -44,7 +44,7 @@ interface ControlPanelProps {
   // Presets
   presets: SavedPreset[];
   autoRestore: boolean;
-  onSavePreset: (name: string, settings: VisualizerSettings) => SavedPreset;
+  onSavePreset: (name: string) => SavedPreset;
   onLoadPreset: (id: string) => void;
   onDeletePreset: (id: string) => void;
   onToggleAutoRestore: (enabled: boolean) => void;
@@ -1510,7 +1510,6 @@ export function ControlPanel({
             onLoadPreset={onLoadPreset}
             onDeletePreset={onDeletePreset}
             onToggleAutoRestore={onToggleAutoRestore}
-            currentSettings={settings}
           />
 
           <Separator className="bg-border" />

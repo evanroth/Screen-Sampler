@@ -27,16 +27,14 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { SavedPreset } from '@/hooks/useSettingsStorage';
-import { VisualizerSettings } from '@/hooks/useVisualizerSettings';
 
 interface PresetsSectionProps {
   presets: SavedPreset[];
   autoRestore: boolean;
-  onSavePreset: (name: string, settings: VisualizerSettings) => SavedPreset;
+  onSavePreset: (name: string) => SavedPreset;
   onLoadPreset: (id: string) => void;
   onDeletePreset: (id: string) => void;
   onToggleAutoRestore: (enabled: boolean) => void;
-  currentSettings: VisualizerSettings;
 }
 
 export function PresetsSection({
@@ -46,14 +44,13 @@ export function PresetsSection({
   onLoadPreset,
   onDeletePreset,
   onToggleAutoRestore,
-  currentSettings,
 }: PresetsSectionProps) {
   const [presetName, setPresetName] = useState('');
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 
   const handleSavePreset = () => {
     if (presetName.trim()) {
-      onSavePreset(presetName.trim(), currentSettings);
+      onSavePreset(presetName.trim());
       setPresetName('');
       setSaveDialogOpen(false);
     }
