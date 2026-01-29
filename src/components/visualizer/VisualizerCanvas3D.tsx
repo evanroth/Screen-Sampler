@@ -71,8 +71,10 @@ function RegionMesh({
   // - turning Auto-Rotate Region off/on never "jumps" (angle is continuous)
   // - MIDI rotation can "write" the angle, and auto-rotate will resume from that exact angle
   // - turning auto-rotate off decelerates smoothly (friction)
-  // Initialize from region.midiRotationY if available to prevent jumps when props change
-  const rotationAngleRef = useRef(region.midiRotationY ?? 0);
+  // IMPORTANT: Use a stable initial value (0) - do NOT re-initialize from props on re-render
+  // or the rotation will jump when unrelated props (like scale) change.
+  // MIDI rotation syncs this ref inside useFrame when active.
+  const rotationAngleRef = useRef(0);
   // Current rotation velocity (decays when auto-rotate is off)
   const rotateVelocityRef = useRef(0);
   const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
