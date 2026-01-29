@@ -198,6 +198,7 @@ function categorizeControls(controls: MappableControl[], regionCount: number) {
     rotation: MappableControl[];
     autoRotate: MappableControl[];
     bounce: MappableControl[];
+    favorites: MappableControl[];
   }> = new Map();
   
   // Initialize per-region buckets
@@ -208,6 +209,7 @@ function categorizeControls(controls: MappableControl[], regionCount: number) {
       rotation: [],
       autoRotate: [],
       bounce: [],
+      favorites: [],
     });
   }
   
@@ -265,6 +267,8 @@ function categorizeControls(controls: MappableControl[], regionCount: number) {
       regionBucket.rotation.push(control);
     } else if (control.targetType === 'regionBounce') {
       regionBucket.bounce.push(control);
+    } else if (control.targetType === 'regionFavoriteNavigation') {
+      regionBucket.favorites.push(control);
     }
   });
   
@@ -370,7 +374,7 @@ export function MidiSection({
         continue;
       }
       let count = 0;
-      [...bucket.visibility, ...bucket.scale, ...bucket.rotation, ...bucket.autoRotate, ...bucket.bounce].forEach(c => {
+      [...bucket.visibility, ...bucket.scale, ...bucket.rotation, ...bucket.autoRotate, ...bucket.bounce, ...bucket.favorites].forEach(c => {
         if (getMappingForControl(c.id)) count++;
       });
       counts.push(count);
@@ -597,6 +601,7 @@ export function MidiSection({
                     ...bucket.rotation,
                     ...bucket.autoRotate,
                     ...bucket.bounce,
+                    ...bucket.favorites,
                   ];
                   
                   if (allControls.length === 0) return null;
@@ -670,6 +675,19 @@ export function MidiSection({
                         <ControlGroup
                           title="Bounce"
                           controls={bucket.bounce}
+                          learnMode={learnMode}
+                          lastMessage={lastMessage}
+                          onStartLearn={onStartLearn}
+                          onCancelLearn={onCancelLearn}
+                          onRemoveMapping={onRemoveMapping}
+                          getMappingForControl={getMappingForControl}
+                          onSetMappingRelative={onSetMappingRelative}
+                          disabled={!activeDeviceId}
+                        />
+                        
+                        <ControlGroup
+                          title="Favorites"
+                          controls={bucket.favorites}
                           learnMode={learnMode}
                           lastMessage={lastMessage}
                           onStartLearn={onStartLearn}
