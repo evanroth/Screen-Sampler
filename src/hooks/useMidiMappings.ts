@@ -261,6 +261,9 @@ export function useMidiMappings({
       min: control.min,
       max: control.max,
       step: control.step,
+      // Most endless encoders / DJ platters send values around 64 (relative)
+      // so rotation controls should default to relative mode.
+      relative: control.targetType === 'modelRotation' ? true : undefined,
     };
     
     // Remove any existing mapping for this control
@@ -529,8 +532,11 @@ export function useMidiMappings({
         if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
           const targetKey = mapping.targetKey;
           
-          // Temporarily disable auto-rotate camera while receiving MIDI rotation data
-          if (autoRotateWasEnabledRef.current === null && currentSettings.autoRotateCamera) {
+          // Temporarily disable *camera* auto-rotate while receiving MIDI rotation data.
+          // IMPORTANT: In Individual Rotation mode, autoRotateCamera is used as the master
+          // clock/enable for per-region spins, so we must NOT toggle it off here.
+          const shouldDisableCameraAutoRotate = currentSettings.autoRotateCamera && !currentSettings.individualRotation;
+          if (autoRotateWasEnabledRef.current === null && shouldDisableCameraAutoRotate) {
             // First rotation message: store current state and disable auto-rotate
             autoRotateWasEnabledRef.current = true;
             onUpdateSetting('autoRotateCamera', false);
@@ -549,7 +555,11 @@ export function useMidiMappings({
             midiRotationTimeoutRef.current = null;
           }, MIDI_ROTATION_TIMEOUT);
           
-          if (mapping.relative) {
+          // Back-compat: older saved mappings didn't have `relative`.
+          // For rotation controls we default to relative because many encoders report ~64 (+/- a few).
+          const isRelative = mapping.relative ?? true;
+
+          if (isRelative) {
             // Relative mode for DJ platters/endless encoders:
             // CC 64 = center/no movement
             // CC > 64 (e.g., 65-70) = clockwise, speed = value - 64
