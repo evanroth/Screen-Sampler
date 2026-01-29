@@ -34,7 +34,7 @@ export function Onboarding({
           {/* Left panel - Main content */}
           <div className="flex-1 bg-muted border-2 border-foreground rounded-lg p-6 md:p-8 flex flex-col">
             {/* Title */}
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-mono font-bold text-foreground tracking-wider uppercase mb-1">SCREEN SAMPLER V.1.1</h1>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-mono font-bold text-foreground tracking-wider uppercase mb-1">SCREEN SAMPLER V.1.9</h1>
             <p className="text-xs md:text-sm text-foreground uppercase tracking-[0.3em] font-mono mb-8">
               VJ SOFTWARE FOR DJS
             </p>
