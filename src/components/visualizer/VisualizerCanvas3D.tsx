@@ -118,15 +118,15 @@ function RegionMesh({
     const time = timeRef.current;
 
     // Turntable stop effect (per-region) for Individual Rotation mode.
-    // NOTE: In non-individual mode the camera rotates (not the mesh), so we avoid advancing
-    // any per-mesh phase there (otherwise disabling rotation can appear to "jump").
+    // Individual rotation is INDEPENDENT of auto-rotate camera - they can work simultaneously.
     // IMPORTANT: Skip auto-rotation logic entirely when MIDI is controlling this region's rotation
     // to prevent the rotation angle from advancing and causing jumps during other prop updates.
     const isUserDragging = isDraggingRef?.current ?? false;
     const isMidiControlled = region.midiRotationY !== undefined;
     if (settings.individualRotation && !isMidiControlled) {
       const regionAutoRotateEnabled = region.autoRotate3D !== false; // default true
-      const shouldAutoRotate = settings.autoRotateCamera && regionAutoRotateEnabled && !isUserDragging;
+      // Individual rotation works independently - only check region toggle, not camera
+      const shouldAutoRotate = regionAutoRotateEnabled && !isUserDragging;
 
       const targetVelocity = shouldAutoRotate ? 1 : 0;
       const friction = isUserDragging ? 0.5 : (targetVelocity > 0 ? 0.1 : 0.04);
@@ -137,8 +137,8 @@ function RegionMesh({
         rotateVelocityRef.current = 0;
       }
 
-      // Advance rotation angle based on current velocity
-      const angularSpeed = settings.autoRotateCameraSpeed * 0.5; // matches previous behavior
+      // Advance rotation angle based on current velocity - use individualRotationSpeed
+      const angularSpeed = settings.individualRotationSpeed * 0.5;
       rotationAngleRef.current += delta * rotateVelocityRef.current * angularSpeed;
     }
     
@@ -343,15 +343,12 @@ function RegionMesh({
           mesh.position.z = 0;
         }
         // Auto-rotate with turntable stop effect (velocity-based, MIDI override applied below)
-        // In individual rotation mode, models rotate around their own center (if per-region toggle is on)
-        // In camera rotation mode, this is handled by camera controls
+        // Individual rotation: models rotate around their own center (INDEPENDENT of camera rotation)
         if (settings.individualRotation) {
-          // Individual rotation: models rotate around their own center.
-          // If a region is toggled off, we still apply the velocity-based decay (gradual stop)
-          // until rotateVelocity reaches ~0.
+          // Individual rotation is independent - if region toggle is on, model rotates
           const regionWantsAutoRotate = region.autoRotate3D !== false;
           const hasSpinVelocity = rotateVelocityRef.current > 0;
-          if ((regionWantsAutoRotate && settings.autoRotateCamera) || hasSpinVelocity) {
+          if (regionWantsAutoRotate || hasSpinVelocity) {
             const y = rotationAngleRef.current;
             mesh.rotation.y = y;
             mesh.rotation.x = Math.sin(y * 0.5) * 0.1;
@@ -816,11 +813,10 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
       manualRotationAngleRef.current = midiCameraAngle;
       lastMidiAngleRef.current = midiCameraAngle;
     }
-    // Turntable stop effect: smoothly decelerate camera rotation when auto-rotate is off, 
-    // individual rotation is enabled, or user is dragging
+    // Turntable stop effect: smoothly decelerate camera rotation when auto-rotate is off or user is dragging.
+    // Camera rotation is now INDEPENDENT of individual rotation - both can work simultaneously.
     const isUserDragging = isDraggingRef.current;
-    // Camera should NOT rotate when individual rotation is enabled - models rotate instead
-    const shouldCameraRotate = settings.autoRotateCamera && !settings.individualRotation && !isUserDragging;
+    const shouldCameraRotate = settings.autoRotateCamera && !isUserDragging;
     const targetVelocity = shouldCameraRotate ? 1 : 0;
     const friction = isUserDragging ? 0.5 : (shouldCameraRotate ? 0.1 : 0.04); // Instant stop when dragging, faster decay when off
     cameraRotateVelocityRef.current += (targetVelocity - cameraRotateVelocityRef.current) * friction;
