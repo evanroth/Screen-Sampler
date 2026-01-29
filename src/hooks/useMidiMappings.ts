@@ -344,8 +344,10 @@ export function useMidiMappings({
       return;
     }
     
-    // Find matching mapping
-    const mapping = mappings.find(m => {
+    // Find ALL matching mappings.
+    // (Important: multiple controls can intentionally share the same CC/Note;
+    // previously we only applied the first match, which made other mappings appear “broken”.)
+    const matchingMappings = mappings.filter(m => {
       if (m.channel !== message.channel) return false;
       if (m.messageType === 'noteon' && message.type === 'noteon') {
         return m.noteOrCC === message.note;
@@ -356,26 +358,35 @@ export function useMidiMappings({
       return false;
     });
     
-    if (!mapping) return;
+    if (matchingMappings.length === 0) return;
     
-    // Look up the current control definition to use its min/max values
-    // This ensures that if control limits are updated, existing mappings use the new limits
-    const control = MAPPABLE_CONTROLS.find(c => 
-      c.targetType === mapping.targetType && 
-      c.targetKey === mapping.targetKey && 
-      c.subKey === mapping.subKey
-    );
-    
-    // Use control definition's min/max if available, otherwise fall back to stored mapping values
-    const effectiveMin = control?.min ?? mapping.min;
-    const effectiveMax = control?.max ?? mapping.max;
-    const effectiveStep = control?.step ?? mapping.step;
+    // Helpful debug signal for diagnosing “this control does nothing” reports.
+    if (matchingMappings.length > 1) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[MIDI] ${message.type.toUpperCase()} ${message.type === 'cc' ? message.cc : message.note} on Ch ${message.channel} matched ${matchingMappings.length} mappings. Applying all.`
+      );
+    }
     
     const currentSettings = settingsRef.current;
     const currentRegions = regionsRef.current;
     
-    // Apply the mapping
-    switch (mapping.targetType) {
+    for (const mapping of matchingMappings) {
+      // Look up the current control definition to use its min/max values.
+      // This ensures that if control limits are updated, existing mappings use the new limits.
+      const control = MAPPABLE_CONTROLS.find(c => 
+        c.targetType === mapping.targetType && 
+        c.targetKey === mapping.targetKey && 
+        c.subKey === mapping.subKey
+      );
+      
+      // Use control definition's min/max if available, otherwise fall back to stored mapping values.
+      const effectiveMin = control?.min ?? mapping.min;
+      const effectiveMax = control?.max ?? mapping.max;
+      const effectiveStep = control?.step ?? mapping.step;
+      
+      // Apply the mapping
+      switch (mapping.targetType) {
       case 'setting': {
         if (mapping.messageType === 'noteon') {
           // Toggle boolean settings
@@ -598,6 +609,7 @@ export function useMidiMappings({
           onJumpToFavorite(mapping.targetKey as 'next' | 'previous');
         }
         break;
+      }
       }
     }
   }, [learnMode, mappings, completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce, onJumpToFavorite]);
