@@ -1374,6 +1374,27 @@ export function ControlPanel({
                           ? "Each model rotates around its own center" 
                           : "Camera orbits around all models"}
                       </p>
+                      
+                      {/* Per-region auto-rotate toggles (only shown in individual rotation mode) */}
+                      {settings.individualRotation && regions.length > 0 && (
+                        <div className="space-y-2 pl-2 border-l-2 border-border mt-2">
+                          {regions.map((region, index) => (
+                            <div key={region.id} className="flex items-center justify-between">
+                              <Label className="text-xs text-muted-foreground">
+                                Auto-Rotate Region {index + 1}
+                              </Label>
+                              <Switch
+                                checked={region.autoRotate3D !== false}
+                                onCheckedChange={(checked) => {
+                                  if (onUpdateRegion) {
+                                    onUpdateRegion(region.id, { autoRotate3D: checked });
+                                  }
+                                }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </>
                   )}
                 </div>

@@ -87,7 +87,19 @@ export const MAPPABLE_CONTROLS: MappableControl[] = [
   { id: 'enableRotation', name: 'Enable Rotation', targetType: 'setting', targetKey: 'enableRotation', preferredMessageType: 'noteon' },
   { id: 'enableTrails', name: 'Enable Trails', targetType: 'setting', targetKey: 'enableTrails', preferredMessageType: 'noteon' },
   { id: 'autoRotateCamera', name: 'Auto Rotate Camera', targetType: 'setting', targetKey: 'autoRotateCamera', preferredMessageType: 'noteon' },
+  { id: 'individualRotation', name: 'Individual Rotation', targetType: 'setting', targetKey: 'individualRotation', preferredMessageType: 'noteon' },
   { id: 'playModeEnabled', name: 'Play Mode', targetType: 'setting', targetKey: 'playMode', subKey: 'enabled', preferredMessageType: 'noteon' },
+  
+  // Per-region auto-rotate toggles (Note On - for individual rotation mode)
+  { id: 'region1AutoRotate', name: 'Auto-Rotate Region 1', targetType: 'regionSetting', targetKey: '0', subKey: 'autoRotate3D', preferredMessageType: 'noteon' },
+  { id: 'region2AutoRotate', name: 'Auto-Rotate Region 2', targetType: 'regionSetting', targetKey: '1', subKey: 'autoRotate3D', preferredMessageType: 'noteon' },
+  { id: 'region3AutoRotate', name: 'Auto-Rotate Region 3', targetType: 'regionSetting', targetKey: '2', subKey: 'autoRotate3D', preferredMessageType: 'noteon' },
+  { id: 'region4AutoRotate', name: 'Auto-Rotate Region 4', targetType: 'regionSetting', targetKey: '3', subKey: 'autoRotate3D', preferredMessageType: 'noteon' },
+  { id: 'region5AutoRotate', name: 'Auto-Rotate Region 5', targetType: 'regionSetting', targetKey: '4', subKey: 'autoRotate3D', preferredMessageType: 'noteon' },
+  { id: 'region6AutoRotate', name: 'Auto-Rotate Region 6', targetType: 'regionSetting', targetKey: '5', subKey: 'autoRotate3D', preferredMessageType: 'noteon' },
+  { id: 'region7AutoRotate', name: 'Auto-Rotate Region 7', targetType: 'regionSetting', targetKey: '6', subKey: 'autoRotate3D', preferredMessageType: 'noteon' },
+  { id: 'region8AutoRotate', name: 'Auto-Rotate Region 8', targetType: 'regionSetting', targetKey: '7', subKey: 'autoRotate3D', preferredMessageType: 'noteon' },
+  { id: 'region9AutoRotate', name: 'Auto-Rotate Region 9', targetType: 'regionSetting', targetKey: '8', subKey: 'autoRotate3D', preferredMessageType: 'noteon' },
   
   // Animation mode selects (Note On cycles through)
   { id: 'animationMode', name: '2D Animation Mode', targetType: 'settingSelect', targetKey: 'animationMode', preferredMessageType: 'noteon', selectOptions: ANIMATION_MODES as unknown as string[] },
@@ -443,18 +455,26 @@ export function useMidiMappings({
       }
       
       case 'regionSetting': {
-        // Per-region CC control (e.g., scale3D)
-        if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
-          const regionIndex = parseInt(mapping.targetKey, 10);
-          const region = currentRegions[regionIndex];
-          if (region && mapping.subKey) {
-            const normalizedValue = message.value / 127;
-            let newValue = effectiveMin + normalizedValue * (effectiveMax - effectiveMin);
-            if (effectiveStep) {
-              newValue = Math.round(newValue / effectiveStep) * effectiveStep;
-            }
+        const regionIndex = parseInt(mapping.targetKey, 10);
+        const region = currentRegions[regionIndex];
+        if (!region || !mapping.subKey) break;
+        
+        if (mapping.messageType === 'noteon') {
+          // Toggle boolean region settings (e.g., autoRotate3D)
+          const currentValue = region[mapping.subKey as keyof CaptureRegion];
+          if (typeof currentValue === 'boolean' || currentValue === undefined) {
+            // Default to true for undefined booleans like autoRotate3D
+            const newValue = currentValue === undefined ? false : !currentValue;
             onUpdateRegion(region.id, { [mapping.subKey]: newValue });
           }
+        } else if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
+          // Per-region CC control (e.g., scale3D)
+          const normalizedValue = message.value / 127;
+          let newValue = effectiveMin + normalizedValue * (effectiveMax - effectiveMin);
+          if (effectiveStep) {
+            newValue = Math.round(newValue / effectiveStep) * effectiveStep;
+          }
+          onUpdateRegion(region.id, { [mapping.subKey]: newValue });
         }
         break;
       }
