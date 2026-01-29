@@ -466,6 +466,17 @@ export function useMidiMappings({
             // Default to true for undefined booleans like autoRotate3D
             const newValue = currentValue === undefined ? false : !currentValue;
             onUpdateRegion(region.id, { [mapping.subKey]: newValue });
+            
+            // If enabling auto-rotate for a region, also ensure global settings are enabled
+            if (mapping.subKey === 'autoRotate3D' && newValue === true) {
+              // Enable individual rotation mode and auto-rotate camera if not already on
+              if (!currentSettings.individualRotation) {
+                onUpdateSetting('individualRotation', true);
+              }
+              if (!currentSettings.autoRotateCamera) {
+                onUpdateSetting('autoRotateCamera', true);
+              }
+            }
           }
         } else if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
           // Per-region CC control (e.g., scale3D)
