@@ -331,11 +331,12 @@ function RegionMesh({
           mesh.position.z = 0;
         }
         // Auto-rotate with turntable stop effect (velocity-based, MIDI override applied below)
-        // In individual rotation mode, models rotate around their own center
+        // In individual rotation mode, models rotate around their own center (if per-region toggle is on)
         // In camera rotation mode, this is handled by camera controls
         if (settings.individualRotation) {
-          // Individual rotation: models rotate around their own center
-          if (rotateVelocityRef.current > 0 || settings.autoRotateCamera) {
+          // Individual rotation: models rotate around their own center (respecting per-region toggle)
+          const shouldRotate = region.autoRotate3D !== false; // Default to true if undefined
+          if (shouldRotate && (rotateVelocityRef.current > 0 || settings.autoRotateCamera)) {
             mesh.rotation.y = rotateTime * settings.autoRotateCameraSpeed * 0.5;
             mesh.rotation.x = Math.sin(rotateTime * settings.autoRotateCameraSpeed * 0.25) * 0.1;
           }
