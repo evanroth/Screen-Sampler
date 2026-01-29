@@ -45,7 +45,13 @@ export function usePWAInstall() {
   const installApp = async () => {
     if (!deferredPrompt) {
       // Fallback for browsers that don't support beforeinstallprompt
-      alert('To install: On mobile, tap the share button and "Add to Home Screen". On desktop Chrome, click the install icon in the address bar.');
+      alert(`To install:
+
+• Desktop (Mac/Windows/Linux): Open in Chrome and click the install icon in the address bar. You can find the app at chrome://apps/ and from here you can right click the app and select "Create shortcut"
+
+• Android: Tap the share button and "Add to Home Screen"
+
+• iOS: Screen Capture (getDisplayMedia) does not work in iOS (sorry)`);
       return false;
     }
 
