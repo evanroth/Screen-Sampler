@@ -71,7 +71,8 @@ function RegionMesh({
   // - turning Auto-Rotate Region off/on never "jumps" (angle is continuous)
   // - MIDI rotation can "write" the angle, and auto-rotate will resume from that exact angle
   // - turning auto-rotate off decelerates smoothly (friction)
-  const rotationAngleRef = useRef(0);
+  // Initialize from region.midiRotationY if available to prevent jumps when props change
+  const rotationAngleRef = useRef(region.midiRotationY ?? 0);
   // Current rotation velocity (decays when auto-rotate is off)
   const rotateVelocityRef = useRef(0);
   const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
@@ -117,8 +118,11 @@ function RegionMesh({
     // Turntable stop effect (per-region) for Individual Rotation mode.
     // NOTE: In non-individual mode the camera rotates (not the mesh), so we avoid advancing
     // any per-mesh phase there (otherwise disabling rotation can appear to "jump").
+    // IMPORTANT: Skip auto-rotation logic entirely when MIDI is controlling this region's rotation
+    // to prevent the rotation angle from advancing and causing jumps during other prop updates.
     const isUserDragging = isDraggingRef?.current ?? false;
-    if (settings.individualRotation) {
+    const isMidiControlled = region.midiRotationY !== undefined;
+    if (settings.individualRotation && !isMidiControlled) {
       const regionAutoRotateEnabled = region.autoRotate3D !== false; // default true
       const shouldAutoRotate = settings.autoRotateCamera && regionAutoRotateEnabled && !isUserDragging;
 
