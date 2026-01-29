@@ -87,6 +87,8 @@ export default function Index() {
     const getCurrentModelForRegion = (idx: number): string | null => {
       const region = regions[idx];
       if (region?.customModelId) return region.customModelId;
+      // Check if region has its own animationMode3D override
+      if (region?.animationMode3D) return region.animationMode3D;
       return settings.animationMode3D;
     };
     
@@ -106,35 +108,51 @@ export default function Index() {
     const modelType = favorites.getModelType(nextFavoriteId);
     
     // Helper to apply model to specific region or all regions
-    const applyModel = (customModelId: string | undefined) => {
-      if (regionIndex !== undefined) {
-        // Apply to specific region only
-        const region = regions[regionIndex];
-        if (region) {
-          setRegions(prev => prev.map((r, i) => 
-            i === regionIndex ? { ...r, customModelId } : r
-          ));
+    const applyModelToRegion = (idx: number, customModelId: string | undefined, animationMode3D?: string) => {
+      setRegions(prev => prev.map((r, i) => {
+        if (i !== idx) return r;
+        if (customModelId !== undefined) {
+          // Applying a custom/remote model
+          return { ...r, customModelId, animationMode3D: undefined };
+        } else if (animationMode3D) {
+          // Applying a default shape to this specific region
+          return { ...r, customModelId: undefined, animationMode3D: animationMode3D as any };
         }
-      } else {
-        // Apply to all regions (global)
-        setRegions(prev => prev.map(r => ({ ...r, customModelId })));
-      }
+        return r;
+      }));
+    };
+    
+    const applyModelGlobally = (customModelId: string | undefined) => {
+      setRegions(prev => prev.map(r => ({ ...r, customModelId })));
     };
     
     if (modelType === 'default') {
-      // It's a default shape - update the animation mode
-      updateSetting('animationMode3D', nextFavoriteId as any);
-      // Clear custom model from regions (or specific region)
-      applyModel(undefined);
+      // It's a default shape
+      if (regionIndex !== undefined) {
+        // Per-region: set the region's animationMode3D override, don't change global setting
+        applyModelToRegion(regionIndex, undefined, nextFavoriteId);
+      } else {
+        // Global: update the global setting and clear custom models from all regions
+        updateSetting('animationMode3D', nextFavoriteId as any);
+        applyModelGlobally(undefined);
+      }
     } else if (modelType === 'remote') {
       // It's a remote model - need to load it first
       const geometry = await remoteModels.loadModel(nextFavoriteId);
       if (geometry) {
-        applyModel(nextFavoriteId);
+        if (regionIndex !== undefined) {
+          applyModelToRegion(regionIndex, nextFavoriteId);
+        } else {
+          applyModelGlobally(nextFavoriteId);
+        }
       }
     } else {
       // It's a custom model (already loaded in IndexedDB)
-      applyModel(nextFavoriteId);
+      if (regionIndex !== undefined) {
+        applyModelToRegion(regionIndex, nextFavoriteId);
+      } else {
+        applyModelGlobally(nextFavoriteId);
+      }
     }
   }, [settings.visualizerMode, getCurrentModelId, favorites, updateSetting, remoteModels, regions, toast]);
 

@@ -906,7 +906,7 @@ export function ControlPanel({
             {settings.visualizerMode === '3d' && (
               <>
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">Default 3D Animation</Label>
+                  <Label className="text-muted-foreground">Default 3D Shape</Label>
                   <Select
                     value={settings.animationMode3D}
                     onValueChange={(v) => onUpdateSetting('animationMode3D', v as AnimationMode3D)}
