@@ -311,6 +311,17 @@ export default function Index() {
         updateSetting('playMode', { ...settings.playMode, enabled: !settings.playMode.enabled });
       }
       
+      // Spacebar to toggle Auto-Rotate Camera
+      if (e.key === ' ') {
+        e.preventDefault();
+        updateSetting('autoRotateCamera', !settings.autoRotateCamera);
+      }
+      
+      // 'z' key to toggle Individual Rotation
+      if (e.key === 'z' || e.key === 'Z') {
+        updateSetting('individualRotation', !settings.individualRotation);
+      }
+      
       // Arrow keys for navigation - prevent default to stop Tabs component from capturing
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
