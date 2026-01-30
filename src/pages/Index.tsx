@@ -517,6 +517,10 @@ export default function Index() {
           onAddCustomModel={customModels.addModel}
           onDeleteCustomModel={customModels.deleteModel}
           onClearCustomModelsError={customModels.clearError}
+          onSelectCustomModel={(modelId) => {
+            // Apply the custom model to all regions
+            setRegions(prev => prev.map(r => ({ ...r, customModelId: modelId })));
+          }}
           remoteModels={remoteModels.models}
           remoteModelsLoading={remoteModels.isListLoading}
           remoteModelsError={remoteModels.listError}

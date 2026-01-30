@@ -22,6 +22,7 @@ interface CustomModelsSectionProps {
   onAddModel: (file: File) => Promise<CustomModel | null>;
   onDeleteModel: (modelId: string) => void;
   onClearError: () => void;
+  onSelectCustomModel?: (modelId: string) => void;
   // Remote models (built-in)
   remoteModels?: RemoteModel[];
   remoteModelsLoading?: boolean;
@@ -40,6 +41,7 @@ export function CustomModelsSection({
   onAddModel,
   onDeleteModel,
   onClearError,
+  onSelectCustomModel,
   remoteModels = [],
   remoteModelsLoading = false,
   remoteModelsError,
@@ -58,8 +60,13 @@ export function CustomModelsSection({
     if (!file) return;
 
     setIsUploading(true);
-    await onAddModel(file);
+    const newModel = await onAddModel(file);
     setIsUploading(false);
+    
+    // Auto-select the newly uploaded model
+    if (newModel && onSelectCustomModel) {
+      onSelectCustomModel(newModel.id);
+    }
     
     // Clear input so same file can be selected again
     if (fileInputRef.current) {
@@ -239,7 +246,7 @@ export function CustomModelsSection({
                 key={model.id}
                 className="flex items-center justify-between p-2 bg-secondary/50 rounded text-xs group"
               >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -253,11 +260,16 @@ export function CustomModelsSection({
                       className={`w-3 h-3 ${favorited ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground'}`}
                     />
                   </button>
-                  <FileBox className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                  <span className="truncate">{model.name}</span>
-                  <span className="text-muted-foreground uppercase flex-shrink-0">
-                    .{model.fileType}
-                  </span>
+                  <button
+                    onClick={() => onSelectCustomModel?.(model.id)}
+                    className="flex items-center gap-2 min-w-0 flex-1 text-left hover:text-primary transition-colors"
+                  >
+                    <FileBox className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate">{model.name}</span>
+                    <span className="text-muted-foreground uppercase flex-shrink-0">
+                      .{model.fileType}
+                    </span>
+                  </button>
                 </div>
                 <Button
                   variant="ghost"
