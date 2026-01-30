@@ -1,123 +1,130 @@
 
 
-# MIDI Mapping Reorganization Plan
+# 3D Model Library Reorganization Plan
 
 ## Overview
 
-Reorganize the MIDI Mappings section into collapsible dropdown menus that separate global controls from per-region controls. This will allow you to map one MIDI control to affect all objects globally, or map different MIDI controls to individual objects on screen.
+Reorganize how 3D models are presented and selected in the settings panel. Create a unified "Library" section for browsing and favoriting models from all sources, and update per-region controls to use a Source + Model selection pattern.
+
+## Current State
+
+- **Default 3D Shapes**: Hardcoded geometries (Cube, Sphere, Torus, etc.) stored as `animationMode3D` values
+- **Built-in Models** (to be renamed "External 3D Models"): Remote GLB/OBJ files fetched from server
+- **Custom 3D Models**: User-uploaded files stored in IndexedDB
+
+These currently appear in different places with inconsistent UI patterns:
+- Default shapes: Global dropdown in 3D settings + per-region override dropdown
+- Built-in/External: Collapsible list in `CustomModelsSection` with click-to-load
+- Custom uploads: Separate list in `CustomModelsSection` with click-to-select
 
 ## New Structure
 
-The "MIDI Mappings" section will be reorganized as follows:
-
 ```text
-MIDI Mappings
-├── Global Settings (collapsible)
-│   ├── Parameters (CC): Object Scale, Speed, Bounce, Trails, etc.
-│   ├── Toggles (Note): Enable Rotation, Enable Trails, Auto Rotate, etc.
-│   ├── Modes: 2D/3D Animation Mode, Visualizer Mode
-│   ├── Camera Rotation
-│   └── All Models: Rotate All, Bounce All
+Settings Panel
+├── ... (existing controls)
+├── Library (new header)
+│   ├── Default 3D Shapes (collapsible dropdown)
+│   │   └── Click to load into Region 1, star to favorite
+│   ├── External 3D Models (collapsible dropdown, renamed from "Built-in")
+│   │   └── Click to load into Region 1, star to favorite
+│   └── Custom 3D Models (collapsible dropdown)
+│       └── Click to load into Region 1, star to favorite, upload button
 │
-├── Region 1 (collapsible) - only shows if region exists
-│   ├── Visibility (toggle on/off)
-│   ├── Scale
-│   ├── Rotation
-│   ├── Auto-Rotate
-│   └── Bounce
-│
-├── Region 2 (collapsible) - only shows if region exists
-│   └── ... same controls as Region 1
-│
-└── ... up to Region 9
+├── Per-Region 3D Modes
+│   └── Region 1
+│       ├── Visible toggle
+│       ├── 3D Model (section header, renamed from "Custom Model")
+│       ├── Source: [Default | External | Custom] (dropdown)
+│       └── Model: [list based on source selection] (dropdown)
 ```
 
-## Key Features
+## Key Changes
 
-- **Collapsible Sections**: Each section (Global, Region 1, Region 2, etc.) can be expanded/collapsed independently
-- **Dynamic Regions**: Region sections only appear when those regions exist
-- **Duplicate Controls per Region**: Each region gets its own mappable controls for Scale, Rotation, Auto-Rotate, Bounce, and Visibility
-- **Global Controls**: Controls that affect all regions at once (like "Rotate All Models", "Bounce All") stay in the Global section
-- **Visual Indicator**: Show how many mappings exist in each section (e.g., "Global Settings (3 mapped)")
+### 1. Rename "Built-in Models" to "External 3D Models"
+- Update label in `CustomModelsSection.tsx`
+- This terminology better reflects that these are loaded from an external server
 
-## User Experience
+### 2. Create unified "Library" section header
+- Add a "Library" label above the model lists
+- All three model sources appear as collapsible dropdowns under this header
+- Each item shows: name, favorite star, click-to-load behavior
+- Clicking loads the model into Region 1 only
 
-1. When you have 2 objects on screen, you'll see:
-   - "Global Settings" dropdown
-   - "Region 1" dropdown  
-   - "Region 2" dropdown
+### 3. Add "Default 3D Shapes" as a collapsible list in Library
+- Convert the current global dropdown into a browsable list
+- Each shape can be clicked to load or starred to favorite
+- Uses same visual style as External and Custom model lists
 
-2. To map a fader to just Object 1's scale:
-   - Open "Region 1" dropdown
-   - Click "Learn" next to "Scale"
-   - Move your MIDI fader
+### 4. Update per-region model selection
+- Rename "Custom Model" to "3D Model"
+- Add "Source" dropdown: Default 3D Shapes, External 3D Models, Custom 3D Models
+- Add "Model" dropdown: populated based on selected source
+- Remove the separate "animation mode" dropdown when a model source is selected
 
-3. To map a different fader to Object 2's scale:
-   - Open "Region 2" dropdown
-   - Click "Learn" next to "Scale"
-   - Move a different MIDI fader
-
----
-
-## Technical Details
-
-### Files to Modify
-
-1. **`src/components/visualizer/MidiSection.tsx`**
-   - Replace the flat list of controls with an Accordion component
-   - Create a "Global Settings" accordion item containing global parameters, toggles, modes, camera rotation, and "all" controls
-   - Create dynamic "Region X" accordion items for each visible region
-   - Move per-region controls (scale, rotation, auto-rotate, bounce, visibility) into their respective region sections
-   - Add a badge showing mapped count per section
-
-2. **`src/hooks/useMidiMappings.ts`** (minor updates)
-   - Add a helper function to categorize controls by region or global scope
-   - No changes to the core mapping logic - the existing `targetKey` and `targetType` already differentiate per-region controls
-
-### Control Categorization
-
-**Global Controls** (in Global Settings section):
-- All `targetType: 'setting'` controls (Object Scale, Speed, Bounce, Trails, Camera Speed, etc.)
-- All `targetType: 'settingSelect'` controls (Animation modes)
-- `targetType: 'cameraRotation'`
-- `targetType: 'favoriteNavigation'`
-- Per-region controls with `targetKey: 'all'` (Rotate All, Bounce All)
-
-**Per-Region Controls** (in Region X sections):
-- `targetType: 'regionVisibility'` with matching region index
-- `targetType: 'regionSetting'` with matching region index (scale, auto-rotate)
-- `targetType: 'modelRotation'` with matching region index
-- `targetType: 'regionBounce'` with matching region index
-
-### UI Component Structure
-
-```text
-<Accordion type="multiple" defaultValue={["global"]}>
-  
-  <AccordionItem value="global">
-    <AccordionTrigger>
-      Global Settings <Badge>3 mapped</Badge>
-    </AccordionTrigger>
-    <AccordionContent>
-      <!-- Parameters, Toggles, Modes, Camera, All-region controls -->
-    </AccordionContent>
-  </AccordionItem>
-
-  {regions.map((region, index) => (
-    <AccordionItem value={`region-${index}`}>
-      <AccordionTrigger>
-        Region {index + 1} <Badge>2 mapped</Badge>
-      </AccordionTrigger>
-      <AccordionContent>
-        <!-- Visibility, Scale, Rotation, Auto-Rotate, Bounce -->
-      </AccordionContent>
-    </AccordionItem>
-  ))}
-
-</Accordion>
+### 5. Update region data structure
+Add new fields to `CaptureRegion`:
+```typescript
+modelSource?: 'default' | 'external' | 'custom'; // Which source to use
 ```
+The existing `customModelId` will be repurposed to store the selected model ID from external or custom sources, and `animationMode3D` continues to store the default shape selection.
 
-### Platter Sensitivity Placement
+## Files to Modify
 
-The "Platter Sensitivity" slider will move to the Global Settings section since it affects all rotation mappings uniformly.
+### `src/hooks/useScreenCapture.ts`
+- Add `modelSource?: 'default' | 'external' | 'custom'` to `CaptureRegion` interface
+
+### `src/components/visualizer/CustomModelsSection.tsx`
+- Rename to `ModelLibrarySection.tsx` (optional but clearer)
+- Rename "Built-in Models" label to "External 3D Models"
+- Add "Library" header above all three sections
+- Add new "Default 3D Shapes" collapsible section with all shape options as a clickable list
+- Each shape shows a star for favoriting and loads on click
+- Update click handlers to only load into Region 1 (not all regions)
+
+### `src/components/visualizer/ControlPanel.tsx`
+- Update the "Custom Model" selector in per-region controls
+- Rename label from "Custom Model" to "3D Model"
+- Add "Source" dropdown with three options
+- Update "Model" dropdown to show items based on selected source:
+  - Default: Show all `AnimationMode3D` shapes
+  - External: Show all remote models
+  - Custom: Show all user-uploaded models
+- Remove the separate animation mode dropdown (it's now integrated into the Source/Model pattern)
+- Pass updated props to `CustomModelsSection`/`ModelLibrarySection`
+
+### `src/pages/Index.tsx`
+- Update model selection handlers to work with the new Source + Model pattern
+- Ensure Library clicks only affect Region 1
+- Handle the `modelSource` field when determining what geometry to render
+
+### `src/components/visualizer/VisualizerCanvas3D.tsx`
+- Update logic to check `region.modelSource` first:
+  - If `'default'`: use `region.animationMode3D` or global `settings.animationMode3D`
+  - If `'external'` or `'custom'`: use `region.customModelId` to load the model geometry
+
+## UI Behavior
+
+### Library Section
+- Clicking any model in the Library loads it into Region 1
+- The star icon toggles favorite status (persisted in localStorage and presets)
+- External models show loading state while downloading
+- Custom models section includes the Upload button
+
+### Per-Region Selection
+1. User selects a Source (Default, External, or Custom)
+2. The Model dropdown updates to show only models from that source
+3. User selects the specific model
+4. The region updates to display that model
+
+### Fallback Behavior
+- If `modelSource` is undefined, fall back to current logic (check `customModelId` first, then `animationMode3D`)
+- This ensures backward compatibility with existing presets and saved states
+
+## Visual Design
+
+The Library section will use consistent styling:
+- Each model source is a collapsible accordion section
+- Items use the existing row style with star, icon, name, and optional file type badge
+- Hover state highlights the row
+- Active/selected state could show a subtle border or background color
 
