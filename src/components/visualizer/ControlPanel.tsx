@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers, ListOrdered, Star } from 'lucide-react';
+import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers, ListOrdered, Star, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -89,6 +89,7 @@ interface ControlPanelProps {
   onToggleFullscreen: () => void;
   onReselectRegion: () => void;
   onUpdateSetting: <K extends keyof VisualizerSettings>(key: K, value: VisualizerSettings[K]) => void;
+  onRandomizeGradient?: () => void;
   onResetSettings: () => void;
   hasRegions: boolean;
   regionCount: number;
@@ -154,6 +155,7 @@ export function ControlPanel({
   onToggleFullscreen,
   onReselectRegion,
   onUpdateSetting,
+  onRandomizeGradient,
   presets,
   autoRestore,
   onSavePreset,
@@ -579,7 +581,7 @@ export function ControlPanel({
               )}
 
               {(settings.backgroundStyle === 'linearGradient' || settings.backgroundStyle === 'radialGradient') && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <ColorPicker
                     value={settings.gradientSettings.color1}
                     onChange={(v) => onUpdateSetting('gradientSettings', { ...settings.gradientSettings, color1: v })}
@@ -590,6 +592,15 @@ export function ControlPanel({
                     onChange={(v) => onUpdateSetting('gradientSettings', { ...settings.gradientSettings, color2: v })}
                     label="End"
                   />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="w-full"
+                    onClick={onRandomizeGradient}
+                  >
+                    <Shuffle className="w-4 h-4 mr-2" />
+                    Randomize Gradient
+                  </Button>
                 </div>
               )}
             </div>

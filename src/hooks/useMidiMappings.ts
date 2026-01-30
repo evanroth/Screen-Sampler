@@ -14,7 +14,8 @@ export type MidiTargetType =
   | 'modelRotation' // Per-region model Y rotation (like horizontal mouse drag)
   | 'favoriteNavigation' // Jump to next/previous favorite model (global)
   | 'regionFavoriteNavigation' // Jump to next/previous favorite model (per-region)
-  | 'crossfade'; // Crossfade between Region 1 and Region 2 scales
+  | 'crossfade' // Crossfade between Region 1 and Region 2 scales
+  | 'action'; // Trigger an action (like randomize gradient)
 
 export interface MidiMapping {
   id: string;
@@ -94,6 +95,7 @@ export const MAPPABLE_CONTROLS: MappableControl[] = [
   { id: 'autoRotateCamera', name: 'Auto Rotate Camera', targetType: 'setting', targetKey: 'autoRotateCamera', preferredMessageType: 'noteon' },
   { id: 'individualRotation', name: 'Individual Rotation', targetType: 'setting', targetKey: 'individualRotation', preferredMessageType: 'noteon' },
   { id: 'playModeEnabled', name: 'Play Mode', targetType: 'setting', targetKey: 'playMode', subKey: 'enabled', preferredMessageType: 'noteon' },
+  { id: 'randomizeGradient', name: 'Randomize Gradient', targetType: 'action', targetKey: 'randomizeGradient', preferredMessageType: 'noteon' },
   
   // Per-region auto-rotate toggles (Note On - for individual rotation mode)
   { id: 'region1AutoRotate', name: 'Auto-Rotate Region 1', targetType: 'regionSetting', targetKey: '0', subKey: 'autoRotate3D', preferredMessageType: 'noteon' },
@@ -180,6 +182,7 @@ interface UseMidiMappingsOptions {
   onCameraRotation?: (angle: number) => void; // Set camera azimuthal angle
   onTriggerBounce?: (regionIndex: number | 'all') => void; // Trigger bounce animation
   onJumpToFavorite?: (direction: 'next' | 'previous', regionIndex?: number) => void; // Jump to next/previous favorite (global or per-region)
+  onRandomizeGradient?: () => void; // Trigger gradient randomization
 }
 
 export function useMidiMappings({
@@ -190,6 +193,7 @@ export function useMidiMappings({
   onCameraRotation,
   onTriggerBounce,
   onJumpToFavorite,
+  onRandomizeGradient,
 }: UseMidiMappingsOptions) {
   const [mappings, setMappings] = useState<MidiMapping[]>([]);
   const [learnMode, setLearnMode] = useState<string | null>(null); // Control ID being learned
@@ -783,9 +787,17 @@ export function useMidiMappings({
         }
         break;
       }
+      
+      case 'action': {
+        // Trigger actions like randomize gradient
+        if (mapping.targetKey === 'randomizeGradient' && onRandomizeGradient) {
+          onRandomizeGradient();
+        }
+        break;
+      }
       }
     }
-  }, [learnMode, mappings, completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce, onJumpToFavorite, beginTemporaryRegionAutoRotateDisable]);
+  }, [learnMode, mappings, completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce, onJumpToFavorite, onRandomizeGradient, beginTemporaryRegionAutoRotateDisable]);
 
   return {
     mappings,
