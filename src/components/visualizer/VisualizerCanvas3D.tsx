@@ -138,7 +138,10 @@ function RegionMesh({
       }
 
       // Advance rotation angle based on current velocity - use individualRotationSpeed
-      const angularSpeed = settings.individualRotationSpeed * 0.5;
+      // IMPORTANT: This speed is completely independent of camera rotation speed.
+      // Use a higher multiplier (1.0) so models rotate at a meaningful speed even when
+      // camera is also rotating. The individualRotationSpeed slider (0.1-10) provides full control.
+      const angularSpeed = settings.individualRotationSpeed * 1.0;
       rotationAngleRef.current += delta * rotateVelocityRef.current * angularSpeed;
     }
     
