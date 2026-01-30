@@ -55,6 +55,7 @@ interface ControlPanelProps {
   onAddCustomModel: (file: File) => Promise<CustomModel | null>;
   onDeleteCustomModel: (modelId: string) => void;
   onClearCustomModelsError: () => void;
+  onSelectCustomModel?: (modelId: string) => void;
   // Remote (built-in) 3D Models
   remoteModels?: RemoteModel[];
   remoteModelsLoading?: boolean;
@@ -116,6 +117,7 @@ export function ControlPanel({
   onAddCustomModel,
   onDeleteCustomModel,
   onClearCustomModelsError,
+  onSelectCustomModel,
   remoteModels,
   remoteModelsLoading,
   remoteModelsError,
@@ -1484,6 +1486,7 @@ export function ControlPanel({
                   onAddModel={onAddCustomModel}
                   onDeleteModel={onDeleteCustomModel}
                   onClearError={onClearCustomModelsError}
+                  onSelectCustomModel={onSelectCustomModel}
                   remoteModels={remoteModels}
                   remoteModelsLoading={remoteModelsLoading}
                   remoteModelsError={remoteModelsError}
