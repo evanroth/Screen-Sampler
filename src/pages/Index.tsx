@@ -518,8 +518,21 @@ export default function Index() {
           onDeleteCustomModel={customModels.deleteModel}
           onClearCustomModelsError={customModels.clearError}
           onSelectCustomModel={(modelId) => {
-            // Apply the custom model to all regions
-            setRegions(prev => prev.map(r => ({ ...r, customModelId: modelId })));
+            // Apply the custom model to Region 1 only
+            setRegions(prev => prev.map((r, i) => i === 0 ? { 
+              ...r, 
+              customModelId: modelId,
+              modelSource: 'custom' as const
+            } : r));
+          }}
+          onSelectDefaultShape={(shapeId) => {
+            // Apply the default shape to Region 1 only
+            setRegions(prev => prev.map((r, i) => i === 0 ? { 
+              ...r, 
+              animationMode3D: shapeId,
+              customModelId: undefined,
+              modelSource: 'default' as const
+            } : r));
           }}
           remoteModels={remoteModels.models}
           remoteModelsLoading={remoteModels.isListLoading}
@@ -527,8 +540,12 @@ export default function Index() {
           onSelectRemoteModel={async (modelId) => {
             const geometry = await remoteModels.loadModel(modelId);
             if (geometry) {
-              // Apply the model to all regions
-              setRegions(prev => prev.map(r => ({ ...r, customModelId: modelId })));
+              // Apply the model to Region 1 only
+              setRegions(prev => prev.map((r, i) => i === 0 ? { 
+                ...r, 
+                customModelId: modelId,
+                modelSource: 'external' as const
+              } : r));
             }
           }}
           getRemoteModelLoadingState={remoteModels.getLoadingState}
