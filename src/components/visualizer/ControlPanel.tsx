@@ -1138,9 +1138,20 @@ export function ControlPanel({
                               <Select
                                 value={region.customModelId || 'none'}
                                 onValueChange={(v) => {
-                                  if (onUpdateRegion) {
+                                  if (v !== 'none' && onSelectRemoteModel) {
+                                    // Load the model first, then the handler will update regions
+                                    // But we need to update THIS region specifically
+                                    onSelectRemoteModel(v);
+                                    // Also update this specific region
+                                    if (onUpdateRegion) {
+                                      onUpdateRegion(region.id, { 
+                                        customModelId: v,
+                                        modelSource: 'external'
+                                      });
+                                    }
+                                  } else if (onUpdateRegion) {
                                     onUpdateRegion(region.id, { 
-                                      customModelId: v === 'none' ? undefined : v,
+                                      customModelId: undefined,
                                       modelSource: 'external'
                                     });
                                   }
