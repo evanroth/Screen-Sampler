@@ -10,6 +10,7 @@ import { useRemoteModels } from '@/hooks/useRemoteModels';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useMidi } from '@/hooks/useMidi';
 import { useMidiMappings } from '@/hooks/useMidiMappings';
+import { useGradientAnimation } from '@/hooks/useGradientAnimation';
 import { Onboarding } from '@/components/visualizer/Onboarding';
 import { ScreenPreview } from '@/components/visualizer/ScreenPreview';
 import { VisualizerCanvas } from '@/components/visualizer/VisualizerCanvas';
@@ -52,6 +53,12 @@ export default function Index() {
   }, []); // Only run once on mount
   
   const { settings, updateSetting, loadSettings, resetSettings } = useVisualizerSettings(initialSettings);
+
+  // Gradient animation for smooth color transitions
+  const gradientAnimation = useGradientAnimation({
+    currentSettings: settings.gradientSettings,
+    onUpdate: (newGradient) => updateSetting('gradientSettings', newGradient),
+  });
 
   // Camera rotation ref for MIDI control (passed to VisualizerCanvas3D)
   const [midiCameraAngle, setMidiCameraAngle] = useState<number | null>(null);
@@ -167,6 +174,7 @@ export default function Index() {
     onCameraRotation: setMidiCameraAngle,
     onTriggerBounce: handleTriggerBounce,
     onJumpToFavorite: handleJumpToFavorite,
+    onRandomizeGradient: gradientAnimation.randomize,
   });
   
   const midi = useMidi(midiMappings.handleMidiMessage);
@@ -500,7 +508,8 @@ export default function Index() {
           onToggleFullscreen={handleToggleFullscreen} 
           onReselectRegion={handleResetRegions} 
           onUpdateSetting={updateSetting} 
-          onResetSettings={resetSettings} 
+          onRandomizeGradient={gradientAnimation.randomize}
+          onResetSettings={resetSettings}
           hasRegions={regions.length > 0}
           regionCount={regions.length}
           regions={regions}
