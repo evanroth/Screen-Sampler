@@ -396,12 +396,23 @@ function RegionMesh({
 
   // Determine geometry based on mode or custom model
   const geometry = useMemo(() => {
-    // Check if region has a custom model
+    // Check if region has a custom model from external or custom source
     if (region.customModelId && getCustomGeometry) {
       const customGeo = getCustomGeometry(region.customModelId);
       if (customGeo) {
         return <primitive object={customGeo} attach="geometry" />;
       }
+      // If modelSource is 'external' or 'custom' but geometry not loaded yet,
+      // return null to avoid flashing the default shape
+      if (region.modelSource === 'external' || region.modelSource === 'custom') {
+        return null;
+      }
+    }
+    
+    // If modelSource is explicitly 'external' or 'custom' but no customModelId,
+    // don't fall back to default shape - return null
+    if (region.modelSource === 'external' || region.modelSource === 'custom') {
+      return null;
     }
     
     switch (mode) {
@@ -481,6 +492,11 @@ function RegionMesh({
         return <planeGeometry args={[2, 2]} />;
     }
   }, [mode, customGeometries, region.customModelId, getCustomGeometry]);
+
+  // Don't render mesh if geometry is null (e.g., external model still loading)
+  if (!geometry) {
+    return null;
+  }
 
   return (
     <mesh
