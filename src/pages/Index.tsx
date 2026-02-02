@@ -338,6 +338,12 @@ export default function Index() {
         updateSetting('autoRotateCamera', !settings.autoRotateCamera);
       }
       
+      // 'Enter' key to toggle Settings Panel
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        setIsControlPanelOpen(prev => !prev);
+      }
+      
       // Arrow keys for navigation - prevent default to stop Tabs component from capturing
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
