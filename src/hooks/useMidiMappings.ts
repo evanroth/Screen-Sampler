@@ -581,14 +581,11 @@ export function useMidiMappings({
             const newValue = currentValue === undefined ? false : !currentValue;
             onUpdateRegion(region.id, { [mapping.subKey]: newValue });
             
-            // If enabling auto-rotate for a region, also ensure global settings are enabled
+            // If enabling auto-rotate for a region, also ensure individual rotation mode is enabled
+            // (but do NOT automatically toggle autoRotateCamera - that should remain independent)
             if (mapping.subKey === 'autoRotate3D' && newValue === true) {
-              // Enable individual rotation mode and auto-rotate camera if not already on
               if (!currentSettings.individualRotation) {
                 onUpdateSetting('individualRotation', true);
-              }
-              if (!currentSettings.autoRotateCamera) {
-                onUpdateSetting('autoRotateCamera', true);
               }
             }
           }
