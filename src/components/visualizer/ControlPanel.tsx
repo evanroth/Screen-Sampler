@@ -1676,28 +1676,32 @@ export function ControlPanel({
                 <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">P</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Auto-Rotate Camera</span>
+                <span className="text-muted-foreground">Randomize Gradient</span>
                 <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">Space</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Individual Rotation</span>
-                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">Z</kbd>
+                <span className="text-muted-foreground">Auto-Rotate Camera</span>
+                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">R</kbd>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Cycle Animations</span>
                 <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">← →</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Cycle Favorites</span>
+                <span className="text-muted-foreground">Region 1: All Models</span>
+                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">Z X</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Region 2: All Models</span>
                 <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">&lt; &gt;</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Built-in Models (Region 1)</span>
-                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">K</kbd>
+                <span className="text-muted-foreground">Region 1: Favorites</span>
+                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">A S</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Built-in Models (Region 2)</span>
-                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">L</kbd>
+                <span className="text-muted-foreground">Region 2: Favorites</span>
+                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">K L</kbd>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Toggle Region 1-9</span>

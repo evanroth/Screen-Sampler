@@ -308,10 +308,17 @@ export default function Index() {
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
       
       if (e.key === 'Escape' && appState === 'visualizing') setIsControlPanelOpen(true);
+      
+      // 's' key: In 3D mode with regions, cycle next favorite for Region 1; otherwise toggle settings panel
       if (e.key === 's' || e.key === 'S') {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsControlPanelOpen(prev => !prev);
+        if (regions.length > 0 && settings.visualizerMode === '3d') {
+          e.preventDefault();
+          handleJumpToFavorite('next', 0); // Next favorite for Region 1
+        } else {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsControlPanelOpen(prev => !prev);
+        }
       }
       
       // 'p' key to toggle Play Mode
@@ -319,15 +326,16 @@ export default function Index() {
         updateSetting('playMode', { ...settings.playMode, enabled: !settings.playMode.enabled });
       }
       
-      // Spacebar to toggle Auto-Rotate Camera
+      // Spacebar to Randomize Gradient
       if (e.key === ' ') {
         e.preventDefault();
-        updateSetting('autoRotateCamera', !settings.autoRotateCamera);
+        gradientAnimation.randomize();
       }
       
-      // 'z' key to toggle Individual Rotation
-      if (e.key === 'z' || e.key === 'Z') {
-        updateSetting('individualRotation', !settings.individualRotation);
+      // 'r' key to toggle Auto-Rotate Camera
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        updateSetting('autoRotateCamera', !settings.autoRotateCamera);
       }
       
       // Arrow keys for navigation - prevent default to stop Tabs component from capturing
@@ -372,61 +380,92 @@ export default function Index() {
         }
       }
       
-      // < and > keys for favorite navigation
-      if (e.key === ',' || e.key === '<') {
-        e.preventDefault();
-        handleJumpToFavorite('previous');
-      }
-      if (e.key === '.' || e.key === '>') {
-        e.preventDefault();
-        handleJumpToFavorite('next');
-      }
-      // 'f' key to test fade out on first region
-      if ((e.key === 'f' || e.key === 'F') && regions.length > 0) {
-        const startTime = performance.now();
-        const duration = 2000;
-        const animate = (currentTime: number) => {
-          const elapsed = currentTime - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          const opacity = 1 - progress;
+      // Helper function to cycle through ALL models for a specific region
+      const cycleAllModelsForRegion = async (regionIndex: number, direction: 1 | -1) => {
+        if (settings.visualizerMode !== '3d' || regions.length <= regionIndex) return;
+        
+        // Build complete ordered list: Default shapes, External models, Custom models
+        const allModelIds: string[] = [
+          ...(ANIMATION_MODES_3D as unknown as string[]),
+          ...remoteModels.models.map(m => m.id),
+          ...customModels.models.map(m => m.id),
+        ];
+        
+        if (allModelIds.length === 0) return;
+        
+        // Get current model for this region
+        const region = regions[regionIndex];
+        const currentModelId = region?.customModelId || region?.animationMode3D || settings.animationMode3D;
+        
+        let currentIndex = allModelIds.indexOf(currentModelId);
+        if (currentIndex === -1) currentIndex = direction === 1 ? -1 : allModelIds.length;
+        
+        const nextIndex = (currentIndex + direction + allModelIds.length) % allModelIds.length;
+        const nextModelId = allModelIds[nextIndex];
+        
+        // Determine model type and apply appropriately
+        const isDefaultShape = (ANIMATION_MODES_3D as unknown as string[]).includes(nextModelId);
+        const isRemoteModel = remoteModels.models.some(m => m.id === nextModelId);
+        
+        if (isDefaultShape) {
+          // Apply default shape to this region
           setRegions(prev => prev.map((r, i) => 
-            i === 0 ? { ...r, fadeOpacity: opacity } : r
+            i === regionIndex ? { ...r, customModelId: undefined, animationMode3D: nextModelId as any, modelSource: 'default' } : r
           ));
-          if (progress < 1) {
-            requestAnimationFrame(animate);
+        } else if (isRemoteModel) {
+          // Load and apply external model
+          const geometry = await remoteModels.loadModel(nextModelId);
+          if (geometry) {
+            setRegions(prev => prev.map((r, i) => 
+              i === regionIndex ? { ...r, customModelId: nextModelId, animationMode3D: undefined, modelSource: 'external' } : r
+            ));
           }
-        };
-        requestAnimationFrame(animate);
+        } else {
+          // Apply custom model
+          setRegions(prev => prev.map((r, i) => 
+            i === regionIndex ? { ...r, customModelId: nextModelId, animationMode3D: undefined, modelSource: 'custom' } : r
+          ));
+        }
+      };
+      
+      // 'z' and 'x' cycle through ALL models for Region 1
+      if ((e.key === 'z' || e.key === 'Z') && regions.length > 0 && settings.visualizerMode === '3d') {
+        e.preventDefault();
+        cycleAllModelsForRegion(0, -1); // Previous
+      }
+      if ((e.key === 'x' || e.key === 'X') && regions.length > 0 && settings.visualizerMode === '3d') {
+        e.preventDefault();
+        cycleAllModelsForRegion(0, 1); // Next
       }
       
-      // 'k' cycles through Built-in Models for Region 1
-      if ((e.key === 'k' || e.key === 'K') && regions.length > 0 && remoteModels.models.length > 0 && settings.visualizerMode === '3d') {
+      // '<' and '>' cycle through ALL models for Region 2
+      if ((e.key === ',' || e.key === '<') && regions.length > 1 && settings.visualizerMode === '3d') {
         e.preventDefault();
-        const currentModelId = regions[0]?.customModelId;
-        const modelIds = remoteModels.models.map(m => m.id);
-        let currentIndex = currentModelId ? modelIds.indexOf(currentModelId) : -1;
-        const nextIndex = (currentIndex + 1) % modelIds.length;
-        const nextModelId = modelIds[nextIndex];
-        remoteModels.loadModel(nextModelId).then(geometry => {
-          if (geometry) {
-            setRegions(prev => prev.map((r, i) => i === 0 ? { ...r, customModelId: nextModelId } : r));
-          }
-        });
+        cycleAllModelsForRegion(1, -1); // Previous
+      }
+      if ((e.key === '.' || e.key === '>') && regions.length > 1 && settings.visualizerMode === '3d') {
+        e.preventDefault();
+        cycleAllModelsForRegion(1, 1); // Next
       }
       
-      // 'l' cycles through Built-in Models for Region 2
-      if ((e.key === 'l' || e.key === 'L') && regions.length > 1 && remoteModels.models.length > 0 && settings.visualizerMode === '3d') {
+      // 'a' and 's' cycle through FAVORITED models for Region 1 (but s is settings toggle, so skip s)
+      // Actually user wants a/s for Region 1 favorites, but s is settings. Let me check...
+      // Wait, user said 'a' and 's' for Region 1 favorites AND 'k' and 'l' for Region 2 favorites
+      // But 's' is already used for settings panel. I'll implement as requested but note the conflict.
+      if ((e.key === 'a' || e.key === 'A') && regions.length > 0 && settings.visualizerMode === '3d') {
         e.preventDefault();
-        const currentModelId = regions[1]?.customModelId;
-        const modelIds = remoteModels.models.map(m => m.id);
-        let currentIndex = currentModelId ? modelIds.indexOf(currentModelId) : -1;
-        const nextIndex = (currentIndex + 1) % modelIds.length;
-        const nextModelId = modelIds[nextIndex];
-        remoteModels.loadModel(nextModelId).then(geometry => {
-          if (geometry) {
-            setRegions(prev => prev.map((r, i) => i === 1 ? { ...r, customModelId: nextModelId } : r));
-          }
-        });
+        handleJumpToFavorite('previous', 0); // Previous favorite for Region 1
+      }
+      // Note: 's' is already handled above for settings panel toggle
+      
+      // 'k' and 'l' cycle through FAVORITED models for Region 2
+      if ((e.key === 'k' || e.key === 'K') && regions.length > 1 && settings.visualizerMode === '3d') {
+        e.preventDefault();
+        handleJumpToFavorite('previous', 1); // Previous favorite for Region 2
+      }
+      if ((e.key === 'l' || e.key === 'L') && regions.length > 1 && settings.visualizerMode === '3d') {
+        e.preventDefault();
+        handleJumpToFavorite('next', 1); // Next favorite for Region 2
       }
       
       // Number keys 1-9 toggle region visibility
@@ -443,7 +482,7 @@ export default function Index() {
     }; 
     window.addEventListener('keydown', h, true); // Use capture phase to intercept before Select components
     return () => window.removeEventListener('keydown', h, true);
-  }, [appState, regions, settings, updateSetting, customModels.models, toast, handleJumpToFavorite]);
+  }, [appState, regions, settings, updateSetting, customModels.models, remoteModels, toast, handleJumpToFavorite, gradientAnimation]);
 
   return (
     <div className="min-h-screen bg-background">
