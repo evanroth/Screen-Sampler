@@ -565,6 +565,7 @@ export default function Index() {
           onLoadPreset={handleLoadPreset}
           onDeletePreset={handleDeletePreset}
           onToggleAutoRestore={storage.toggleAutoRestore}
+          onClearCache={storage.clearCache}
           customModels={customModels.models}
           customModelsLoading={customModels.isLoading}
           customModelsError={customModels.error}

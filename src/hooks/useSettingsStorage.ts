@@ -109,6 +109,20 @@ export function useSettingsStorage() {
     setAutoRestore(enabled);
   }, []);
 
+  const clearCache = useCallback((): void => {
+    try {
+      localStorage.removeItem(PRESETS_KEY);
+      localStorage.removeItem(LAST_SESSION_KEY);
+      localStorage.removeItem(AUTO_RESTORE_KEY);
+      localStorage.removeItem('screen-sampler-midi-mappings');
+      localStorage.removeItem('screen-sampler-favorites');
+      setPresets([]);
+      setAutoRestore(false);
+    } catch (error) {
+      console.error('Failed to clear cache:', error);
+    }
+  }, []);
+
   return {
     presets,
     autoRestore,
@@ -118,5 +132,6 @@ export function useSettingsStorage() {
     saveLastSession,
     loadLastSession,
     toggleAutoRestore,
+    clearCache,
   };
 }
