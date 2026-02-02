@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers, ListOrdered, Star, Shuffle } from 'lucide-react';
+import { Settings, Monitor, Mic, Play, Square, Maximize, Minimize, RotateCcw, Link, Unlink, Box, Layers, ListOrdered, Star, Shuffle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -102,6 +102,7 @@ interface ControlPanelProps {
   onLoadPreset: (id: string) => void;
   onDeletePreset: (id: string) => void;
   onToggleAutoRestore: (enabled: boolean) => void;
+  onClearCache: () => void;
   // Custom 3D Models
   customModels: CustomModel[];
   customModelsLoading: boolean;
@@ -162,6 +163,7 @@ export function ControlPanel({
   onLoadPreset,
   onDeletePreset,
   onToggleAutoRestore,
+  onClearCache,
   onResetSettings,
   hasRegions,
   regionCount,
@@ -1653,13 +1655,23 @@ export function ControlPanel({
 
           <Separator className="bg-border" />
 
-          <Button
-            onClick={onResetSettings}
-            variant="outline"
-            className="w-full text-muted-foreground text-xs uppercase tracking-wider"
-          >
-            Reset to Defaults
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={onResetSettings}
+              variant="outline"
+              className="flex-1 text-muted-foreground text-xs uppercase tracking-wider"
+            >
+              Reset to Defaults
+            </Button>
+            <Button
+              onClick={onClearCache}
+              variant="outline"
+              className="text-muted-foreground text-xs"
+              title="Clear all cached data including presets, MIDI mappings, and favorites"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
 
           <Separator className="bg-border" />
 
