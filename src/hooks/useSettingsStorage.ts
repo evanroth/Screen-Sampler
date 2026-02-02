@@ -93,11 +93,12 @@ export function useSettingsStorage() {
     }
   }, []);
 
-  const loadLastSession = useCallback((): VisualizerSettings | null => {
+  const loadLastSession = useCallback((): Partial<VisualizerSettings> | null => {
     try {
       const stored = localStorage.getItem(LAST_SESSION_KEY);
       if (!stored) return null;
-      return JSON.parse(stored) as VisualizerSettings;
+      // Return as partial - let useVisualizerSettings merge with current defaults
+      return JSON.parse(stored) as Partial<VisualizerSettings>;
     } catch {
       console.warn('Failed to parse last session');
       return null;
