@@ -265,6 +265,12 @@ function categorizeControls(controls: MappableControl[], regionCount: number) {
       return;
     }
     
+    // Action controls (e.g., Randomize Gradient) - go to toggles section
+    if (control.targetType === 'action') {
+      global.toggles.push(control);
+      return;
+    }
+    
     // Mode selectors
     if (control.targetType === 'settingSelect') {
       global.modes.push(control);
