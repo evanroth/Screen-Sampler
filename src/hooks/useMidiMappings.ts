@@ -590,19 +590,17 @@ export function useMidiMappings({
             }
           }
         } else if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
-          // Per-region CC control (e.g., scale3D)
-          // For scale3D, use the global panelScaleX as the maximum so that CC 127 = current global scale setting
-          let dynamicMax = effectiveMax;
-          if (mapping.subKey === 'scale3D') {
-            dynamicMax = currentSettings.panelScaleX;
-          }
-          
+          // Per-region CC control (e.g., Region X Scale)
+          // IMPORTANT: MIDI should NOT overwrite the user's Scale slider value.
+          // We treat the UI `scale3D` as the per-region *max*, and MIDI writes a 0..1 factor.
           const normalizedValue = message.value / 127;
-          let newValue = effectiveMin + normalizedValue * (dynamicMax - effectiveMin);
+          let newValue = effectiveMin + normalizedValue * (effectiveMax - effectiveMin);
           if (effectiveStep) {
             newValue = Math.round(newValue / effectiveStep) * effectiveStep;
           }
-          onUpdateRegion(region.id, { [mapping.subKey]: newValue });
+
+          const updateKey = mapping.subKey === 'scale3D' ? 'midiScale3D' : mapping.subKey;
+          onUpdateRegion(region.id, { [updateKey]: newValue } as Partial<CaptureRegion>);
         }
         break;
       }
@@ -782,10 +780,10 @@ export function useMidiMappings({
           const region2 = currentRegions[1];
           
           if (region1) {
-            onUpdateRegion(region1.id, { scale3D: region1Scale });
+            onUpdateRegion(region1.id, { midiScale3D: region1Scale });
           }
           if (region2) {
-            onUpdateRegion(region2.id, { scale3D: region2Scale });
+            onUpdateRegion(region2.id, { midiScale3D: region2Scale });
           }
         }
         break;
