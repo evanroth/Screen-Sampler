@@ -371,9 +371,12 @@ function RegionMesh({
       mesh.rotation.x = Math.sin(region.midiRotationY * 0.5) * 0.1;
     }
 
-    // Apply scale with optional per-region override, morph effect, and bounce
-    const regionScale = region.scale3D ?? 1;
-    mesh.scale.setScalar(baseScale * audioScale * regionScale * morphScale * bounceScale);
+    // Apply scale with optional per-region override, morph effect, bounce, and MIDI scaling.
+    // `scale3D` is the user-set max in the UI. MIDI writes to `midiScale3D` (0..1) so it
+    // never overwrites the user's slider value.
+    const regionScaleMax = region.scale3D ?? 1;
+    const midiScale = region.midiScale3D ?? 1;
+    mesh.scale.setScalar(baseScale * audioScale * regionScaleMax * midiScale * morphScale * bounceScale);
   });
 
   // Create custom geometries

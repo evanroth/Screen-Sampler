@@ -27,6 +27,11 @@ export interface CaptureRegion {
   animationMode3D?: AnimationMode3D;
   position3D?: { x: number; y: number; z: number };
   scale3D?: number;
+  /**
+   * MIDI-controlled per-region scale (0..1) that scales within the user-set `scale3D` max.
+   * This prevents MIDI input from overwriting the user's Scale slider value.
+   */
+  midiScale3D?: number;
   position2D?: { x: number; y: number; z: number };
   scale2D?: number;
   transparentColor?: string;
