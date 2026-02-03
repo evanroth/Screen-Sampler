@@ -591,8 +591,14 @@ export function useMidiMappings({
           }
         } else if (mapping.messageType === 'cc' && effectiveMin !== undefined && effectiveMax !== undefined) {
           // Per-region CC control (e.g., scale3D)
+          // For scale3D, use the global panelScaleX as the maximum so that CC 127 = current global scale setting
+          let dynamicMax = effectiveMax;
+          if (mapping.subKey === 'scale3D') {
+            dynamicMax = currentSettings.panelScaleX;
+          }
+          
           const normalizedValue = message.value / 127;
-          let newValue = effectiveMin + normalizedValue * (effectiveMax - effectiveMin);
+          let newValue = effectiveMin + normalizedValue * (dynamicMax - effectiveMin);
           if (effectiveStep) {
             newValue = Math.round(newValue / effectiveStep) * effectiveStep;
           }
