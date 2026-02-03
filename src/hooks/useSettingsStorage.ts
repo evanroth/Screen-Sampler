@@ -40,9 +40,12 @@ export function useSettingsStorage() {
   const [presets, setPresets] = useState<SavedPreset[]>(() => getStoredPresets());
   const [autoRestore, setAutoRestore] = useState<boolean>(() => {
     try {
-      return localStorage.getItem(AUTO_RESTORE_KEY) === 'true';
+      const stored = localStorage.getItem(AUTO_RESTORE_KEY);
+      // Default to true if no preference has been saved yet
+      if (stored === null) return true;
+      return stored === 'true';
     } catch {
-      return false;
+      return true;
     }
   });
 
