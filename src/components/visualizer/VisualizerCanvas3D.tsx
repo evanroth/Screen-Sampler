@@ -704,6 +704,8 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   const cameraRotateVelocityRef = useRef(settings.autoRotateCamera ? 1 : 0);
   // Track if user is currently dragging
   const isDraggingRef = useRef(false);
+  // Reusable Vector3 for center camera lerp - prevents memory leak from creating new objects every frame
+  const centerTargetRef = useRef(new THREE.Vector3());
   
   // Filter visible regions, then separate fullscreen background from normal
   const backgroundRegions = regions.filter(r => r.fullscreenBackground && r.visible !== false);
@@ -816,11 +818,9 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
       centerY /= visibleChildren.length;
       centerZ /= visibleChildren.length;
       
-      // Smoothly interpolate target to center
-      controlsRef.current.target.lerp(
-        new THREE.Vector3(centerX, centerY, centerZ),
-        0.05
-      );
+      // Smoothly interpolate target to center using reusable Vector3 (prevents memory leak)
+      centerTargetRef.current.set(centerX, centerY, centerZ);
+      controlsRef.current.target.lerp(centerTargetRef.current, 0.05);
     }
     
     // Handle MIDI camera rotation (takes priority over auto-rotate)
