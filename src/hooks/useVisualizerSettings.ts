@@ -130,6 +130,7 @@ export interface VisualizerSettings {
   textureSmoothing: boolean;
   playMode: PlayModeSettings;
   midiRotationSensitivity: number; // 0.01 to 0.2, controls DJ platter rotation speed
+  centerCamera: boolean; // When true, camera auto-centers on models. When false, full manual control.
 }
 
 const defaultSettings: VisualizerSettings = {
@@ -167,6 +168,7 @@ const defaultSettings: VisualizerSettings = {
     transition: 'fade',
   },
   midiRotationSensitivity: 0.02,
+  centerCamera: true,
 };
 
 export function useVisualizerSettings(initialSettings?: Partial<VisualizerSettings>) {

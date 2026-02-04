@@ -742,6 +742,9 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
   }, []);
   
   useEffect(() => {
+    // Skip auto-positioning when centerCamera is disabled
+    if (!settings.centerCamera) return;
+    
     // Calculate camera distance to fit objects at ~85% of screen
     // IMPORTANT (Play Mode): During crossfades there are briefly 2 visible meshes.
     // If we re-fit the camera based on visible count, it causes a perceived "position jump".
@@ -767,7 +770,7 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
     const cameraZ = Math.max(distanceForWidth, distanceForHeight, 2);
     
     camera.position.set(0, 0, cameraZ);
-  }, [camera, visibleNormalCount, settings.regionSpacing3D, settings.panelScaleX, isPlayMode]);
+  }, [camera, visibleNormalCount, settings.regionSpacing3D, settings.panelScaleX, isPlayMode, settings.centerCamera]);
 
   // Handle auto-rotate toggle to prevent jumping
   useEffect(() => {
@@ -800,22 +803,25 @@ function Scene({ regions, settings, audioLevel, defaultMode, getVideoElement, ge
     const visibleChildren = children.filter((c) => (c as any).visible !== false);
     if (visibleChildren.length === 0) return;
     
-    // Calculate center point of all meshes
-    let centerX = 0, centerY = 0, centerZ = 0;
-    visibleChildren.forEach((child) => {
-      centerX += child.position.x;
-      centerY += child.position.y;
-      centerZ += child.position.z;
-    });
-    centerX /= visibleChildren.length;
-    centerY /= visibleChildren.length;
-    centerZ /= visibleChildren.length;
-    
-    // Smoothly interpolate target to center
-    controlsRef.current.target.lerp(
-      new THREE.Vector3(centerX, centerY, centerZ),
-      0.05
-    );
+    // Only auto-center when centerCamera is enabled
+    if (settings.centerCamera) {
+      // Calculate center point of all meshes
+      let centerX = 0, centerY = 0, centerZ = 0;
+      visibleChildren.forEach((child) => {
+        centerX += child.position.x;
+        centerY += child.position.y;
+        centerZ += child.position.z;
+      });
+      centerX /= visibleChildren.length;
+      centerY /= visibleChildren.length;
+      centerZ /= visibleChildren.length;
+      
+      // Smoothly interpolate target to center
+      controlsRef.current.target.lerp(
+        new THREE.Vector3(centerX, centerY, centerZ),
+        0.05
+      );
+    }
     
     // Handle MIDI camera rotation (takes priority over auto-rotate)
     if (midiCameraAngle !== null && midiCameraAngle !== undefined && controlsRef.current) {

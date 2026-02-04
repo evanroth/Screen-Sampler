@@ -1450,6 +1450,24 @@ export function ControlPanel({
 
                 <Separator className="bg-border" />
 
+                {/* Center Camera */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-muted-foreground">Center Camera</Label>
+                    <Switch
+                      checked={settings.centerCamera}
+                      onCheckedChange={(v) => onUpdateSetting('centerCamera', v)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {settings.centerCamera 
+                      ? "Camera auto-centers on models" 
+                      : "Full manual camera control (Shift+drag)"}
+                  </p>
+                </div>
+
+                <Separator className="bg-border" />
+
                 {/* Camera Auto-Rotate */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
