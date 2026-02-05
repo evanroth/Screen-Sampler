@@ -4,7 +4,6 @@ import { Download, Camera } from "lucide-react";
 import cropIcon from "@/assets/crop-icon.png";
 import tipJarIcon from "@/assets/tip-jar.png";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
-import PayPalDonateButton from "@/components/ui/PayPalDonateButton";
 interface OnboardingProps {
   onStartCapture: () => void;
   onStartCamera?: () => Promise<void>;
@@ -125,15 +124,6 @@ export function Onboarding({ onStartCapture, onStartCamera }: OnboardingProps) {
                 <img src={tipJarIcon} alt="" width={40} height={40} className="dark:invert" />
                 Support this work
               </a>
-              /* Pay Pal Begin */
-              <div style={{ marginTop: "1rem", textAlign: "center" }}>
-                <p>
-                  I love creating software like Screen Sampler, and I want to always keep it free and open source. If
-                  you enjoy using it and want to support my work, please consider sending a donation.
-                </p>
-                <PayPalDonateButton hostedButtonId="B8ACUSKTNBTPJ" />
-              </div>
-              /* Pay Pal End */
             </div>
           </div>
 
