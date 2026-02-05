@@ -47,6 +47,7 @@ import { CustomModel } from "@/hooks/useCustomModels";
 import { RemoteModel, RemoteModelLoadingState } from "@/hooks/useRemoteModels";
 import { MidiDevice, MidiMessage } from "@/hooks/useMidi";
 import { MidiMapping } from "@/hooks/useMidiMappings";
+import { PayPalDonateButton } from "@/components/PayPalDonateButton";
 
 // Display names for model sources
 const MODEL_SOURCE_NAMES: Record<ModelSource, string> = {
@@ -1741,6 +1742,12 @@ export function ControlPanel({
                 <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">1-9</kbd>
               </div>
             </div>
+          </div>
+
+          {/* Support / Donate */}
+          <div className="space-y-3 pt-4 border-t border-border">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Support This Project</h3>
+            <PayPalDonateButton />
           </div>
         </div>
       </div>
