@@ -1,0 +1,15 @@
+ RewriteEngine On
+ 
+ RewriteBase /
+ 
+ # Serve existing files normally
+ RewriteCond %{REQUEST_FILENAME} -f [OR]
+ RewriteCond %{REQUEST_FILENAME} -d
+ RewriteRule ^ - [L]
+ 
+ # All other requests go to index.html
+ RewriteRule ^ index.html [L]
+ 
+ <IfModule mod_headers.c>
+     Header set Access-Control-Allow-Origin "*"
+ </IfModule>
