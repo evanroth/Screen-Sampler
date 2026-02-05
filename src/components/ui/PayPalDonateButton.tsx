@@ -4,11 +4,16 @@ interface PayPalDonateButtonProps {
   hostedButtonId: string;
 }
 
+declare global {
+  interface Window {
+    PayPal?: any; // tell TS that window.PayPal exists
+  }
+}
+
 export default function PayPalDonateButton({ hostedButtonId }: PayPalDonateButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Dynamically load PayPal SDK
     const script = document.createElement("script");
     script.src = "https://www.paypalobjects.com/donate/sdk/donate-sdk.js";
     script.async = true;
