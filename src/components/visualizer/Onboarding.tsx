@@ -2,8 +2,8 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Camera } from "lucide-react";
 import cropIcon from "@/assets/crop-icon.png";
-import tipJarIcon from "@/assets/tip-jar.png";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { PayPalDonateButton } from "@/components/PayPalDonateButton";
 interface OnboardingProps {
   onStartCapture: () => void;
   onStartCamera?: () => Promise<void>;
@@ -115,15 +115,7 @@ export function Onboarding({ onStartCapture, onStartCamera }: OnboardingProps) {
               >
                 Beats and Bobbins
               </a>
-              <a
-                href="https://shop.evan-roth.com/product/beats-bobbins-tip-jar/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-foreground/70 transition-colors underline underline-offset-4 inline-flex items-center gap-1"
-              >
-                <img src={tipJarIcon} alt="" width={40} height={40} className="dark:invert" />
-                Support this work
-              </a>
+              <PayPalDonateButton />
             </div>
           </div>
 
