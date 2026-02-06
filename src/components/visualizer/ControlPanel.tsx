@@ -241,6 +241,7 @@ export function ControlPanel({
           "overflow-y-auto",
           isOpen ? "translate-x-0" : "translate-x-full",
         )}
+        style={{ cursor: 'auto' }}
       >
         <div className="p-5 pt-6 space-y-5">
           <div className="flex items-center justify-between">
