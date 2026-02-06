@@ -278,6 +278,15 @@ export function useRemoteModels() {
     return modelId.startsWith('remote-');
   }, []);
 
+  // Dispose all loaded geometries on unmount to free GPU memory
+  useEffect(() => {
+    return () => {
+      loadedGeometries.forEach((geometry) => {
+        geometry.dispose();
+      });
+    };
+  }, []); // Only on unmount - don't track loadedGeometries to avoid premature disposal
+
   return {
     models,
     isListLoading,

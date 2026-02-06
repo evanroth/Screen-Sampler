@@ -66,6 +66,8 @@ function RegionMesh({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
   const timeRef = useRef(0);
+  // Pool ImageData to avoid massive allocation per frame when transparent color is active
+  const imageDataRef = useRef<ImageData | null>(null);
   // Per-region turntable state for Individual Rotation mode.
   // We keep an explicit angle accumulator so that:
   // - turning Auto-Rotate Region off/on never "jumps" (angle is continuous)
@@ -103,6 +105,9 @@ function RegionMesh({
     const filter = settings.textureSmoothing ? THREE.LinearFilter : THREE.NearestFilter;
     textureRef.current.minFilter = filter;
     textureRef.current.magFilter = filter;
+    
+    // Invalidate pooled ImageData when quality changes
+    imageDataRef.current = null;
     
     return () => {
       textureRef.current?.dispose();
@@ -158,10 +163,16 @@ function RegionMesh({
       const quality = settings.textureQuality;
       ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, quality, quality);
       
-      // Per-region transparent color processing
+      // Per-region transparent color processing with pooled ImageData
       if (region.transparentColor) {
-        const imageData = ctx.getImageData(0, 0, quality, quality);
-        const data = imageData.data;
+        // Reuse ImageData to avoid massive per-frame allocation (up to 16MB at 2048x2048)
+        if (!imageDataRef.current || imageDataRef.current.width !== quality || imageDataRef.current.height !== quality) {
+          imageDataRef.current = ctx.createImageData(quality, quality);
+        }
+        const freshData = ctx.getImageData(0, 0, quality, quality);
+        imageDataRef.current.data.set(freshData.data);
+        
+        const data = imageDataRef.current.data;
         const threshold = region.transparentThreshold ?? 30;
         
         // Parse the hex color
@@ -188,7 +199,7 @@ function RegionMesh({
           }
         }
         
-        ctx.putImageData(imageData, 0, 0);
+        ctx.putImageData(imageDataRef.current, 0, 0);
       }
       
       textureRef.current.needsUpdate = true;
@@ -537,6 +548,10 @@ function FullscreenBackgroundMesh({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
   const { camera, size } = useThree();
+  // Reusable objects to avoid per-frame allocation (prevents GC pressure over hours)
+  const cameraDirectionRef = useRef(new THREE.Vector3());
+  // Pool ImageData to avoid 16MB allocation per frame when transparent color is active
+  const imageDataRef = useRef<ImageData | null>(null);
 
   useEffect(() => {
     const quality = settings.textureQuality;
@@ -547,6 +562,9 @@ function FullscreenBackgroundMesh({
     const filter = settings.textureSmoothing ? THREE.LinearFilter : THREE.NearestFilter;
     textureRef.current.minFilter = filter;
     textureRef.current.magFilter = filter;
+    
+    // Invalidate pooled ImageData when quality changes
+    imageDataRef.current = null;
     
     // Assign texture to material immediately
     if (materialRef.current) {
@@ -583,10 +601,17 @@ function FullscreenBackgroundMesh({
       const quality = settings.textureQuality;
       ctx.drawImage(videoElement, rx, ry, rw, rh, 0, 0, quality, quality);
       
-      // Apply transparent color processing
+      // Apply transparent color processing with pooled ImageData
       if (region.transparentColor) {
-        const imageData = ctx.getImageData(0, 0, quality, quality);
-        const data = imageData.data;
+        // Reuse ImageData object to avoid 16MB allocation per frame
+        if (!imageDataRef.current || imageDataRef.current.width !== quality || imageDataRef.current.height !== quality) {
+          imageDataRef.current = ctx.createImageData(quality, quality);
+        }
+        // Copy current canvas pixels into pooled ImageData
+        const freshData = ctx.getImageData(0, 0, quality, quality);
+        imageDataRef.current.data.set(freshData.data);
+        
+        const data = imageDataRef.current.data;
         const threshold = region.transparentThreshold ?? 30;
         
         const hex = region.transparentColor.replace('#', '');
@@ -611,7 +636,7 @@ function FullscreenBackgroundMesh({
           }
         }
         
-        ctx.putImageData(imageData, 0, 0);
+        ctx.putImageData(imageDataRef.current, 0, 0);
       }
       
       textureRef.current.needsUpdate = true;
@@ -625,14 +650,14 @@ function FullscreenBackgroundMesh({
     const mesh = meshRef.current;
     
     // Calculate distance from camera and size needed to fill viewport
-    // Use a distance within the fog range but behind other objects
-    const distance = 25; // Place within fog range but behind scene objects
+    const distance = 25;
     const fov = (camera as THREE.PerspectiveCamera).fov * (Math.PI / 180);
     const height = 2 * Math.tan(fov / 2) * distance;
     const width = height * (size.width / size.height);
     
-    // Position mesh behind camera's view, centered
-    const cameraDirection = new THREE.Vector3(0, 0, -1);
+    // Reuse Vector3 to avoid per-frame allocation
+    const cameraDirection = cameraDirectionRef.current;
+    cameraDirection.set(0, 0, -1);
     cameraDirection.applyQuaternion(camera.quaternion);
     
     mesh.position.copy(camera.position).add(cameraDirection.multiplyScalar(distance));
@@ -652,6 +677,13 @@ function FullscreenBackgroundMesh({
     }
     return new THREE.CanvasTexture(canvas);
   }, []);
+
+  // Dispose default texture on unmount
+  useEffect(() => {
+    return () => {
+      defaultTexture.dispose();
+    };
+  }, [defaultTexture]);
 
   return (
     <mesh ref={meshRef} renderOrder={-1000}>
@@ -984,8 +1016,11 @@ export function VisualizerCanvas3D({
     let animationId: number;
     
     const updateBackground = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      // Only resize canvas when dimensions actually change (avoids reallocating backing store every frame)
+      if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
       
       if (settings.backgroundStyle === 'linearGradient') {
         const gradient = ctx.createLinearGradient(
