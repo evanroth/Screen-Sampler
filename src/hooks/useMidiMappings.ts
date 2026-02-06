@@ -840,6 +840,16 @@ export function useMidiMappings({
     };
   }, []);
 
+  // Get current mappings for saving in presets
+  const getMappings = useCallback((): MidiMapping[] => {
+    return [...mappings];
+  }, [mappings]);
+
+  // Restore mappings from a preset
+  const setMappingsFromPreset = useCallback((newMappings: MidiMapping[]) => {
+    saveMappings([...newMappings]);
+  }, [saveMappings]);
+
   return {
     mappings,
     learnMode,
@@ -853,5 +863,7 @@ export function useMidiMappings({
     getMappingsForControl,
     setMappingRelative,
     handleMidiMessage,
+    getMappings,
+    setMappingsFromPreset,
   };
 }
