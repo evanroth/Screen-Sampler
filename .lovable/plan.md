@@ -1,17 +1,32 @@
 
 
-## Update PWA Manifest to v1.9
+## Fix: Grey Screen When Re-entering "Edit Regions"
 
-The PWA configuration in `vite.config.ts` has outdated version references. Two fields need updating:
+### Problem
+When the visualizer is running, the `ScreenPreview` component is unmounted. Clicking "Edit Regions" remounts it, creating a new `<video>` element. The `autoPlay` HTML attribute alone is unreliable for restarting playback on a remounted element with an existing `MediaStream`. The result is a grey/blank video preview even though the stream is still active.
 
-- **Line 20**: `name` — change from `"Screen Sampler v1.0"` to `"Screen Sampler v1.9"`
-- **Line 22**: `description` — change from `"VJ Software for DJs - Screen Sampler v1.0 by Evan Roth"` to `"VJ Software for DJs - Screen Sampler v1.9 by Evan Roth"`
-
-This will fix the app name shown when installing the PWA (e.g., "Screen Sampler v1.9.app" on macOS) and ensure the description matches the current version.
+### Solution
+Explicitly call `.play()` on the video element after assigning `srcObject` in `ScreenPreview.tsx`. This ensures the video starts playing regardless of browser autoplay behavior.
 
 ### Technical Details
 
-File: `vite.config.ts`, lines 20-22 in the `VitePWA` manifest config.
+**File: `src/components/visualizer/ScreenPreview.tsx`**
 
-**Note:** After publishing, users with the old cached PWA may need to reload or reinstall for the updated name to appear, since `registerType: "autoUpdate"` handles the service worker update automatically but the OS-level app name may persist until reinstall.
+In the video ref callback (around line 192), after setting `el.srcObject = source.stream`, add an explicit `.play()` call with error handling:
+
+```typescript
+ref={(el) => {
+  if (el) {
+    videoRefs.current.set(source.id, el);
+    if (el.srcObject !== source.stream) {
+      el.srcObject = source.stream;
+    }
+    el.play().catch(() => {});
+  }
+}}
+```
+
+The `.catch(() => {})` silences the harmless "play interrupted" error that can occur if autoPlay also fires. The `srcObject` check avoids unnecessary reassignment.
+
+This is a one-line fix in a single file.
 
