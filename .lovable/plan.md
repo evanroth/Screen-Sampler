@@ -1,36 +1,17 @@
 
 
-## Add .htaccess File for CORS and SPA Routing
+## Update PWA Manifest to v1.9
 
-### Overview
-Add an `.htaccess` file to the `public` directory that will be included in the build output. This file configures Apache to:
-1. Enable SPA (Single Page Application) routing by redirecting all requests to `index.html`
-2. Set CORS headers to allow external resources to be loaded from any origin
+The PWA configuration in `vite.config.ts` has outdated version references. Two fields need updating:
 
-### Implementation
+- **Line 20**: `name` — change from `"Screen Sampler v1.0"` to `"Screen Sampler v1.9"`
+- **Line 22**: `description` — change from `"VJ Software for DJs - Screen Sampler v1.0 by Evan Roth"` to `"VJ Software for DJs - Screen Sampler v1.9 by Evan Roth"`
 
-**Create `public/.htaccess`**
+This will fix the app name shown when installing the PWA (e.g., "Screen Sampler v1.9.app" on macOS) and ensure the description matches the current version.
 
-```apache
-RewriteEngine On
+### Technical Details
 
-RewriteBase /
+File: `vite.config.ts`, lines 20-22 in the `VitePWA` manifest config.
 
-# Serve existing files normally
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-
-# All other requests go to index.html
-RewriteRule ^ index.html [L]
-
-<IfModule mod_headers.c>
-    Header set Access-Control-Allow-Origin "*"
-</IfModule>
-```
-
-### Technical Notes
-- Files in the `public` directory are copied as-is to the `dist` folder during build
-- This will replace the dynamically generated `.htaccess` in your `deploy.sh` script, so you may want to remove that section from the deploy script after this change
-- The `mod_headers` module must be enabled on your Apache server for the CORS header to work
+**Note:** After publishing, users with the old cached PWA may need to reload or reinstall for the updated name to appear, since `registerType: "autoUpdate"` handles the service worker update automatically but the OS-level app name may persist until reinstall.
 
