@@ -78,7 +78,14 @@ export function Onboarding({ onStartCapture, onStartCamera }: OnboardingProps) {
                   </Button>
                 )}
               </div>
+
+              {/* Hint */}
+              <p className="text-xs text-foreground/60 font-mono mt-3">
+                'RETURN' toggles on and off the settings page
+              </p>
             </div>
+
+            <div className="mt-8" />
 
             {/* Footer Links */}
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-foreground font-mono mt-8">
