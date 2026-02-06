@@ -115,13 +115,11 @@ export function Onboarding({ onStartCapture, onStartCamera }: OnboardingProps) {
               >
                 Beats and Bobbins
               </a>
-              <br></br>
-              <PayPalDonateButton />
             </div>
           </div>
 
           {/* Right panel - MPC-style pad grid */}
-          <div className="lg:w-80 flex items-center justify-center p-4">
+          <div className="lg:w-80 flex flex-col items-center justify-center p-4">
             <div className="grid grid-cols-3 gap-3 md:gap-4">
               {Array.from({
                 length: 12,
@@ -130,6 +128,11 @@ export function Onboarding({ onStartCapture, onStartCamera }: OnboardingProps) {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* PayPal button below the frame, right-aligned */}
+        <div className="flex justify-end mt-4">
+          <PayPalDonateButton />
         </div>
       </div>
     </div>
