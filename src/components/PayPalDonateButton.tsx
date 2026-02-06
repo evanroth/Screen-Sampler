@@ -15,7 +15,7 @@ export function PayPalDonateButton({ className }: PayPalDonateButtonProps) {
         <img
           src={paypalSupport}
           alt="Donate with PayPal"
-          className="h-10 w-auto"
+          className="w-[200px] h-auto"
         />
       </a>
     </div>
