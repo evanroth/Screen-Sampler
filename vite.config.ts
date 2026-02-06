@@ -17,9 +17,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "android-chrome-192x192.png", "android-chrome-512x512.png"],
       manifest: {
-        name: "Screen Sampler v1.0",
+        name: "Screen Sampler v1.9",
         short_name: "Screen Sampler",
-        description: "VJ Software for DJs - Screen Sampler v1.0 by Evan Roth",
+        description: "VJ Software for DJs - Screen Sampler v1.9 by Evan Roth",
         theme_color: "#000000",
         background_color: "#000000",
         display: "standalone",
