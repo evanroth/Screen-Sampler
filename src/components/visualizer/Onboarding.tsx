@@ -115,6 +115,7 @@ export function Onboarding({ onStartCapture, onStartCamera }: OnboardingProps) {
               >
                 Beats and Bobbins
               </a>
+              <br></br>
               <PayPalDonateButton />
             </div>
           </div>
