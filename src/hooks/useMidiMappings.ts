@@ -825,6 +825,21 @@ export function useMidiMappings({
     }
   }, [completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce, onJumpToFavorite, onRandomizeGradient, beginTemporaryRegionAutoRotateDisable]);
 
+  // Cleanup all pending timeouts on unmount to prevent state updates after unmount
+  useEffect(() => {
+    return () => {
+      if (midiRotationTimeoutRef.current !== null) {
+        window.clearTimeout(midiRotationTimeoutRef.current);
+        midiRotationTimeoutRef.current = null;
+      }
+      regionAutoRotateTimeoutRef.current.forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
+      regionAutoRotateTimeoutRef.current.clear();
+      regionAutoRotateOverrideRef.current.clear();
+    };
+  }, []);
+
   return {
     mappings,
     learnMode,

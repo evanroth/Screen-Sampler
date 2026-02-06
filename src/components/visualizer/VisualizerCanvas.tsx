@@ -26,6 +26,8 @@ export function VisualizerCanvas({
   const initializedRef = useRef(false);
   const currentRandomModeRef = useRef<AnimationMode>(ANIMATION_MODES[0]);
   const lastModeChangeRef = useRef<number>(0);
+  // Pool ImageData per region to avoid large allocations per frame during transparent color processing
+  const imageDataPoolRef = useRef<Map<string, ImageData>>(new Map());
 
   // Initialize panels when regions change
   useEffect(() => {
@@ -50,10 +52,11 @@ export function VisualizerCanvas({
       }
     }
     
-    // Clean up offscreen canvases for removed regions
+    // Clean up offscreen canvases and pooled ImageData for removed regions
     offscreenCanvasesRef.current.forEach((_, id) => {
       if (!newRegionIds.has(id)) {
         offscreenCanvasesRef.current.delete(id);
+        imageDataPoolRef.current.delete(id);
       }
     });
   }, [regions, settings.opacityVariation, settings.blurIntensity, settings.enableRotation]);
@@ -207,10 +210,18 @@ export function VisualizerCanvas({
         0, 0, regionW, regionH
       );
 
-      // Per-region transparent color
+      // Per-region transparent color processing with pooled ImageData
       if (region.transparentColor) {
-        const imageData = offCtx.getImageData(0, 0, regionW, regionH);
-        const data = imageData.data;
+        // Reuse ImageData to avoid large per-frame allocation
+        let pooled = imageDataPoolRef.current.get(region.id);
+        if (!pooled || pooled.width !== regionW || pooled.height !== regionH) {
+          pooled = offCtx.createImageData(regionW, regionH);
+          imageDataPoolRef.current.set(region.id, pooled);
+        }
+        const freshData = offCtx.getImageData(0, 0, regionW, regionH);
+        pooled.data.set(freshData.data);
+        
+        const data = pooled.data;
         const threshold = region.transparentThreshold ?? 30;
         
         const hex = region.transparentColor.replace('#', '');
@@ -235,7 +246,7 @@ export function VisualizerCanvas({
           }
         }
         
-        offCtx.putImageData(imageData, 0, 0);
+        offCtx.putImageData(pooled, 0, 0);
       }
 
       // Handle fullscreen background mode
