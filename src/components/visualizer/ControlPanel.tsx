@@ -34,6 +34,7 @@ import {
   TextureQuality,
   GradientSettings,
   PlayModeTransition,
+  CursorStyle,
   ANIMATION_MODES_3D,
 } from "@/hooks/useVisualizerSettings";
 import { CaptureRegion, ModelSource } from "@/hooks/useScreenCapture";
@@ -1693,6 +1694,26 @@ export function ControlPanel({
             >
               <Trash2 className="w-4 h-4" />
             </Button>
+          </div>
+
+          <Separator className="bg-border" />
+
+          {/* Mouse Icon */}
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs">Mouse Icon</Label>
+            <Select
+              value={settings.cursorStyle}
+              onValueChange={(v) => onUpdateSetting("cursorStyle", v as CursorStyle)}
+            >
+              <SelectTrigger className="bg-secondary border-border h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="dot">Dot</SelectItem>
+                <SelectItem value="none">None</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <Separator className="bg-border" />

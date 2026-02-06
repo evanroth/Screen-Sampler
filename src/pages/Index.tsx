@@ -490,6 +490,19 @@ export default function Index() {
     return () => window.removeEventListener('keydown', h, true);
   }, [appState, regions, settings, updateSetting, customModels.models, remoteModels, toast, handleJumpToFavorite, gradientAnimation]);
 
+  // Apply cursor style globally
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings.cursorStyle === 'dot') {
+      root.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'8\' height=\'8\'%3E%3Ccircle cx=\'4\' cy=\'4\' r=\'3\' fill=\'white\' stroke=\'black\' stroke-width=\'0.5\'/%3E%3C/svg%3E") 4 4, auto';
+    } else if (settings.cursorStyle === 'none') {
+      root.style.cursor = 'none';
+    } else {
+      root.style.cursor = '';
+    }
+    return () => { root.style.cursor = ''; };
+  }, [settings.cursorStyle]);
+
   return (
     <div className="min-h-screen bg-background">
       {appState === 'onboarding' && <Onboarding onStartCapture={handleStartCapture} onStartCamera={handleAddCameraSource} />}

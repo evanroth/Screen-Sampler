@@ -96,6 +96,8 @@ export type TextureQuality = 512 | 1024 | 2048;
 
 export type PlayModeTransition = 'none' | 'fade' | 'zoom';
 
+export type CursorStyle = 'normal' | 'dot' | 'none';
+
 export interface PlayModeSettings {
   enabled: boolean;
   interval: number;
@@ -131,6 +133,7 @@ export interface VisualizerSettings {
   playMode: PlayModeSettings;
   midiRotationSensitivity: number; // 0.01 to 0.2, controls DJ platter rotation speed
   centerCamera: boolean; // When true, camera auto-centers on models. When false, full manual control.
+  cursorStyle: CursorStyle; // Mouse cursor appearance: normal, dot, or none
 }
 
 const defaultSettings: VisualizerSettings = {
@@ -169,6 +172,7 @@ const defaultSettings: VisualizerSettings = {
   },
   midiRotationSensitivity: 0.02,
   centerCamera: true,
+  cursorStyle: 'dot',
 };
 
 export function useVisualizerSettings(initialSettings?: Partial<VisualizerSettings>) {
