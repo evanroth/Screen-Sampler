@@ -199,6 +199,12 @@ export function useMidiMappings({
   const [learnMode, setLearnMode] = useState<string | null>(null); // Control ID being learned
   const [lastLearnedMessage, setLastLearnedMessage] = useState<MidiMessage | null>(null);
   
+  // Refs to avoid stale closures in MIDI message handler.
+  // Without these, rapidly arriving MIDI messages after a learn-complete can miss
+  // the newly added mapping because the callback still closes over the old state.
+  const mappingsRef = useRef(mappings);
+  const learnModeRef = useRef(learnMode);
+  
   // Track cumulative rotation for relative mode (keyed by region index or 'all')
   const cumulativeRotationRef = useRef<Record<string, number>>({});
   // Track last CC value for relative mode delta calculation
@@ -220,7 +226,7 @@ export function useMidiMappings({
   const settingsRef = useRef(settings);
   const regionsRef = useRef(regions);
   
-  // Keep refs updated
+  // Keep refs updated synchronously with state
   useEffect(() => {
     settingsRef.current = settings;
   }, [settings]);
@@ -228,6 +234,14 @@ export function useMidiMappings({
   useEffect(() => {
     regionsRef.current = regions;
   }, [regions]);
+  
+  useEffect(() => {
+    mappingsRef.current = mappings;
+  }, [mappings]);
+  
+  useEffect(() => {
+    learnModeRef.current = learnMode;
+  }, [learnMode]);
 
   const beginTemporaryRegionAutoRotateDisable = useCallback(
     (region: CaptureRegion) => {
@@ -290,6 +304,8 @@ export function useMidiMappings({
   // Save mappings to localStorage
   const saveMappings = useCallback((newMappings: MidiMapping[]) => {
     setMappings(newMappings);
+    // Sync ref immediately so MIDI messages arriving before next render see updated mappings
+    mappingsRef.current = newMappings;
     try {
       const data: StoredMappings = {
         mappings: newMappings,
@@ -304,12 +320,14 @@ export function useMidiMappings({
   // Start learning a control
   const startLearn = useCallback((controlId: string) => {
     setLearnMode(controlId);
+    learnModeRef.current = controlId;
     setLastLearnedMessage(null);
   }, []);
 
   // Cancel learning
   const cancelLearn = useCallback(() => {
     setLearnMode(null);
+    learnModeRef.current = null;
     setLastLearnedMessage(null);
   }, []);
 
@@ -342,6 +360,7 @@ export function useMidiMappings({
       // Don't add duplicate, just close learn mode
       setLastLearnedMessage(message);
       setLearnMode(null);
+      learnModeRef.current = null;
       return;
     }
     
@@ -367,6 +386,7 @@ export function useMidiMappings({
     saveMappings([...mappings, newMapping]);
     setLastLearnedMessage(message);
     setLearnMode(null);
+    learnModeRef.current = null;
   }, [learnMode, mappings, saveMappings, cancelLearn]);
 
   // Remove a specific mapping by its ID
@@ -441,8 +461,13 @@ export function useMidiMappings({
 
   // Handle incoming MIDI message
   const handleMidiMessage = useCallback((message: MidiMessage) => {
+    // Use refs to avoid stale closures - MIDI messages can arrive between
+    // React renders, so state values in the closure may be outdated.
+    const currentLearnMode = learnModeRef.current;
+    const currentMappings = mappingsRef.current;
+    
     // If in learn mode, complete the learning
-    if (learnMode && (message.type === 'noteon' || message.type === 'cc')) {
+    if (currentLearnMode && (message.type === 'noteon' || message.type === 'cc')) {
       completeLearn(message);
       return;
     }
@@ -450,7 +475,7 @@ export function useMidiMappings({
     // Find ALL matching mappings.
     // (Important: multiple controls can intentionally share the same CC/Note;
     // previously we only applied the first match, which made other mappings appear “broken”.)
-    const matchingMappings = mappings.filter(m => {
+    const matchingMappings = currentMappings.filter(m => {
       if (m.channel !== message.channel) return false;
       if (m.messageType === 'noteon' && message.type === 'noteon') {
         return m.noteOrCC === message.note;
@@ -798,7 +823,7 @@ export function useMidiMappings({
       }
       }
     }
-  }, [learnMode, mappings, completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce, onJumpToFavorite, onRandomizeGradient, beginTemporaryRegionAutoRotateDisable]);
+  }, [completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce, onJumpToFavorite, onRandomizeGradient, beginTemporaryRegionAutoRotateDisable]);
 
   return {
     mappings,
