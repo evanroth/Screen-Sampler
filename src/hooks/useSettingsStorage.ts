@@ -1,15 +1,44 @@
 import { useState, useEffect, useCallback } from 'react';
-import { VisualizerSettings } from './useVisualizerSettings';
+import { VisualizerSettings, AnimationMode, AnimationMode3D } from './useVisualizerSettings';
+import { MidiMapping } from './useMidiMappings';
 
 const PRESETS_KEY = 'screen-sampler-presets';
 const LAST_SESSION_KEY = 'screen-sampler-last-session';
 const AUTO_RESTORE_KEY = 'screen-sampler-auto-restore';
 
+/**
+ * Per-region visual/effect settings that can be saved and restored.
+ * Excludes geometry (x, y, width, height), sourceId, and transient animation state.
+ */
+export interface SavedRegionSettings {
+  animationMode3D?: AnimationMode3D;
+  animationMode2D?: AnimationMode;
+  customModelId?: string;
+  modelSource?: 'default' | 'external' | 'custom';
+  scale3D?: number;
+  position3D?: { x: number; y: number; z: number };
+  scale2D?: number;
+  position2D?: { x: number; y: number; z: number };
+  transparentColor?: string;
+  transparentThreshold?: number;
+  glowEnabled?: boolean;
+  glowColor?: string;
+  glowAmount?: number;
+  fullscreenBackground?: boolean;
+  randomizeEnabled?: boolean;
+  randomizeInterval?: number;
+  transitionType?: 'none' | 'fade' | 'zoom';
+  visible?: boolean;
+  autoRotate3D?: boolean;
+}
+
 export interface SavedPreset {
   id: string;
   name: string;
   settings: VisualizerSettings;
-  favorites?: string[]; // Favorited model IDs
+  favorites?: string[];
+  regionSettings?: SavedRegionSettings[];
+  midiMappings?: MidiMapping[];
   createdAt: number;
 }
 
@@ -63,24 +92,39 @@ export function useSettingsStorage() {
     }
   }, [autoRestore]);
 
-  const savePreset = useCallback((name: string, settings: VisualizerSettings, favorites?: string[]): SavedPreset => {
+  const savePreset = useCallback((
+    name: string,
+    settings: VisualizerSettings,
+    favorites?: string[],
+    regionSettings?: SavedRegionSettings[],
+    midiMappings?: MidiMapping[],
+  ): SavedPreset => {
     const preset: SavedPreset = {
       id: generateId(),
       name: name.trim() || 'Untitled Preset',
       settings: { ...settings },
       favorites: favorites ? [...favorites] : undefined,
+      regionSettings: regionSettings ? [...regionSettings] : undefined,
+      midiMappings: midiMappings ? [...midiMappings] : undefined,
       createdAt: Date.now(),
     };
     setPresets((prev) => [preset, ...prev]);
     return preset;
   }, []);
 
-  const loadPreset = useCallback((id: string): { settings: VisualizerSettings; favorites?: string[] } | null => {
+  const loadPreset = useCallback((id: string): {
+    settings: VisualizerSettings;
+    favorites?: string[];
+    regionSettings?: SavedRegionSettings[];
+    midiMappings?: MidiMapping[];
+  } | null => {
     const preset = presets.find((p) => p.id === id);
     if (!preset) return null;
     return { 
       settings: { ...preset.settings },
       favorites: preset.favorites ? [...preset.favorites] : undefined,
+      regionSettings: preset.regionSettings ? [...preset.regionSettings] : undefined,
+      midiMappings: preset.midiMappings ? [...preset.midiMappings] : undefined,
     };
   }, [presets]);
 
@@ -88,20 +132,36 @@ export function useSettingsStorage() {
     setPresets((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
-  const saveLastSession = useCallback((settings: VisualizerSettings): void => {
+  const saveLastSession = useCallback((
+    settings: VisualizerSettings,
+    regionSettings?: SavedRegionSettings[],
+    midiMappings?: MidiMapping[],
+  ): void => {
     try {
-      localStorage.setItem(LAST_SESSION_KEY, JSON.stringify(settings));
+      localStorage.setItem(LAST_SESSION_KEY, JSON.stringify({
+        settings,
+        regionSettings,
+        midiMappings,
+      }));
     } catch (error) {
       console.error('Failed to save last session:', error);
     }
   }, []);
 
-  const loadLastSession = useCallback((): Partial<VisualizerSettings> | null => {
+  const loadLastSession = useCallback((): {
+    settings: Partial<VisualizerSettings>;
+    regionSettings?: SavedRegionSettings[];
+    midiMappings?: MidiMapping[];
+  } | null => {
     try {
       const stored = localStorage.getItem(LAST_SESSION_KEY);
       if (!stored) return null;
-      // Return as partial - let useVisualizerSettings merge with current defaults
-      return JSON.parse(stored) as Partial<VisualizerSettings>;
+      const parsed = JSON.parse(stored);
+      // Handle legacy format (plain VisualizerSettings object without wrapper)
+      if (parsed && !parsed.settings && parsed.visualizerMode !== undefined) {
+        return { settings: parsed as Partial<VisualizerSettings> };
+      }
+      return parsed;
     } catch {
       console.warn('Failed to parse last session');
       return null;

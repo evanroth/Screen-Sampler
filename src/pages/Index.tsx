@@ -4,7 +4,7 @@ import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useVisualizerSettings, ANIMATION_MODES, ANIMATION_MODES_3D } from '@/hooks/useVisualizerSettings';
 import { useRegionRandomizer } from '@/hooks/useRegionRandomizer';
 import { usePlayMode } from '@/hooks/usePlayMode';
-import { useSettingsStorage } from '@/hooks/useSettingsStorage';
+import { useSettingsStorage, SavedRegionSettings } from '@/hooks/useSettingsStorage';
 import { useCustomModels } from '@/hooks/useCustomModels';
 import { useRemoteModels } from '@/hooks/useRemoteModels';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -44,13 +44,14 @@ export default function Index() {
   const storage = useSettingsStorage();
   
   // Initialize settings with last session if auto-restore is enabled
-  const initialSettings = useMemo(() => {
+  const lastSessionData = useMemo(() => {
     if (storage.autoRestore) {
-      const lastSession = storage.loadLastSession();
-      if (lastSession) return lastSession;
+      return storage.loadLastSession();
     }
-    return undefined;
+    return null;
   }, []); // Only run once on mount
+  
+  const initialSettings = lastSessionData?.settings;
   
   const { settings, updateSetting, loadSettings, resetSettings } = useVisualizerSettings(initialSettings);
 
@@ -179,15 +180,65 @@ export default function Index() {
   
   const midi = useMidi(midiMappings.handleMidiMessage);
 
-  // Auto-save session when settings change (debounced)
+  // Helper: extract saveable visual settings from regions
+  const extractRegionSettings = useCallback((regs: CaptureRegion[]): SavedRegionSettings[] => {
+    return regs.map(r => ({
+      animationMode3D: r.animationMode3D,
+      animationMode2D: r.animationMode2D,
+      customModelId: r.customModelId,
+      modelSource: r.modelSource,
+      scale3D: r.scale3D,
+      position3D: r.position3D,
+      scale2D: r.scale2D,
+      position2D: r.position2D,
+      transparentColor: r.transparentColor,
+      transparentThreshold: r.transparentThreshold,
+      glowEnabled: r.glowEnabled,
+      glowColor: r.glowColor,
+      glowAmount: r.glowAmount,
+      fullscreenBackground: r.fullscreenBackground,
+      randomizeEnabled: r.randomizeEnabled,
+      randomizeInterval: r.randomizeInterval,
+      transitionType: r.transitionType,
+      visible: r.visible,
+      autoRotate3D: r.autoRotate3D,
+    }));
+  }, []);
+
+  // Helper: apply saved region settings onto existing regions by index
+  const applyRegionSettings = useCallback((saved: SavedRegionSettings[]) => {
+    setRegions(prev => prev.map((r, i) => {
+      if (i >= saved.length) return r;
+      return { ...r, ...saved[i] };
+    }));
+  }, []);
+
+  // Auto-save session when settings or regions change (debounced)
   useEffect(() => {
     if (storage.autoRestore) {
       const timeout = setTimeout(() => {
-        storage.saveLastSession(settings);
+        storage.saveLastSession(
+          settings,
+          extractRegionSettings(regions),
+          midiMappings.getMappings(),
+        );
       }, 500);
       return () => clearTimeout(timeout);
     }
-  }, [settings, storage.autoRestore]);
+  }, [settings, regions, storage.autoRestore, midiMappings.mappings]);
+
+  // Restore region settings and MIDI mappings from last session once regions are created
+  const sessionRestoredRef = React.useRef(false);
+  useEffect(() => {
+    if (sessionRestoredRef.current || !lastSessionData || regions.length === 0) return;
+    sessionRestoredRef.current = true;
+    if (lastSessionData.regionSettings && lastSessionData.regionSettings.length > 0) {
+      applyRegionSettings(lastSessionData.regionSettings);
+    }
+    if (lastSessionData.midiMappings && lastSessionData.midiMappings.length > 0) {
+      midiMappings.setMappingsFromPreset(lastSessionData.midiMappings);
+    }
+  }, [regions.length, lastSessionData]);
 
   // Preset handlers
   const handleLoadPreset = useCallback((id: string) => {
@@ -197,15 +248,27 @@ export default function Index() {
       if (presetData.favorites) {
         favorites.setFavoritesFromPreset(presetData.favorites);
       }
+      if (presetData.regionSettings && presetData.regionSettings.length > 0) {
+        applyRegionSettings(presetData.regionSettings);
+      }
+      if (presetData.midiMappings && presetData.midiMappings.length > 0) {
+        midiMappings.setMappingsFromPreset(presetData.midiMappings);
+      }
       toast({ title: "Preset loaded" });
     }
-  }, [storage, loadSettings, favorites, toast]);
+  }, [storage, loadSettings, favorites, applyRegionSettings, midiMappings, toast]);
 
   const handleSavePreset = useCallback((name: string) => {
-    const preset = storage.savePreset(name, settings, favorites.getFavorites());
+    const preset = storage.savePreset(
+      name,
+      settings,
+      favorites.getFavorites(),
+      extractRegionSettings(regions),
+      midiMappings.getMappings(),
+    );
     toast({ title: `Saved "${preset.name}"` });
     return preset;
-  }, [storage, settings, favorites, toast]);
+  }, [storage, settings, favorites, regions, extractRegionSettings, midiMappings, toast]);
 
   const handleDeletePreset = useCallback((id: string) => {
     storage.deletePreset(id);
