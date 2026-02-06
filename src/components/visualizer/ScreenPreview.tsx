@@ -265,7 +265,10 @@ export function ScreenPreview({
                   ref={(el) => {
                     if (el) {
                       videoRefs.current.set(source.id, el);
-                      el.srcObject = source.stream;
+                      if (el.srcObject !== source.stream) {
+                        el.srcObject = source.stream;
+                      }
+                      el.play().catch(() => {});
                     }
                   }}
                   autoPlay
