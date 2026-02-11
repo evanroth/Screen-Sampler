@@ -445,8 +445,8 @@ export default function Index() {
         updateSetting('playMode', { ...settings.playMode, enabled: !settings.playMode.enabled });
       }
       
-      // Spacebar to Randomize Gradient
-      if (e.key === ' ') {
+      // 'g' key to Randomize Gradient
+      if (e.key === 'g' || e.key === 'G') {
         e.preventDefault();
         gradientAnimation.randomize();
       }
@@ -457,8 +457,8 @@ export default function Index() {
         updateSetting('autoRotateCamera', !settings.autoRotateCamera);
       }
       
-      // 'Enter' key to toggle Settings Panel
-      if (e.key === 'Enter') {
+      // Spacebar to toggle Settings Panel
+      if (e.key === ' ') {
         e.preventDefault();
         setIsControlPanelOpen(prev => !prev);
       }
