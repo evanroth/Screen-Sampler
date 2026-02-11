@@ -82,7 +82,7 @@ function RegionMesh({
   const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
   
   // Use override mode (for morph ghost), region-specific mode, or fall back to default
-  const mode = overrideMode || region.animationMode3D || defaultMode;
+  const mode = overrideMode || region.animationMode3D || 'mobius3D';
 
   // IMPORTANT: Initialize material opacity from the current region fade state.
   // Otherwise, newly-mounted meshes will render 1 frame at the JSX default (0.95)

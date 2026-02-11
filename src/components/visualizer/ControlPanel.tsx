@@ -980,94 +980,11 @@ export function ControlPanel({
             {/* 3D Animation Mode */}
             {settings.visualizerMode === "3d" && (
               <>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Default 3D Shape</Label>
-                  <Select
-                    value={settings.animationMode3D}
-                    onValueChange={(v) => onUpdateSetting("animationMode3D", v as AnimationMode3D)}
-                  >
-                    <SelectTrigger className="bg-secondary border-border">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="random3D">Random</SelectItem>
-                      <SelectItem value="floating3D">Floating Panels</SelectItem>
-                      <SelectItem value="orbit3D">Orbit Panel</SelectItem>
-                      <SelectItem value="wave3D">Wave Panel</SelectItem>
-                      <SelectItem value="sphere3D">Sphere</SelectItem>
-                      <SelectItem value="cube3D">Cube</SelectItem>
-                      <SelectItem value="cylinder3D">Cylinder</SelectItem>
-                      <SelectItem value="torus3D">Torus</SelectItem>
-                      <SelectItem value="pyramid3D">Pyramid</SelectItem>
-                      <SelectItem value="cone3D">Cone</SelectItem>
-                      <SelectItem value="dodecahedron3D">Dodecahedron</SelectItem>
-                      <SelectItem value="icosahedron3D">Icosahedron</SelectItem>
-                      <SelectItem value="octahedron3D">Octahedron</SelectItem>
-                      <SelectItem value="tetrahedron3D">Tetrahedron</SelectItem>
-                      <SelectItem value="torusKnot3D">Torus Knot</SelectItem>
-                      <SelectItem value="trefoil3D">Trefoil Knot</SelectItem>
-                      <SelectItem value="cinquefoil3D">Cinquefoil Knot</SelectItem>
-                      <SelectItem value="septafoil3D">Septafoil Knot</SelectItem>
-                      <SelectItem value="figure8_3D">Figure-8 Knot</SelectItem>
-                      <SelectItem value="granny3D">Granny Knot</SelectItem>
-                      <SelectItem value="lissajous3D">Lissajous Knot</SelectItem>
-                      <SelectItem value="capsule3D">Capsule</SelectItem>
-                      <SelectItem value="ring3D">Ring</SelectItem>
-                      <SelectItem value="mobius3D">Möbius</SelectItem>
-                      <SelectItem value="greatDodecahedron3D">Great Dodecahedron</SelectItem>
-                      <SelectItem value="greatIcosahedron3D">Great Icosahedron</SelectItem>
-                      <SelectItem value="greatStellatedDodecahedron3D">Great Stellated Dodecahedron</SelectItem>
-                      <SelectItem value="tripleTwistMobius3D">Triple Twist Möbius</SelectItem>
-                      <SelectItem value="verrill3D">Verrill Surface</SelectItem>
-                      <SelectItem value="doubleTrefoil3D">Double Trefoil</SelectItem>
-                      <SelectItem value="schwarzP3D">Schwarz P Surface</SelectItem>
-                      <SelectItem value="enneper3D">Enneper Surface</SelectItem>
-                      <SelectItem value="boysSurface3D">Boy's Surface</SelectItem>
-                      <SelectItem value="cliffordTorus3D">Clifford Torus</SelectItem>
-                      <SelectItem value="hyperbolicParaboloid3D">Hyperbolic Paraboloid</SelectItem>
-                      <SelectItem value="hyperboloidOneSheet3D">Hyperboloid</SelectItem>
-                      <SelectItem value="steiner3D">Steiner Surface</SelectItem>
-                      <SelectItem value="helicoid3D">Helicoid</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  {/* Favorite toggle for current default shape */}
-                  <button
-                    type="button"
-                    onClick={() => onToggleFavorite(settings.animationMode3D)}
-                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Star
-                      className={`w-3 h-3 ${isFavorite(settings.animationMode3D) ? "text-yellow-500 fill-yellow-500" : ""}`}
-                    />
-                    {isFavorite(settings.animationMode3D) ? "Remove from favorites" : "Add to favorites"}
-                  </button>
-                </div>
-
-                {settings.animationMode3D === "random3D" && (
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <Label className="text-muted-foreground">Change Interval</Label>
-                      <span className="text-sm text-foreground">{settings.randomModeInterval}s</span>
-                    </div>
-                    <Slider
-                      value={[settings.randomModeInterval]}
-                      onValueChange={([v]) => onUpdateSetting("randomModeInterval", v)}
-                      min={2}
-                      max={90}
-                      step={1}
-                    />
-                  </div>
-                )}
-
                 {/* Per-Region 3D Animation Controls */}
                 {regions.length > 0 && (
                   <div className="space-y-3">
                     <Separator className="bg-border" />
-                    <Label className="text-muted-foreground font-medium">Per-Region 3D Modes</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Override the default mode for each region, or leave as "Default" to use the global setting.
-                    </p>
+                    <Label className="text-muted-foreground font-medium">3D Region Settings</Label>
                     {regions.map((region, index) => (
                       <div key={region.id} className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -1101,7 +1018,7 @@ export function ControlPanel({
                                   onUpdateRegion(region.id, {
                                     modelSource: newSource,
                                     customModelId: undefined,
-                                    animationMode3D: newSource === "default" ? settings.animationMode3D : undefined,
+                                    animationMode3D: newSource === "default" ? 'mobius3D' : undefined,
                                   });
                                 }
                               }}
@@ -1127,7 +1044,7 @@ export function ControlPanel({
                             {/* Default Shapes */}
                             {(region.modelSource === "default" || !region.modelSource) && (
                               <Select
-                                value={region.animationMode3D || settings.animationMode3D}
+                                value={region.animationMode3D || 'mobius3D'}
                                 onValueChange={(v) => {
                                   if (onUpdateRegion) {
                                     onUpdateRegion(region.id, {
