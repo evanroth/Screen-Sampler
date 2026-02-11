@@ -194,6 +194,7 @@ export default function Index() {
       y: r.y,
       width: r.width,
       height: r.height,
+      sourceId: r.sourceId,
       animationMode3D: r.animationMode3D,
       animationMode2D: r.animationMode2D,
       customModelId: r.customModelId,
@@ -222,29 +223,36 @@ export default function Index() {
     const hasGeometry = saved.length > 0 && saved[0].x !== undefined && saved[0].width !== undefined;
 
     setRegions(prev => {
+      // Collect active source IDs for fallback validation
+      const activeSourceIds = new Set(prev.map(r => r.sourceId).filter(Boolean));
+      const firstSourceId = prev.length > 0 ? prev[0].sourceId : '';
+
+      const resolveSourceId = (savedSourceId: string | undefined, fallback: string): string => {
+        if (savedSourceId && activeSourceIds.has(savedSourceId)) return savedSourceId;
+        return fallback;
+      };
+
       if (!hasGeometry) {
         // Legacy presets without geometry: apply settings by index, no region count change
         return prev.map((r, i) => {
           if (i >= saved.length) return r;
-          return { ...r, ...saved[i] };
+          const { sourceId: savedSourceId, ...rest } = saved[i];
+          return { ...r, ...rest, sourceId: resolveSourceId(savedSourceId, r.sourceId) };
         });
       }
 
       // New presets with geometry: reconcile region count
-      const firstSourceId = prev.length > 0 ? prev[0].sourceId : '';
-
       return saved.map((savedSet, i) => {
-        // Destructure geometry out, rest is visual settings
-        const { x, y, width, height, ...visualSettings } = savedSet;
+        const { x, y, width, height, sourceId: savedSourceId, ...visualSettings } = savedSet;
 
         if (i < prev.length) {
-          // Update existing region with saved geometry + visual settings
           return {
             ...prev[i],
             x: x ?? prev[i].x,
             y: y ?? prev[i].y,
             width: width ?? prev[i].width,
             height: height ?? prev[i].height,
+            sourceId: resolveSourceId(savedSourceId, prev[i].sourceId),
             ...visualSettings,
           };
         }
@@ -252,7 +260,7 @@ export default function Index() {
         // Create new region for extras saved beyond current count
         return {
           id: `region-${Date.now()}-${i}`,
-          sourceId: firstSourceId,
+          sourceId: resolveSourceId(savedSourceId, firstSourceId),
           x: x ?? 0,
           y: y ?? 0,
           width: width ?? 200,

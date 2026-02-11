@@ -16,6 +16,7 @@ export interface SavedRegionSettings {
   y?: number;
   width?: number;
   height?: number;
+  sourceId?: string;
   animationMode3D?: AnimationMode3D;
   animationMode2D?: AnimationMode;
   customModelId?: string;
