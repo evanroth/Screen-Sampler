@@ -367,8 +367,14 @@ function RegionMesh({
             mesh.rotation.y = y;
             mesh.rotation.x = Math.sin(y * 0.5) * 0.1;
           }
+          // Clear Z rotation that may be stale from animated modes (e.g. wave3D)
+          mesh.rotation.z = 0;
+        } else {
+          // Reset all rotation for static shapes when not using individual rotation
+          mesh.rotation.x = 0;
+          mesh.rotation.y = 0;
+          mesh.rotation.z = 0;
         }
-        // When camera is rotating (not individual mode), don't rotate mesh - camera does it
         break;
     }
 
