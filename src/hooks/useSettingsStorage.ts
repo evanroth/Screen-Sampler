@@ -11,6 +11,11 @@ const AUTO_RESTORE_KEY = 'screen-sampler-auto-restore';
  * Excludes geometry (x, y, width, height), sourceId, and transient animation state.
  */
 export interface SavedRegionSettings {
+  // Region geometry (optional for backward compatibility with old presets)
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
   animationMode3D?: AnimationMode3D;
   animationMode2D?: AnimationMode;
   customModelId?: string;
