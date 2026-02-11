@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { VisualizerSettings, AnimationMode, AnimationMode3D } from './useVisualizerSettings';
 import { MidiMapping } from './useMidiMappings';
 
 const PRESETS_KEY = 'screen-sampler-presets';
 const LAST_SESSION_KEY = 'screen-sampler-last-session';
 const AUTO_RESTORE_KEY = 'screen-sampler-auto-restore';
+const MAX_PRESETS = 30;
 
 /**
  * Per-region visual/effect settings that can be saved and restored.
@@ -63,11 +64,13 @@ function getStoredPresets(): SavedPreset[] {
   }
 }
 
-function savePresetsToStorage(presets: SavedPreset[]): void {
+function savePresetsToStorage(presets: SavedPreset[]): boolean {
   try {
     localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
+    return true;
   } catch (error) {
-    console.error('Failed to save presets:', error);
+    console.error('Failed to save presets (storage quota may be full):', error);
+    return false;
   }
 }
 
@@ -84,8 +87,13 @@ export function useSettingsStorage() {
     }
   });
 
-  // Sync presets state to localStorage
+  // Sync presets state to localStorage (covers deletes, imports, etc.)
+  // savePreset handles its own persistence eagerly, but other mutations need this.
+  const presetsRef = React.useRef(presets);
   useEffect(() => {
+    // Skip if savePreset already persisted this exact array
+    if (presetsRef.current === presets) return;
+    presetsRef.current = presets;
     savePresetsToStorage(presets);
   }, [presets]);
 
@@ -104,7 +112,7 @@ export function useSettingsStorage() {
     favorites?: string[],
     regionSettings?: SavedRegionSettings[],
     midiMappings?: MidiMapping[],
-  ): SavedPreset => {
+  ): SavedPreset | null => {
     const preset: SavedPreset = {
       id: generateId(),
       name: name.trim() || 'Untitled Preset',
@@ -114,8 +122,20 @@ export function useSettingsStorage() {
       midiMappings: midiMappings ? [...midiMappings] : undefined,
       createdAt: Date.now(),
     };
-    setPresets((prev) => [preset, ...prev]);
-    return preset;
+    let saved = false;
+    setPresets((prev) => {
+      if (prev.length >= MAX_PRESETS) {
+        return prev; // Don't add — caller checks return value
+      }
+      const next = [preset, ...prev];
+      // Eagerly persist to catch quota errors before committing state
+      if (!savePresetsToStorage(next)) {
+        return prev; // Storage full — roll back
+      }
+      saved = true;
+      return next;
+    });
+    return saved ? preset : null;
   }, []);
 
   const loadPreset = useCallback((id: string): {
