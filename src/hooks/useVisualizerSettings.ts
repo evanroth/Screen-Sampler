@@ -135,6 +135,7 @@ export interface VisualizerSettings {
   centerCamera: boolean; // When true, camera auto-centers on models. When false, full manual control.
   cursorStyle: CursorStyle; // Mouse cursor appearance: normal, dot, or none
   presetTransitionFade: boolean; // When true, switching presets fades the canvas
+  muteNotifications: boolean; // When true, suppress non-error toast notifications
 }
 
 const defaultSettings: VisualizerSettings = {
@@ -175,6 +176,7 @@ const defaultSettings: VisualizerSettings = {
   centerCamera: true,
   cursorStyle: 'dot',
   presetTransitionFade: true,
+  muteNotifications: false,
 };
 
 export function useVisualizerSettings(initialSettings?: Partial<VisualizerSettings>) {

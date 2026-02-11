@@ -1634,6 +1634,15 @@ export function ControlPanel({
 
           <Separator className="bg-border" />
 
+          {/* Mute Notifications */}
+          <div className="flex items-center justify-between">
+            <Label className="text-muted-foreground text-xs">Mute Notifications</Label>
+            <Switch
+              checked={settings.muteNotifications}
+              onCheckedChange={(checked) => onUpdateSetting("muteNotifications", checked)}
+            />
+          </div>
+
           {/* Mouse Icon */}
           <div className="space-y-2">
             <Label className="text-muted-foreground text-xs">Mouse Icon</Label>

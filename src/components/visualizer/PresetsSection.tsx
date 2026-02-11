@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { SavedPreset } from '@/hooks/useSettingsStorage';
 import { useToast } from '@/hooks/use-toast';
+import { useCallback } from 'react';
 import { VisualizerSettings } from '@/hooks/useVisualizerSettings';
 import { MidiMapping } from '@/hooks/useMidiMappings';
 
@@ -67,7 +68,11 @@ export function PresetsSection({
   const [importConfirmOpen, setImportConfirmOpen] = useState(false);
   const [pendingImportData, setPendingImportData] = useState<unknown>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+  const { toast: rawToast } = useToast();
+  const toast = useCallback((props: Parameters<typeof rawToast>[0]) => {
+    if (currentSettings.muteNotifications && props.variant !== 'destructive') return;
+    rawToast(props);
+  }, [currentSettings.muteNotifications, rawToast]);
 
   const handleSavePreset = () => {
     if (presetName.trim()) {
