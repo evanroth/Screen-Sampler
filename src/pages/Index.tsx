@@ -26,7 +26,8 @@ export default function Index() {
   const [isRegionConfirmed, setIsRegionConfirmed] = useState(false);
   const [isControlPanelOpen, setIsControlPanelOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [presetFadeOpacity, setPresetFadeOpacity] = useState(1); // 1 = visible, fades to 0 then back to 1
+  const [presetSnapshotUrl, setPresetSnapshotUrl] = useState<string | null>(null);
+  const [presetSnapshotVisible, setPresetSnapshotVisible] = useState(false);
   const { toast } = useToast();
   const screenCapture = useScreenCapture();
   const audioAnalyzer = useAudioAnalyzer();
@@ -267,16 +268,26 @@ export default function Index() {
     if (!presetData) return;
 
     if (settings.presetTransitionFade) {
-      // Crossfade: fade canvas out, apply new settings, fade back in
-      setPresetFadeOpacity(0);
-      setTimeout(() => {
-        applyPresetData(presetData);
-        toast({ title: "Preset loaded" });
-        // Allow new settings to render one frame, then fade in
+      // True crossfade: snapshot current canvas, show overlay, apply new settings, fade overlay out
+      const canvasEl = document.querySelector('canvas') as HTMLCanvasElement | null;
+      if (canvasEl) {
+        try {
+          const dataUrl = canvasEl.toDataURL('image/png');
+          setPresetSnapshotUrl(dataUrl);
+          setPresetSnapshotVisible(true);
+        } catch {
+          // fallback: apply immediately
+        }
+      }
+      // Apply new preset underneath the snapshot
+      applyPresetData(presetData);
+      toast({ title: "Preset loaded" });
+      // After two frames (so new content renders), fade the snapshot out
+      requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          setPresetFadeOpacity(1);
+          setPresetSnapshotVisible(false);
         });
-      }, 500);
+      });
     } else {
       applyPresetData(presetData);
       toast({ title: "Preset loaded" });
@@ -661,14 +672,27 @@ export default function Index() {
           onRefreshCameras={screenCapture.refreshCameras}
         />
       )}
-      {appState === 'visualizing' && regions.length > 0 && (
-        <div
+      {/* Crossfade snapshot overlay */}
+      {presetSnapshotUrl && (
+        <img
+          src={presetSnapshotUrl}
+          alt=""
+          className="fixed inset-0 w-full h-full pointer-events-none"
           style={{
-            opacity: presetFadeOpacity,
-            transition: settings.presetTransitionFade ? 'opacity 500ms ease-in-out' : 'none',
+            zIndex: 50,
+            objectFit: 'cover',
+            transition: 'opacity 500ms ease-in-out',
+            opacity: presetSnapshotVisible ? 1 : 0,
           }}
-          className="fixed inset-0"
-        >
+          onTransitionEnd={() => {
+            if (!presetSnapshotVisible) {
+              setPresetSnapshotUrl(null);
+            }
+          }}
+        />
+      )}
+      {appState === 'visualizing' && regions.length > 0 && (
+        <div className="fixed inset-0">
           {settings.visualizerMode === '3d' ? (
             <VisualizerCanvas3D 
               regions={regions} 
