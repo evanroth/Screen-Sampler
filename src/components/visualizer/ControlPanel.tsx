@@ -1677,6 +1677,10 @@ export function ControlPanel({
                 <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">K L</kbd>
               </div>
               <div className="flex justify-between">
+                <span className="text-muted-foreground">Cycle Presets</span>
+                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">Q W</kbd>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-muted-foreground">Toggle Region 1-9</span>
                 <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">1-9</kbd>
               </div>
