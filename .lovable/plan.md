@@ -1,37 +1,68 @@
 
 
-# Fix: Reset Mesh Orientation When Switching to Static 3D Shapes
+# Fix: Region 2 Model Getting Stuck
 
-## Problem
+## Root Causes Found
 
-When switching from an animated shape (e.g., Floating Panels, Orbit Panel) to a static one (e.g., Sphere, Cube, or a custom/external model), the mesh retains the rotation and position values that were last set by the animated mode. This causes the static shape to appear at a skewed orientation.
+### 1. `handleJumpToFavorite` doesn't set `modelSource` (Primary suspect)
 
-## Root Cause
+In `src/pages/Index.tsx` (lines 121-133), the `applyModelToRegion` helper inside `handleJumpToFavorite` updates `customModelId` and `animationMode3D` but never sets `modelSource`. This causes the ControlPanel to show the wrong source dropdown (e.g., "Default Shapes" even though a remote model is active), because the source dropdown reads `region.modelSource || "default"`.
 
-In `VisualizerCanvas3D.tsx`, the animated modes (`floating3D`, `orbit3D`, `carousel3D`, `helix3D`, `explode3D`, `wave3D`) set `mesh.rotation.x`, `mesh.rotation.y`, and `mesh.rotation.z` every frame. When the mode switches to a static shape, the static branch only updates `mesh.position` and conditionally updates rotation (only when `individualRotation` is enabled). The stale rotation values from the previous animated mode remain on the mesh.
+Since `customModelId` takes priority over `animationMode3D` in the geometry resolver (VisualizerCanvas3D.tsx line 422), the region shows the remote model but the dropdown shows Mobius. When the user tries to change the model through what appears to be the correct dropdown, the underlying `customModelId` still overrides.
 
-## Solution
+### 2. Arrow key handler overwrites ALL regions
 
-Add explicit rotation and position resets in the static shape branch of the animation switch statement. When a static shape is active and `individualRotation` is not controlling the rotation, reset `mesh.rotation` to zero. This ensures a clean orientation regardless of what was previously selected.
+In `src/pages/Index.tsx` (lines 564-569), pressing arrow keys applies model changes to **every** region:
 
-## Technical Details
+```text
+// Line 565 - sets customModelId on ALL regions
+setRegions(prev => prev.map(r => ({ ...r, customModelId: nextModelId })));
 
-**File: `src/components/visualizer/VisualizerCanvas3D.tsx`**
+// Line 569 - clears customModelId on ALL regions  
+setRegions(prev => prev.map(r => ({ ...r, customModelId: undefined })));
+```
 
-In the `useFrame` callback, inside the large `switch(mode)` block at the static shapes case (around line 312), after setting position, add:
+This overwrites Region 2's independently-selected model whenever arrow keys are used.
+
+### 3. Shared geometry object between regions
+
+When two regions use the same remote model, they both receive the same `THREE.BufferGeometry` instance via `<primitive object={customGeo}>`. React Three Fiber may have reconciliation issues when the same object is attached to multiple meshes. Cloning the geometry for each region would prevent this.
+
+## Technical Changes
+
+### File: `src/pages/Index.tsx`
+
+**Fix 1: Set `modelSource` in `applyModelToRegion`** (lines 121-133)
+
+Update the helper to include `modelSource` when applying models:
+- For remote models: set `modelSource: 'external'`
+- For custom models: set `modelSource: 'custom'`
+- For default shapes: set `modelSource: 'default'`
+
+**Fix 2: Scope arrow key model changes to Region 1 only** (lines 551-573)
+
+Change the arrow key handler so it only updates Region 1 (`i === 0`) instead of all regions. This preserves Region 2's independent model assignment.
+
+### File: `src/components/visualizer/VisualizerCanvas3D.tsx`
+
+**Fix 3: Clone geometry for each region** (line 424-426)
+
+When `getCustomGeometry` returns a geometry, clone it before using it in `<primitive>`. This prevents two regions from sharing the exact same object reference:
 
 ```typescript
-// Reset rotation for static shapes when not using individual rotation
-if (!settings.individualRotation) {
-  mesh.rotation.x = 0;
-  mesh.rotation.y = 0;
-  mesh.rotation.z = 0;
+const customGeo = getCustomGeometry(region.customModelId);
+if (customGeo) {
+  const cloned = customGeo.clone();
+  return <primitive object={cloned} attach="geometry" />;
 }
 ```
 
-This goes right before the existing `if (settings.individualRotation)` block (around line 361), ensuring that when individual rotation is off, the mesh is cleanly oriented. When individual rotation IS on, the existing turntable logic takes over as before.
+The clone needs to be memoized (keyed on `region.customModelId`) to avoid creating a new clone every render.
 
-Also reset `mesh.rotation.z` inside the `individualRotation` block since the turntable effect only sets `.x` and `.y`, leaving `.z` potentially stale from modes like `wave3D` which sets `mesh.rotation.z`.
+## Summary
 
-This is a single-file, ~5-line change with no risk to other behavior.
+These three changes together ensure:
+- The ControlPanel always shows the correct source/model dropdown for each region
+- Arrow key navigation doesn't accidentally overwrite Region 2's model
+- Each region gets its own geometry instance to avoid R3F conflicts
 
