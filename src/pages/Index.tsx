@@ -279,6 +279,19 @@ export default function Index() {
     toast({ title: "Preset deleted" });
   }, [storage, toast]);
 
+  const handleImportSettings = useCallback((parsed: unknown): boolean => {
+    const result = storage.importAllSettings(parsed);
+    if (!result) return false;
+    loadSettings(result.settings);
+    if (result.favorites.length > 0) {
+      favorites.setFavoritesFromPreset(result.favorites);
+    }
+    if (result.midiMappings.length > 0) {
+      midiMappings.setMappingsFromPreset(result.midiMappings);
+    }
+    return true;
+  }, [storage, loadSettings, favorites, midiMappings]);
+
   // Track currently loaded preset index for cycling
   const [currentPresetIndex, setCurrentPresetIndex] = useState<number>(-1);
 
@@ -684,6 +697,10 @@ export default function Index() {
           onLoadPreset={handleLoadPreset}
           onDeletePreset={handleDeletePreset}
           onToggleAutoRestore={storage.toggleAutoRestore}
+          onExportSettings={storage.exportAllSettings}
+          onImportSettings={handleImportSettings}
+          currentFavorites={favorites.getFavorites()}
+          currentMidiMappings={midiMappings.getMappings()}
           onClearCache={storage.clearCache}
           customModels={customModels.models}
           customModelsLoading={customModels.isLoading}
