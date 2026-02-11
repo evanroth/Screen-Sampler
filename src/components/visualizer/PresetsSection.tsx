@@ -34,10 +34,12 @@ import { MidiMapping } from '@/hooks/useMidiMappings';
 interface PresetsSectionProps {
   presets: SavedPreset[];
   autoRestore: boolean;
+  presetTransitionFade: boolean;
   onSavePreset: (name: string) => SavedPreset;
   onLoadPreset: (id: string) => void;
   onDeletePreset: (id: string) => void;
   onToggleAutoRestore: (enabled: boolean) => void;
+  onTogglePresetTransitionFade: (enabled: boolean) => void;
   currentSettings: VisualizerSettings;
   currentFavorites: string[];
   currentMidiMappings: MidiMapping[];
@@ -48,10 +50,12 @@ interface PresetsSectionProps {
 export function PresetsSection({
   presets,
   autoRestore,
+  presetTransitionFade,
   onSavePreset,
   onLoadPreset,
   onDeletePreset,
   onToggleAutoRestore,
+  onTogglePresetTransitionFade,
   currentSettings,
   currentFavorites,
   currentMidiMappings,
@@ -240,6 +244,22 @@ export function PresetsSection({
           No saved presets yet. Save your current settings to create one.
         </p>
       )}
+
+      <Separator className="bg-border" />
+
+      {/* Transition Fade toggle */}
+      <div className="flex items-center justify-between">
+        <Label className="text-muted-foreground text-sm">Transition fade</Label>
+        <Switch
+          checked={presetTransitionFade}
+          onCheckedChange={onTogglePresetTransitionFade}
+        />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {presetTransitionFade
+          ? "Presets crossfade smoothly when switched."
+          : "Presets switch instantly."}
+      </p>
 
       <Separator className="bg-border" />
 
