@@ -189,6 +189,10 @@ export default function Index() {
   // Helper: extract saveable visual settings from regions
   const extractRegionSettings = useCallback((regs: CaptureRegion[]): SavedRegionSettings[] => {
     return regs.map(r => ({
+      x: r.x,
+      y: r.y,
+      width: r.width,
+      height: r.height,
       animationMode3D: r.animationMode3D,
       animationMode2D: r.animationMode2D,
       customModelId: r.customModelId,
@@ -213,10 +217,49 @@ export default function Index() {
 
   // Helper: apply saved region settings onto existing regions by index
   const applyRegionSettings = useCallback((saved: SavedRegionSettings[]) => {
-    setRegions(prev => prev.map((r, i) => {
-      if (i >= saved.length) return r;
-      return { ...r, ...saved[i] };
-    }));
+    // Check if saved data includes geometry (new format) by looking at first entry
+    const hasGeometry = saved.length > 0 && saved[0].x !== undefined && saved[0].width !== undefined;
+
+    setRegions(prev => {
+      if (!hasGeometry) {
+        // Legacy presets without geometry: apply settings by index, no region count change
+        return prev.map((r, i) => {
+          if (i >= saved.length) return r;
+          return { ...r, ...saved[i] };
+        });
+      }
+
+      // New presets with geometry: reconcile region count
+      const firstSourceId = prev.length > 0 ? prev[0].sourceId : '';
+
+      return saved.map((savedSet, i) => {
+        // Destructure geometry out, rest is visual settings
+        const { x, y, width, height, ...visualSettings } = savedSet;
+
+        if (i < prev.length) {
+          // Update existing region with saved geometry + visual settings
+          return {
+            ...prev[i],
+            x: x ?? prev[i].x,
+            y: y ?? prev[i].y,
+            width: width ?? prev[i].width,
+            height: height ?? prev[i].height,
+            ...visualSettings,
+          };
+        }
+
+        // Create new region for extras saved beyond current count
+        return {
+          id: `region-${Date.now()}-${i}`,
+          sourceId: firstSourceId,
+          x: x ?? 0,
+          y: y ?? 0,
+          width: width ?? 200,
+          height: height ?? 200,
+          ...visualSettings,
+        } as CaptureRegion;
+      });
+    });
   }, []);
 
   // Auto-save session when settings or regions change (debounced)
