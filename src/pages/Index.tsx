@@ -28,7 +28,7 @@ export default function Index() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [presetSnapshotUrl, setPresetSnapshotUrl] = useState<string | null>(null);
   const [presetSnapshotVisible, setPresetSnapshotVisible] = useState(false);
-  const { toast } = useToast();
+  const { toast: rawToast } = useToast();
   const screenCapture = useScreenCapture();
   const audioAnalyzer = useAudioAnalyzer();
   const customModels = useCustomModels();
@@ -56,6 +56,12 @@ export default function Index() {
   const initialSettings = lastSessionData?.settings;
   
   const { settings, updateSetting, loadSettings, resetSettings } = useVisualizerSettings(initialSettings);
+
+  // Mute-aware toast: suppresses non-destructive notifications when muteNotifications is on
+  const toast = useCallback((props: Parameters<typeof rawToast>[0]) => {
+    if (settings.muteNotifications && props.variant !== 'destructive') return;
+    rawToast(props);
+  }, [settings.muteNotifications, rawToast]);
 
   // Gradient animation for smooth color transitions
   const gradientAnimation = useGradientAnimation({
