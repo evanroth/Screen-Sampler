@@ -26,7 +26,7 @@ export default function Index() {
   const [isRegionConfirmed, setIsRegionConfirmed] = useState(false);
   const [isControlPanelOpen, setIsControlPanelOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [presetFadeOpacity, setPresetFadeOpacity] = useState(0); // 0 = transparent, 1 = black overlay
+  const [presetFadeOpacity, setPresetFadeOpacity] = useState(1); // 1 = visible, fades to 0 then back to 1
   const { toast } = useToast();
   const screenCapture = useScreenCapture();
   const audioAnalyzer = useAudioAnalyzer();
@@ -248,7 +248,9 @@ export default function Index() {
   // Preset handlers
   const applyPresetData = useCallback((presetData: ReturnType<typeof storage.loadPreset>) => {
     if (!presetData) return;
-    loadSettings(presetData.settings);
+    // Preserve presetTransitionFade — it's a UI preference, not a preset setting
+    const currentFadePref = settings.presetTransitionFade;
+    loadSettings({ ...presetData.settings, presetTransitionFade: currentFadePref });
     if (presetData.favorites) {
       favorites.setFavoritesFromPreset(presetData.favorites);
     }
@@ -258,23 +260,23 @@ export default function Index() {
     if (presetData.midiMappings && presetData.midiMappings.length > 0) {
       midiMappings.setMappingsFromPreset(presetData.midiMappings);
     }
-  }, [loadSettings, favorites, applyRegionSettings, midiMappings]);
+  }, [loadSettings, favorites, applyRegionSettings, midiMappings, settings.presetTransitionFade]);
 
   const handleLoadPreset = useCallback((id: string) => {
     const presetData = storage.loadPreset(id);
     if (!presetData) return;
 
     if (settings.presetTransitionFade) {
-      // Fade out over 400ms, apply settings at peak, then fade back in
-      setPresetFadeOpacity(1);
-      const applyTimer = setTimeout(() => {
+      // Crossfade: fade canvas out, apply new settings, fade back in
+      setPresetFadeOpacity(0);
+      setTimeout(() => {
         applyPresetData(presetData);
         toast({ title: "Preset loaded" });
-        // Small delay so new settings render behind the overlay before fading in
-        const fadeInTimer = setTimeout(() => setPresetFadeOpacity(0), 100);
-        return () => clearTimeout(fadeInTimer);
-      }, 450);
-      return () => clearTimeout(applyTimer);
+        // Allow new settings to render one frame, then fade in
+        requestAnimationFrame(() => {
+          setPresetFadeOpacity(1);
+        });
+      }, 500);
     } else {
       applyPresetData(presetData);
       toast({ title: "Preset loaded" });
@@ -660,42 +662,41 @@ export default function Index() {
         />
       )}
       {appState === 'visualizing' && regions.length > 0 && (
-        settings.visualizerMode === '3d' ? (
-          <VisualizerCanvas3D 
-            regions={regions} 
-            settings={settings} 
-            audioLevel={audioAnalyzer.audioLevel} 
-            isActive={true}
-            onUpdateRegion={handleUpdateRegion}
-            getVideoElement={screenCapture.getVideoElement}
-            getCustomGeometry={(modelId) => {
-              // Check remote models first, then custom models
-              if (remoteModels.isRemoteModel(modelId)) {
-                return remoteModels.getGeometry(modelId);
-              }
-              return customModels.getGeometry(modelId);
-            }}
-            midiCameraAngle={midiCameraAngle}
-          />
-        ) : (
-          <VisualizerCanvas 
-            regions={regions} 
-            settings={settings} 
-            audioLevel={audioAnalyzer.audioLevel} 
-            isActive={true}
-            getVideoElement={screenCapture.getVideoElement}
-          />
-        )
+        <div
+          style={{
+            opacity: presetFadeOpacity,
+            transition: settings.presetTransitionFade ? 'opacity 500ms ease-in-out' : 'none',
+          }}
+          className="fixed inset-0"
+        >
+          {settings.visualizerMode === '3d' ? (
+            <VisualizerCanvas3D 
+              regions={regions} 
+              settings={settings} 
+              audioLevel={audioAnalyzer.audioLevel} 
+              isActive={true}
+              onUpdateRegion={handleUpdateRegion}
+              getVideoElement={screenCapture.getVideoElement}
+              getCustomGeometry={(modelId) => {
+                // Check remote models first, then custom models
+                if (remoteModels.isRemoteModel(modelId)) {
+                  return remoteModels.getGeometry(modelId);
+                }
+                return customModels.getGeometry(modelId);
+              }}
+              midiCameraAngle={midiCameraAngle}
+            />
+          ) : (
+            <VisualizerCanvas 
+              regions={regions} 
+              settings={settings} 
+              audioLevel={audioAnalyzer.audioLevel} 
+              isActive={true}
+              getVideoElement={screenCapture.getVideoElement}
+            />
+          )}
+        </div>
       )}
-      {/* Preset transition fade overlay — always mounted for CSS transitions */}
-      <div
-        className="fixed inset-0 bg-background pointer-events-none z-40"
-        style={{
-          opacity: presetFadeOpacity,
-          transition: 'opacity 400ms ease-in-out',
-          visibility: presetFadeOpacity === 0 ? 'hidden' : 'visible',
-        }}
-      />
       {(appState === 'ready' || appState === 'visualizing') && (
         <ControlPanel 
           isOpen={isControlPanelOpen} 
