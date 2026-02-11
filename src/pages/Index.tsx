@@ -739,6 +739,7 @@ export default function Index() {
               } : r));
             }
           }}
+          onLoadRemoteModelGeometry={remoteModels.loadModel}
           getRemoteModelLoadingState={remoteModels.getLoadingState}
           midiSupported={midi.isSupported}
           midiEnabled={midi.isEnabled}

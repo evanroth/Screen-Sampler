@@ -151,6 +151,7 @@ interface ControlPanelProps {
   remoteModelsLoading?: boolean;
   remoteModelsError?: string | null;
   onSelectRemoteModel?: (modelId: string) => void;
+  onLoadRemoteModelGeometry?: (modelId: string) => Promise<unknown>;
   getRemoteModelLoadingState?: (modelId: string) => RemoteModelLoadingState;
   // MIDI
   midiSupported: boolean;
@@ -219,6 +220,7 @@ export function ControlPanel({
   remoteModelsLoading,
   remoteModelsError,
   onSelectRemoteModel,
+  onLoadRemoteModelGeometry,
   getRemoteModelLoadingState,
   midiSupported,
   midiEnabled,
@@ -1080,12 +1082,13 @@ export function ControlPanel({
                             {region.modelSource === "external" && (
                               <Select
                                 value={region.customModelId || "none"}
-                                onValueChange={(v) => {
-                                  if (v !== "none" && onSelectRemoteModel) {
-                                    // Load the model first, then the handler will update regions
-                                    // But we need to update THIS region specifically
-                                    onSelectRemoteModel(v);
-                                    // Also update this specific region
+                                onValueChange={async (v) => {
+                                  if (v !== "none") {
+                                    // Load the geometry without affecting other regions
+                                    if (onLoadRemoteModelGeometry) {
+                                      await onLoadRemoteModelGeometry(v);
+                                    }
+                                    // Update only THIS region
                                     if (onUpdateRegion) {
                                       onUpdateRegion(region.id, {
                                         customModelId: v,
