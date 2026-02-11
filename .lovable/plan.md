@@ -1,46 +1,37 @@
 
 
-# Fix: Preset Region Settings Mismatch
+# Fix: Reset Mesh Orientation When Switching to Static 3D Shapes
 
 ## Problem
 
-Region settings in presets are stored as an ordered array and applied by index. When the number of regions changes between saving and loading a preset, it causes:
+When switching from an animated shape (e.g., Floating Panels, Orbit Panel) to a static one (e.g., Sphere, Cube, or a custom/external model), the mesh retains the rotation and position values that were last set by the animated mode. This causes the static shape to appear at a skewed orientation.
 
-- **Fewer saved than current**: Extra regions keep stale/wrong settings from the previously active preset.
-- **More saved than current**: Extra saved settings are silently dropped.
+## Root Cause
 
-## Proposed Solution
+In `VisualizerCanvas3D.tsx`, the animated modes (`floating3D`, `orbit3D`, `carousel3D`, `helix3D`, `explode3D`, `wave3D`) set `mesh.rotation.x`, `mesh.rotation.y`, and `mesh.rotation.z` every frame. When the mode switches to a static shape, the static branch only updates `mesh.position` and conditionally updates rotation (only when `individualRotation` is enabled). The stale rotation values from the previous animated mode remain on the mesh.
 
-Store the **region count** in each preset and, on load, **resize the regions array** to match what was saved. This means:
+## Solution
 
-1. When loading a preset that had 1 region but you currently have 3, regions 2 and 3 are removed.
-2. When loading a preset that had 3 regions but you currently have 1, two new regions are created with default geometry.
+Add explicit rotation and position resets in the static shape branch of the animation switch statement. When a static shape is active and `individualRotation` is not controlling the rotation, reset `mesh.rotation` to zero. This ensures a clean orientation regardless of what was previously selected.
 
-This ensures presets are fully self-contained snapshots of the region configuration.
+## Technical Details
 
-## Technical Changes
+**File: `src/components/visualizer/VisualizerCanvas3D.tsx`**
 
-### 1. Save region count and geometry in presets
+In the `useFrame` callback, inside the large `switch(mode)` block at the static shapes case (around line 312), after setting position, add:
 
-**`src/hooks/useSettingsStorage.ts`**
-- Add optional geometry fields to `SavedRegionSettings`: `x`, `y`, `width`, `height` (so regions can be fully recreated).
+```typescript
+// Reset rotation for static shapes when not using individual rotation
+if (!settings.individualRotation) {
+  mesh.rotation.x = 0;
+  mesh.rotation.y = 0;
+  mesh.rotation.z = 0;
+}
+```
 
-**`src/pages/Index.tsx`** (`extractRegionSettings`)
-- Include `x`, `y`, `width`, `height` from each region in the saved data.
+This goes right before the existing `if (settings.individualRotation)` block (around line 361), ensuring that when individual rotation is off, the mesh is cleanly oriented. When individual rotation IS on, the existing turntable logic takes over as before.
 
-### 2. Update `applyRegionSettings` to handle count mismatches
+Also reset `mesh.rotation.z` inside the `individualRotation` block since the turntable effect only sets `.x` and `.y`, leaving `.z` potentially stale from modes like `wave3D` which sets `mesh.rotation.z`.
 
-**`src/pages/Index.tsx`** (`applyRegionSettings`)
-- If saved array is shorter than current regions: remove excess regions.
-- If saved array is longer than current regions: create new regions with saved geometry (or sensible defaults if geometry is missing for backward compatibility with old presets).
-- Apply visual settings to all matched regions as before.
-
-### 3. Backward compatibility
-
-Old presets without geometry data will continue to work with the current index-matching behavior (no regions added/removed, just settings applied where indices match). Only presets saved after this change will include geometry and trigger region count adjustment.
-
-## Summary of File Changes
-
-- **`src/hooks/useSettingsStorage.ts`**: Add `x`, `y`, `width`, `height` to `SavedRegionSettings` interface.
-- **`src/pages/Index.tsx`**: Update `extractRegionSettings` to include geometry; rewrite `applyRegionSettings` to reconcile region count differences by adding/removing regions as needed.
+This is a single-file, ~5-line change with no risk to other behavior.
 
