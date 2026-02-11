@@ -1,57 +1,46 @@
 
 
-## Export/Import Settings to File
+# Fix: Preset Region Settings Mismatch
 
-### Overview
-Add "Export Settings" and "Import Settings" buttons to the Presets section. Export saves a JSON file (with a `.ssconfig` extension for branding) containing all presets, favorites, MIDI mappings, current visualizer settings, and auto-restore preference. Import reads the file and restores everything.
+## Problem
 
-### What Gets Exported
-- All saved presets (including their embedded region settings, favorites, and MIDI mappings)
-- Current global favorites list
-- Current MIDI mappings
-- Current visualizer settings
-- Auto-restore preference
+Region settings in presets are stored as an ordered array and applied by index. When the number of regions changes between saving and loading a preset, it causes:
 
-### File Format
-A JSON file with a wrapper object including a version number for future compatibility:
-```text
-{
-  "appName": "Screen Sampler",
-  "version": 1,
-  "exportedAt": "2026-02-11T...",
-  "settings": { ... },
-  "presets": [ ... ],
-  "favorites": [ ... ],
-  "midiMappings": [ ... ],
-  "autoRestore": true
-}
-```
-The file extension will be `.ssconfig` and the default filename will include a date stamp (e.g., `screen-sampler-2026-02-11.ssconfig`).
+- **Fewer saved than current**: Extra regions keep stale/wrong settings from the previously active preset.
+- **More saved than current**: Extra saved settings are silently dropped.
 
-### User Experience
-- Two new buttons appear in the Presets section, below the auto-restore toggle
-- **Export Settings**: Immediately downloads the file -- no dialog needed
-- **Import Settings**: Opens a file picker. After selecting a file, shows a confirmation dialog warning that this will replace all current settings, presets, favorites, and MIDI mappings. On confirm, everything is loaded in.
+## Proposed Solution
 
-### Changes
+Store the **region count** in each preset and, on load, **resize the regions array** to match what was saved. This means:
 
-**1. `src/hooks/useSettingsStorage.ts`**
-- Add `exportAllSettings()` method that collects all data and triggers a JSON file download
-- Add `importAllSettings()` method that accepts parsed JSON, validates the format, and replaces all stored data (presets, auto-restore) plus returns the settings/favorites/midiMappings for the caller to apply
-- Add `importPresets()` helper to bulk-replace the presets state
+1. When loading a preset that had 1 region but you currently have 3, regions 2 and 3 are removed.
+2. When loading a preset that had 3 regions but you currently have 1, two new regions are created with default geometry.
 
-**2. `src/components/visualizer/PresetsSection.tsx`**
-- Add props for current settings, favorites, and MIDI mappings (needed for export)
-- Add an `onImportSettings` callback prop
-- Add "Export Settings" button (Upload icon) and "Import Settings" button (Download icon) below the auto-restore section
-- Import flow: hidden file input, read file, parse JSON, validate, show confirmation AlertDialog, call `onImportSettings`
+This ensures presets are fully self-contained snapshots of the region configuration.
 
-**3. `src/pages/Index.tsx`**
-- Pass the additional props (current settings, favorites, midiMappings) to `PresetsSection`
-- Implement `handleImportSettings` callback that applies the imported data: load settings, set favorites, set MIDI mappings, replace presets
+## Technical Changes
 
-### Technical Details
-- Export uses the browser's `Blob` + `URL.createObjectURL` + temporary `<a>` click pattern for downloading
-- Import uses a hidden `<input type="file" accept=".ssconfig,.json">` element
-- Validation checks for the `appName` field and `version` number to reject invalid files
-- On import, a toast notification confirms success or reports errors
+### 1. Save region count and geometry in presets
+
+**`src/hooks/useSettingsStorage.ts`**
+- Add optional geometry fields to `SavedRegionSettings`: `x`, `y`, `width`, `height` (so regions can be fully recreated).
+
+**`src/pages/Index.tsx`** (`extractRegionSettings`)
+- Include `x`, `y`, `width`, `height` from each region in the saved data.
+
+### 2. Update `applyRegionSettings` to handle count mismatches
+
+**`src/pages/Index.tsx`** (`applyRegionSettings`)
+- If saved array is shorter than current regions: remove excess regions.
+- If saved array is longer than current regions: create new regions with saved geometry (or sensible defaults if geometry is missing for backward compatibility with old presets).
+- Apply visual settings to all matched regions as before.
+
+### 3. Backward compatibility
+
+Old presets without geometry data will continue to work with the current index-matching behavior (no regions added/removed, just settings applied where indices match). Only presets saved after this change will include geometry and trigger region count adjustment.
+
+## Summary of File Changes
+
+- **`src/hooks/useSettingsStorage.ts`**: Add `x`, `y`, `width`, `height` to `SavedRegionSettings` interface.
+- **`src/pages/Index.tsx`**: Update `extractRegionSettings` to include geometry; rewrite `applyRegionSettings` to reconcile region count differences by adding/removing regions as needed.
+
