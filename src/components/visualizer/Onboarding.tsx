@@ -81,7 +81,7 @@ export function Onboarding({ onStartCapture, onStartCamera }: OnboardingProps) {
 
               {/* Hint */}
               <p className="text-xs text-foreground/60 font-mono mt-3">
-                'RETURN' toggles on and off the settings page
+                'SPACE' toggles on and off the settings page
               </p>
             </div>
 

@@ -1655,7 +1655,7 @@ export function ControlPanel({
             <div className="space-y-1.5 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Toggle Settings Panel</span>
-                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">Return</kbd>
+                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">Space</kbd>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Toggle Play Mode</span>
@@ -1663,7 +1663,7 @@ export function ControlPanel({
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Randomize Gradient</span>
-                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">Space</kbd>
+                <kbd className="px-1.5 py-0.5 bg-secondary rounded text-foreground font-mono">G</kbd>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Auto-Rotate Camera</span>
