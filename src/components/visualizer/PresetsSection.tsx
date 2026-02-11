@@ -173,8 +173,11 @@ export function PresetsSection({
       {/* Saved Presets List */}
       {presets.length > 0 && (
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Saved Presets</Label>
-          <ScrollArea className="max-h-40">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">Saved Presets</Label>
+            <span className="text-xs text-muted-foreground">{presets.length}/30</span>
+          </div>
+          <ScrollArea className="max-h-60 pr-3">
             <div className="space-y-1">
               {presets.map((preset) => (
                 <div
@@ -236,6 +239,12 @@ export function PresetsSection({
               ))}
             </div>
           </ScrollArea>
+
+          {presets.length > 3 && (
+            <p className="text-xs text-muted-foreground">
+              Scroll to see all presets.
+            </p>
+          )}
         </div>
       )}
 
