@@ -179,7 +179,7 @@ export function PresetsSection({
               {presets.map((preset) => (
                 <div
                   key={preset.id}
-                  className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary/50 hover:bg-secondary transition-colors"
+                  className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary/50 hover:bg-secondary transition-colors overflow-hidden"
                 >
                   <button
                     onClick={() => onLoadPreset(preset.id)}
