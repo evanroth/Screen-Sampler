@@ -216,6 +216,7 @@ function categorizeControls(controls: MappableControl[], regionCount: number) {
     camera: MappableControl[];
     allModels: MappableControl[];
     favorites: MappableControl[];
+    presets: MappableControl[];
   } = {
     parameters: [],
     toggles: [],
@@ -223,6 +224,7 @@ function categorizeControls(controls: MappableControl[], regionCount: number) {
     camera: [],
     allModels: [],
     favorites: [],
+    presets: [],
   };
   
   const perRegion: Map<number, {
@@ -286,6 +288,12 @@ function categorizeControls(controls: MappableControl[], regionCount: number) {
     // Favorite navigation
     if (control.targetType === 'favoriteNavigation') {
       global.favorites.push(control);
+      return;
+    }
+    
+    // Preset navigation
+    if (control.targetType === 'presetNavigation') {
+      global.presets.push(control);
       return;
     }
     
@@ -404,7 +412,7 @@ export function MidiSection({
   // Count mappings per section (count total number of mappings, not just controls with mappings)
   const globalMappingCount = useMemo(() => {
     let count = 0;
-    [...global.parameters, ...global.toggles, ...global.modes, ...global.camera, ...global.allModels, ...global.favorites].forEach(c => {
+    [...global.parameters, ...global.toggles, ...global.modes, ...global.camera, ...global.allModels, ...global.favorites, ...global.presets].forEach(c => {
       count += getMappingsForControl(c.id).length;
     });
     return count;
@@ -623,6 +631,19 @@ export function MidiSection({
                     <ControlGroup
                       title="Favorites"
                       controls={global.favorites}
+                      learnMode={learnMode}
+                      lastMessage={lastMessage}
+                      onStartLearn={onStartLearn}
+                      onCancelLearn={onCancelLearn}
+                      onRemoveMapping={onRemoveMapping}
+                      getMappingsForControl={getMappingsForControl}
+                      onSetMappingRelative={onSetMappingRelative}
+                      disabled={!activeDeviceId}
+                    />
+                    
+                    <ControlGroup
+                      title="Presets"
+                      controls={global.presets}
                       learnMode={learnMode}
                       lastMessage={lastMessage}
                       onStartLearn={onStartLearn}
