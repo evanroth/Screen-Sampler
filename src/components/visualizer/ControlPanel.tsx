@@ -133,6 +133,10 @@ interface ControlPanelProps {
   onDeletePreset: (id: string) => void;
   onToggleAutoRestore: (enabled: boolean) => void;
   onClearCache: () => void;
+  onExportSettings: (settings: VisualizerSettings, favorites: string[], midiMappings: MidiMapping[]) => void;
+  onImportSettings: (parsed: unknown) => boolean;
+  currentFavorites: string[];
+  currentMidiMappings: MidiMapping[];
   // Custom 3D Models
   customModels: CustomModel[];
   customModelsLoading: boolean;
@@ -194,6 +198,10 @@ export function ControlPanel({
   onDeletePreset,
   onToggleAutoRestore,
   onClearCache,
+  onExportSettings,
+  onImportSettings,
+  currentFavorites,
+  currentMidiMappings,
   onResetSettings,
   hasRegions,
   regionCount,
@@ -1567,6 +1575,11 @@ export function ControlPanel({
             onLoadPreset={onLoadPreset}
             onDeletePreset={onDeletePreset}
             onToggleAutoRestore={onToggleAutoRestore}
+            currentSettings={settings}
+            currentFavorites={currentFavorites}
+            currentMidiMappings={currentMidiMappings}
+            onExportSettings={onExportSettings}
+            onImportSettings={onImportSettings}
           />
 
           <Separator className="bg-border" />

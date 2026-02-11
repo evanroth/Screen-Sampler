@@ -186,6 +186,62 @@ export function useSettingsStorage() {
     }
   }, []);
 
+  const importPresets = useCallback((newPresets: SavedPreset[]): void => {
+    setPresets(newPresets);
+  }, []);
+
+  const exportAllSettings = useCallback((
+    currentSettings: VisualizerSettings,
+    currentFavorites: string[],
+    currentMidiMappings: MidiMapping[],
+  ): void => {
+    const data = {
+      appName: 'Screen Sampler',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      settings: currentSettings,
+      presets,
+      favorites: currentFavorites,
+      midiMappings: currentMidiMappings,
+      autoRestore,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `screen-sampler-${date}.ssconfig`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [presets, autoRestore]);
+
+  const importAllSettings = useCallback((json: unknown): {
+    settings: VisualizerSettings;
+    favorites: string[];
+    midiMappings: MidiMapping[];
+  } | null => {
+    if (!json || typeof json !== 'object') return null;
+    const data = json as Record<string, unknown>;
+    if (data.appName !== 'Screen Sampler' || typeof data.version !== 'number') return null;
+
+    // Restore presets
+    if (Array.isArray(data.presets)) {
+      setPresets(data.presets as SavedPreset[]);
+    }
+    // Restore auto-restore preference
+    if (typeof data.autoRestore === 'boolean') {
+      setAutoRestore(data.autoRestore);
+    }
+
+    return {
+      settings: data.settings as VisualizerSettings,
+      favorites: Array.isArray(data.favorites) ? data.favorites as string[] : [],
+      midiMappings: Array.isArray(data.midiMappings) ? data.midiMappings as MidiMapping[] : [],
+    };
+  }, []);
+
   return {
     presets,
     autoRestore,
@@ -196,5 +252,8 @@ export function useSettingsStorage() {
     loadLastSession,
     toggleAutoRestore,
     clearCache,
+    importPresets,
+    exportAllSettings,
+    importAllSettings,
   };
 }

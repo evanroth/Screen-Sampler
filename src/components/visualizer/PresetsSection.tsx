@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Save, Trash2, Download, BookmarkCheck } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Save, Trash2, Download, BookmarkCheck, Upload, FolderDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { SavedPreset } from '@/hooks/useSettingsStorage';
+import { useToast } from '@/hooks/use-toast';
+import { VisualizerSettings } from '@/hooks/useVisualizerSettings';
+import { MidiMapping } from '@/hooks/useMidiMappings';
 
 interface PresetsSectionProps {
   presets: SavedPreset[];
@@ -35,6 +38,11 @@ interface PresetsSectionProps {
   onLoadPreset: (id: string) => void;
   onDeletePreset: (id: string) => void;
   onToggleAutoRestore: (enabled: boolean) => void;
+  currentSettings: VisualizerSettings;
+  currentFavorites: string[];
+  currentMidiMappings: MidiMapping[];
+  onExportSettings: (settings: VisualizerSettings, favorites: string[], midiMappings: MidiMapping[]) => void;
+  onImportSettings: (parsed: unknown) => boolean;
 }
 
 export function PresetsSection({
@@ -44,9 +52,18 @@ export function PresetsSection({
   onLoadPreset,
   onDeletePreset,
   onToggleAutoRestore,
+  currentSettings,
+  currentFavorites,
+  currentMidiMappings,
+  onExportSettings,
+  onImportSettings,
 }: PresetsSectionProps) {
   const [presetName, setPresetName] = useState('');
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [importConfirmOpen, setImportConfirmOpen] = useState(false);
+  const [pendingImportData, setPendingImportData] = useState<unknown>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleSavePreset = () => {
     if (presetName.trim()) {
@@ -54,6 +71,46 @@ export function PresetsSection({
       setPresetName('');
       setSaveDialogOpen(false);
     }
+  };
+
+  const handleExport = () => {
+    onExportSettings(currentSettings, currentFavorites, currentMidiMappings);
+    toast({ title: 'Settings exported' });
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result as string);
+        setPendingImportData(parsed);
+        setImportConfirmOpen(true);
+      } catch {
+        toast({ title: 'Invalid file', description: 'Could not parse the settings file.', variant: 'destructive' });
+      }
+    };
+    reader.readAsText(file);
+    // Reset so the same file can be selected again
+    e.target.value = '';
+  };
+
+  const handleConfirmImport = () => {
+    if (pendingImportData) {
+      const success = onImportSettings(pendingImportData);
+      if (success) {
+        toast({ title: 'Settings imported successfully' });
+      } else {
+        toast({ title: 'Import failed', description: 'The file does not appear to be a valid Screen Sampler config.', variant: 'destructive' });
+      }
+    }
+    setPendingImportData(null);
+    setImportConfirmOpen(false);
   };
 
   const formatDate = (timestamp: number): string => {
@@ -199,6 +256,45 @@ export function PresetsSection({
           ? "Settings will be restored when you reopen the app." 
           : "Start fresh each session."}
       </p>
+
+      <Separator className="bg-border" />
+
+      {/* Export / Import */}
+      <div className="flex gap-2">
+        <Button variant="secondary" className="flex-1" size="sm" onClick={handleExport}>
+          <Upload className="w-4 h-4 mr-2" />
+          Export Settings
+        </Button>
+        <Button variant="secondary" className="flex-1" size="sm" onClick={handleImportClick}>
+          <FolderDown className="w-4 h-4 mr-2" />
+          Import Settings
+        </Button>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".ssconfig,.json"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
+      <AlertDialog open={importConfirmOpen} onOpenChange={setImportConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Import Settings</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will replace all your current settings, presets, favorites, and MIDI mappings. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingImportData(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmImport}>
+              Import
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
