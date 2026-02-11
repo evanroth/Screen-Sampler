@@ -15,6 +15,7 @@ export type MidiTargetType =
   | 'favoriteNavigation' // Jump to next/previous favorite model (global)
   | 'regionFavoriteNavigation' // Jump to next/previous favorite model (per-region)
   | 'crossfade' // Crossfade between Region 1 and Region 2 scales
+  | 'presetNavigation' // Cycle through saved presets (next/previous)
   | 'action'; // Trigger an action (like randomize gradient)
 
 export interface MidiMapping {
@@ -138,6 +139,10 @@ export const MAPPABLE_CONTROLS: MappableControl[] = [
   { id: 'region9Bounce', name: 'Region 9 Bounce', targetType: 'regionBounce', targetKey: '8', preferredMessageType: 'noteon' },
   { id: 'allRegionsBounce', name: 'All Regions Bounce', targetType: 'regionBounce', targetKey: 'all', preferredMessageType: 'noteon' },
   
+  // Preset navigation - global (Note On - cycles through saved presets)
+  { id: 'nextPreset', name: 'Next Preset', targetType: 'presetNavigation', targetKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'previousPreset', name: 'Previous Preset', targetType: 'presetNavigation', targetKey: 'previous', preferredMessageType: 'noteon' },
+  
   // Favorite navigation - global (Note On - triggers jump to next/previous favorite for all regions)
   { id: 'jumpToNextFavorite', name: 'Jump to Next Favorite', targetType: 'favoriteNavigation', targetKey: 'next', preferredMessageType: 'noteon' },
   { id: 'jumpToPreviousFavorite', name: 'Jump to Previous Favorite', targetType: 'favoriteNavigation', targetKey: 'previous', preferredMessageType: 'noteon' },
@@ -183,6 +188,7 @@ interface UseMidiMappingsOptions {
   onTriggerBounce?: (regionIndex: number | 'all') => void; // Trigger bounce animation
   onJumpToFavorite?: (direction: 'next' | 'previous', regionIndex?: number) => void; // Jump to next/previous favorite (global or per-region)
   onRandomizeGradient?: () => void; // Trigger gradient randomization
+  onCyclePreset?: (direction: 'next' | 'previous') => void; // Cycle through saved presets
 }
 
 export function useMidiMappings({
@@ -194,6 +200,7 @@ export function useMidiMappings({
   onTriggerBounce,
   onJumpToFavorite,
   onRandomizeGradient,
+  onCyclePreset,
 }: UseMidiMappingsOptions) {
   const [mappings, setMappings] = useState<MidiMapping[]>([]);
   const [learnMode, setLearnMode] = useState<string | null>(null); // Control ID being learned
@@ -814,6 +821,14 @@ export function useMidiMappings({
         break;
       }
       
+      case 'presetNavigation': {
+        // Cycle through saved presets (next/previous)
+        if (onCyclePreset) {
+          onCyclePreset(mapping.targetKey as 'next' | 'previous');
+        }
+        break;
+      }
+      
       case 'action': {
         // Trigger actions like randomize gradient
         if (mapping.targetKey === 'randomizeGradient' && onRandomizeGradient) {
@@ -823,7 +838,7 @@ export function useMidiMappings({
       }
       }
     }
-  }, [completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce, onJumpToFavorite, onRandomizeGradient, beginTemporaryRegionAutoRotateDisable]);
+  }, [completeLearn, onUpdateSetting, onUpdateRegion, onCameraRotation, onTriggerBounce, onJumpToFavorite, onRandomizeGradient, onCyclePreset, beginTemporaryRegionAutoRotateDisable]);
 
   // Cleanup all pending timeouts on unmount to prevent state updates after unmount
   useEffect(() => {

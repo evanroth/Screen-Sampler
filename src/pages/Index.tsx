@@ -164,6 +164,9 @@ export default function Index() {
     }
   }, [settings.visualizerMode, getCurrentModelId, favorites, updateSetting, remoteModels, regions, toast]);
 
+  // Ref for preset cycling callback (defined later, after handleLoadPreset)
+  const cyclePresetRef = React.useRef<(direction: 'next' | 'previous') => void>(() => {});
+
   // MIDI control
   const midiMappings = useMidiMappings({
     settings,
@@ -176,6 +179,7 @@ export default function Index() {
     onTriggerBounce: handleTriggerBounce,
     onJumpToFavorite: handleJumpToFavorite,
     onRandomizeGradient: gradientAnimation.randomize,
+    onCyclePreset: (direction) => cyclePresetRef.current(direction),
   });
   
   const midi = useMidi(midiMappings.handleMidiMessage);
@@ -274,6 +278,35 @@ export default function Index() {
     storage.deletePreset(id);
     toast({ title: "Preset deleted" });
   }, [storage, toast]);
+
+  // Track currently loaded preset index for cycling
+  const [currentPresetIndex, setCurrentPresetIndex] = useState<number>(-1);
+
+  // Cycle through presets (next/previous with looping)
+  const handleCyclePreset = useCallback((direction: 'next' | 'previous') => {
+    if (storage.presets.length === 0) {
+      toast({ title: "No saved presets" });
+      return;
+    }
+    const total = storage.presets.length;
+    let nextIndex: number;
+    if (currentPresetIndex < 0) {
+      nextIndex = direction === 'next' ? 0 : total - 1;
+    } else {
+      nextIndex = direction === 'next'
+        ? (currentPresetIndex + 1) % total
+        : (currentPresetIndex - 1 + total) % total;
+    }
+    setCurrentPresetIndex(nextIndex);
+    const preset = storage.presets[nextIndex];
+    handleLoadPreset(preset.id);
+    toast({ title: `Preset: ${preset.name}` });
+  }, [storage.presets, currentPresetIndex, handleLoadPreset, toast]);
+
+  // Keep ref in sync for MIDI callback
+  React.useEffect(() => {
+    cyclePresetRef.current = handleCyclePreset;
+  }, [handleCyclePreset]);
 
   const handleStartCapture = useCallback(async () => {
     const source = await screenCapture.addSource();
@@ -382,6 +415,16 @@ export default function Index() {
           e.stopPropagation();
           setIsControlPanelOpen(prev => !prev);
         }
+      }
+      
+      // 'q' and 'w' cycle through saved presets (previous / next)
+      if (e.key === 'q' || e.key === 'Q') {
+        e.preventDefault();
+        handleCyclePreset('previous');
+      }
+      if (e.key === 'w' || e.key === 'W') {
+        e.preventDefault();
+        handleCyclePreset('next');
       }
       
       // 'p' key to toggle Play Mode
@@ -551,7 +594,7 @@ export default function Index() {
     }; 
     window.addEventListener('keydown', h, true); // Use capture phase to intercept before Select components
     return () => window.removeEventListener('keydown', h, true);
-  }, [appState, regions, settings, updateSetting, customModels.models, remoteModels, toast, handleJumpToFavorite, gradientAnimation]);
+  }, [appState, regions, settings, updateSetting, customModels.models, remoteModels, toast, handleJumpToFavorite, gradientAnimation, handleCyclePreset]);
 
   // Apply cursor style globally
   useEffect(() => {
