@@ -260,12 +260,12 @@ export function PresetsSection({
       <Separator className="bg-border" />
 
       {/* Export / Import */}
-      <div className="flex gap-2">
-        <Button variant="secondary" className="flex-1" size="sm" onClick={handleExport}>
+      <div className="flex flex-col gap-2">
+        <Button variant="secondary" className="w-full" size="sm" onClick={handleExport}>
           <Upload className="w-4 h-4 mr-2" />
           Export Settings
         </Button>
-        <Button variant="secondary" className="flex-1" size="sm" onClick={handleImportClick}>
+        <Button variant="secondary" className="w-full" size="sm" onClick={handleImportClick}>
           <FolderDown className="w-4 h-4 mr-2" />
           Import Settings
         </Button>
