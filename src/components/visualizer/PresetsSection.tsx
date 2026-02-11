@@ -177,74 +177,74 @@ export function PresetsSection({
             <Label className="text-xs text-muted-foreground">Saved Presets</Label>
             <span className="text-xs text-muted-foreground">{presets.length}/30</span>
           </div>
-          <ScrollArea className="max-h-60 pr-3">
-            <div className="space-y-1">
-              {presets.map((preset) => (
-                <div
-                  key={preset.id}
-                  className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary/50 hover:bg-secondary transition-colors overflow-hidden"
-                >
-                  <button
-                    onClick={() => onLoadPreset(preset.id)}
-                    className="flex-1 text-left min-w-0"
-                  >
-                    <div className="text-sm font-medium text-foreground truncate">
-                      {preset.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatDate(preset.createdAt)}
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => onLoadPreset(preset.id)}
-                      title="Load preset"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          title="Delete preset"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Preset</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete "{preset.name}"? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => onDeletePreset(preset.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
 
-          {presets.length > 3 && (
-            <p className="text-xs text-muted-foreground">
-              Scroll to see all presets.
-            </p>
-          )}
+          {/* Dedicated scroll container so the main settings panel doesn't capture the wheel */}
+          <div
+            className="rounded-md"
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
+            <ScrollArea type="always" className="h-72 pr-3">
+              <div className="space-y-1">
+                {presets.map((preset) => (
+                  <div
+                    key={preset.id}
+                    className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary/50 hover:bg-secondary transition-colors overflow-hidden"
+                  >
+                    <button
+                      onClick={() => onLoadPreset(preset.id)}
+                      className="flex-1 text-left min-w-0"
+                    >
+                      <div className="text-sm font-medium text-foreground truncate">{preset.name}</div>
+                      <div className="text-xs text-muted-foreground">{formatDate(preset.createdAt)}</div>
+                    </button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => onLoadPreset(preset.id)}
+                        title="Load preset"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            title="Delete preset"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Preset</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{preset.name}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onDeletePreset(preset.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {presets.length > 3 && <p className="text-xs text-muted-foreground">Scroll to see all presets.</p>}
         </div>
       )}
 
@@ -259,15 +259,10 @@ export function PresetsSection({
       {/* Transition Fade toggle */}
       <div className="flex items-center justify-between">
         <Label className="text-muted-foreground text-sm">Transition fade</Label>
-        <Switch
-          checked={presetTransitionFade}
-          onCheckedChange={onTogglePresetTransitionFade}
-        />
+        <Switch checked={presetTransitionFade} onCheckedChange={onTogglePresetTransitionFade} />
       </div>
       <p className="text-xs text-muted-foreground">
-        {presetTransitionFade
-          ? "Presets crossfade smoothly when switched."
-          : "Presets switch instantly."}
+        {presetTransitionFade ? "Presets crossfade smoothly when switched." : "Presets switch instantly."}
       </p>
 
       <Separator className="bg-border" />
