@@ -122,11 +122,12 @@ export default function Index() {
       setRegions(prev => prev.map((r, i) => {
         if (i !== idx) return r;
         if (customModelId !== undefined) {
-          // Applying a custom/remote model
-          return { ...r, customModelId, animationMode3D: undefined };
+          // Applying a custom/remote model - determine source type
+          const modelSource = favorites.getModelType(customModelId) === 'custom' ? 'custom' : 'external';
+          return { ...r, customModelId, animationMode3D: undefined, modelSource };
         } else if (animationMode3D) {
           // Applying a default shape to this specific region
-          return { ...r, customModelId: undefined, animationMode3D: animationMode3D as any };
+          return { ...r, customModelId: undefined, animationMode3D: animationMode3D as any, modelSource: 'default' };
         }
         return r;
       }));
@@ -561,12 +562,12 @@ export default function Index() {
           const nextIndex = (currentIndex + direction + modelIds.length) % modelIds.length;
           const nextModelId = modelIds[nextIndex];
           
-          // Apply the model to all regions
-          setRegions(prev => prev.map(r => ({ ...r, customModelId: nextModelId })));
+          // Apply the model to Region 1 only, preserve other regions
+          setRegions(prev => prev.map((r, i) => i === 0 ? { ...r, customModelId: nextModelId } : r));
         } else if (settings.visualizerMode === '3d') {
           // 3D mode: cycle through 3D animations (default shapes)
-          // Clear any custom model so the default shape shows
-          setRegions(prev => prev.map(r => ({ ...r, customModelId: undefined })));
+          // Clear custom model on Region 1 only so the default shape shows
+          setRegions(prev => prev.map((r, i) => i === 0 ? { ...r, customModelId: undefined } : r));
           const modes = ANIMATION_MODES_3D;
           const currentIndex = modes.indexOf(settings.animationMode3D);
           const nextIndex = (currentIndex + direction + modes.length) % modes.length;

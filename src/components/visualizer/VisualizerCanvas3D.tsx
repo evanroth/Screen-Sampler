@@ -423,7 +423,9 @@ function RegionMesh({
     if (region.customModelId && getCustomGeometry) {
       const customGeo = getCustomGeometry(region.customModelId);
       if (customGeo) {
-        return <primitive object={customGeo} attach="geometry" />;
+        // Clone geometry so each region gets its own instance (avoids R3F conflicts)
+        const cloned = customGeo.clone();
+        return <primitive object={cloned} attach="geometry" />;
       }
       // If modelSource is 'external' or 'custom' but geometry not loaded yet,
       // return null to avoid flashing the default shape
