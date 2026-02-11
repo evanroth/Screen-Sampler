@@ -4,7 +4,7 @@ import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useVisualizerSettings, ANIMATION_MODES, ANIMATION_MODES_3D } from '@/hooks/useVisualizerSettings';
 import { useRegionRandomizer } from '@/hooks/useRegionRandomizer';
 import { usePlayMode } from '@/hooks/usePlayMode';
-import { useSettingsStorage, SavedRegionSettings } from '@/hooks/useSettingsStorage';
+import { useSettingsStorage, SavedRegionSettings, SavedPreset } from '@/hooks/useSettingsStorage';
 import { useCustomModels } from '@/hooks/useCustomModels';
 import { useRemoteModels } from '@/hooks/useRemoteModels';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -354,6 +354,10 @@ export default function Index() {
       extractRegionSettings(regions),
       midiMappings.getMappings(),
     );
+    if (!preset) {
+      toast({ title: 'Preset limit reached', description: `Maximum of 30 presets allowed. Delete one to save a new one.`, variant: 'destructive' });
+      return null as unknown as SavedPreset;
+    }
     toast({ title: `Saved "${preset.name}"` });
     return preset;
   }, [storage, settings, favorites, regions, extractRegionSettings, midiMappings, toast]);
