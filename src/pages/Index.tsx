@@ -265,13 +265,16 @@ export default function Index() {
     if (!presetData) return;
 
     if (settings.presetTransitionFade) {
-      // Fade out, apply, fade in
+      // Fade out over 400ms, apply settings at peak, then fade back in
       setPresetFadeOpacity(1);
-      setTimeout(() => {
+      const applyTimer = setTimeout(() => {
         applyPresetData(presetData);
         toast({ title: "Preset loaded" });
-        setTimeout(() => setPresetFadeOpacity(0), 50);
-      }, 400);
+        // Small delay so new settings render behind the overlay before fading in
+        const fadeInTimer = setTimeout(() => setPresetFadeOpacity(0), 100);
+        return () => clearTimeout(fadeInTimer);
+      }, 450);
+      return () => clearTimeout(applyTimer);
     } else {
       applyPresetData(presetData);
       toast({ title: "Preset loaded" });
@@ -684,16 +687,15 @@ export default function Index() {
           />
         )
       )}
-      {/* Preset transition fade overlay */}
-      {presetFadeOpacity > 0 && (
-        <div
-          className="fixed inset-0 bg-background pointer-events-none z-40"
-          style={{
-            opacity: presetFadeOpacity,
-            transition: 'opacity 400ms ease-in-out',
-          }}
-        />
-      )}
+      {/* Preset transition fade overlay — always mounted for CSS transitions */}
+      <div
+        className="fixed inset-0 bg-background pointer-events-none z-40"
+        style={{
+          opacity: presetFadeOpacity,
+          transition: 'opacity 400ms ease-in-out',
+          visibility: presetFadeOpacity === 0 ? 'hidden' : 'visible',
+        }}
+      />
       {(appState === 'ready' || appState === 'visualizing') && (
         <ControlPanel 
           isOpen={isControlPanelOpen} 
