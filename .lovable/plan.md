@@ -1,54 +1,37 @@
 
 
-## Save More Settings in Presets and Session Restore
+## Remove Global "Default 3D Shape" and Rename Per-Region Section
 
-### What's Currently Saved
-- All `VisualizerSettings` (animation modes, background, effects, cursor, etc.)
-- Favorited model IDs
+### Overview
+This change removes the global "Default 3D Shape" dropdown (which currently sets a single shape for all regions) and makes all 3D shape control happen exclusively through the per-region settings. Every new region will default to Mobius. The per-region section will be renamed from "Per-Region 3D Modes" to "3D Region Settings".
 
-### What's NOT Currently Saved (But Could Be)
-Per-region visual settings that persist as long as the capture sources remain active:
-- `animationMode3D` (per-region 3D shape override)
-- `animationMode2D` (per-region 2D animation override)
-- `customModelId` / `modelSource` (assigned custom or external model)
-- `scale3D`, `position3D` (3D transform overrides)
-- `scale2D`, `position2D` (2D transform overrides)
-- `transparentColor`, `transparentThreshold` (color keying)
-- `glowEnabled`, `glowColor`, `glowAmount` (glow effects)
-- `fullscreenBackground` (region used as background)
-- `randomizeEnabled`, `randomizeInterval` (auto-randomize per region)
-- `transitionType` (transition style)
-- `visible` (region visibility)
-- `autoRotate3D` (per-region auto-rotation)
-- MIDI mappings
+### Changes
 
-### What Can't Be Saved
-- Region geometry (`x`, `y`, `width`, `height`) and `sourceId` -- these are tied to the specific screen capture session and must be re-selected each time for security reasons (browsers require fresh user permission)
+**1. `src/components/visualizer/ControlPanel.tsx`**
+- Remove the "Default 3D Shape" dropdown, its favorite toggle button, and the random mode interval slider (lines ~983-1061)
+- Rename "Per-Region 3D Modes" label to "3D Region Settings"
+- Remove the description text referencing "Default" and the global setting
+- Update the per-region "default" source model dropdown: instead of falling back to `settings.animationMode3D`, fall back to `'mobius3D'`
+- When switching source to "default", set `animationMode3D` to `'mobius3D'` instead of `settings.animationMode3D`
 
-### How It Will Work
+**2. `src/components/visualizer/VisualizerCanvas3D.tsx`**
+- Change the fallback in `RegionMesh`: instead of falling back to `defaultMode` (which came from the global setting), fall back to `'mobius3D'`
+- The `defaultMode` prop and random-mode-switching logic can remain for backward compatibility but will effectively be unused since every region will have its own `animationMode3D` set
 
-When saving a preset or auto-saving the session, the region **visual settings** (everything listed above except geometry/sourceId) will be saved alongside the regions, indexed by region order (Region 1, Region 2, etc.). When restoring:
-- If the same number of regions exist, the saved visual settings are applied to each region by index
-- If fewer regions exist, extra saved settings are ignored
-- Region geometry stays as the user configured it -- only the visual/effect settings are restored
+**3. `src/hooks/useVisualizerSettings.ts`**
+- Change the default value of `animationMode3D` from `'mobius3D'` (already Mobius, so no change needed -- it's already `'mobius3D'`)
 
-MIDI mappings will also be saved in presets.
+**4. `src/hooks/useScreenCapture.ts` (or wherever `CaptureRegion` defaults are set)**
+- Ensure new regions initialize with `animationMode3D: 'mobius3D'` and `modelSource: 'default'` so they always have an explicit shape
 
-### Technical Changes
+**5. `src/components/visualizer/ModelLibrarySection.tsx`**
+- Keep the "Default 3D Shapes" section in the Library as-is (it's useful for browsing/favoriting shapes and loading them into Region 1) -- this is the Library browser, not the global setting
 
-**1. `src/hooks/useSettingsStorage.ts`**
-- Define a `SavedRegionSettings` interface containing all the visual/effect properties of `CaptureRegion` (excluding `id`, `sourceId`, `x`, `y`, `width`, `height`, `bounceTime`, `fadeOpacity`, `morphProgress`, `transitionFrozen`, `midiScale3D`, `midiRotationY`)
-- Update `SavedPreset` to include `regionSettings?: SavedRegionSettings[]` and `midiMappings?: any[]`
-- Update `savePreset` to accept region settings and MIDI mappings
-- Update `saveLastSession` / `loadLastSession` to include region settings and MIDI mappings
+**6. `src/pages/Index.tsx`**
+- The `onSelectDefaultShape` handler in the Library already applies shapes to Region 1 specifically, so it remains functional and correct
 
-**2. `src/pages/Index.tsx`**
-- When saving a preset: extract visual settings from current `regions` array and pass them to `savePreset`
-- When loading a preset: apply saved region settings back onto existing regions by index
-- When auto-saving session: include region visual settings and MIDI mappings
-- When auto-restoring session: apply saved region settings after regions are created
-
-**3. `src/hooks/useMidiMappings.ts`**
-- Expose a `getMappings()` function to retrieve current MIDI mappings for saving
-- Expose a `setMappingsFromPreset()` function to restore saved MIDI mappings
-
+### What the User Will See
+- The settings panel's 3D section will no longer have a global shape picker at the top
+- Instead, it will show "3D Region Settings" with per-region controls immediately
+- All new regions will start as Mobius
+- The Library section still allows browsing and clicking shapes to load into Region 1
