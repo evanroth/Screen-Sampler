@@ -26,6 +26,7 @@ export default function Index() {
   const [isRegionConfirmed, setIsRegionConfirmed] = useState(false);
   const [isControlPanelOpen, setIsControlPanelOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [presetFadeOpacity, setPresetFadeOpacity] = useState(0); // 0 = transparent, 1 = black overlay
   const { toast } = useToast();
   const screenCapture = useScreenCapture();
   const audioAnalyzer = useAudioAnalyzer();
@@ -245,22 +246,37 @@ export default function Index() {
   }, [regions.length, lastSessionData]);
 
   // Preset handlers
+  const applyPresetData = useCallback((presetData: ReturnType<typeof storage.loadPreset>) => {
+    if (!presetData) return;
+    loadSettings(presetData.settings);
+    if (presetData.favorites) {
+      favorites.setFavoritesFromPreset(presetData.favorites);
+    }
+    if (presetData.regionSettings && presetData.regionSettings.length > 0) {
+      applyRegionSettings(presetData.regionSettings);
+    }
+    if (presetData.midiMappings && presetData.midiMappings.length > 0) {
+      midiMappings.setMappingsFromPreset(presetData.midiMappings);
+    }
+  }, [loadSettings, favorites, applyRegionSettings, midiMappings]);
+
   const handleLoadPreset = useCallback((id: string) => {
     const presetData = storage.loadPreset(id);
-    if (presetData) {
-      loadSettings(presetData.settings);
-      if (presetData.favorites) {
-        favorites.setFavoritesFromPreset(presetData.favorites);
-      }
-      if (presetData.regionSettings && presetData.regionSettings.length > 0) {
-        applyRegionSettings(presetData.regionSettings);
-      }
-      if (presetData.midiMappings && presetData.midiMappings.length > 0) {
-        midiMappings.setMappingsFromPreset(presetData.midiMappings);
-      }
+    if (!presetData) return;
+
+    if (settings.presetTransitionFade) {
+      // Fade out, apply, fade in
+      setPresetFadeOpacity(1);
+      setTimeout(() => {
+        applyPresetData(presetData);
+        toast({ title: "Preset loaded" });
+        setTimeout(() => setPresetFadeOpacity(0), 50);
+      }, 400);
+    } else {
+      applyPresetData(presetData);
       toast({ title: "Preset loaded" });
     }
-  }, [storage, loadSettings, favorites, applyRegionSettings, midiMappings, toast]);
+  }, [storage, settings.presetTransitionFade, applyPresetData, toast]);
 
   const handleSavePreset = useCallback((name: string) => {
     const preset = storage.savePreset(
@@ -667,6 +683,16 @@ export default function Index() {
             getVideoElement={screenCapture.getVideoElement}
           />
         )
+      )}
+      {/* Preset transition fade overlay */}
+      {presetFadeOpacity > 0 && (
+        <div
+          className="fixed inset-0 bg-background pointer-events-none z-40"
+          style={{
+            opacity: presetFadeOpacity,
+            transition: 'opacity 400ms ease-in-out',
+          }}
+        />
       )}
       {(appState === 'ready' || appState === 'visualizing') && (
         <ControlPanel 

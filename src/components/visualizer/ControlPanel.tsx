@@ -1574,10 +1574,12 @@ export function ControlPanel({
           <PresetsSection
             presets={presets}
             autoRestore={autoRestore}
+            presetTransitionFade={settings.presetTransitionFade}
             onSavePreset={onSavePreset}
             onLoadPreset={onLoadPreset}
             onDeletePreset={onDeletePreset}
             onToggleAutoRestore={onToggleAutoRestore}
+            onTogglePresetTransitionFade={(enabled) => onUpdateSetting('presetTransitionFade', enabled)}
             currentSettings={settings}
             currentFavorites={currentFavorites}
             currentMidiMappings={currentMidiMappings}

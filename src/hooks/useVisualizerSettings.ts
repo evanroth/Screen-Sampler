@@ -134,6 +134,7 @@ export interface VisualizerSettings {
   midiRotationSensitivity: number; // 0.01 to 0.2, controls DJ platter rotation speed
   centerCamera: boolean; // When true, camera auto-centers on models. When false, full manual control.
   cursorStyle: CursorStyle; // Mouse cursor appearance: normal, dot, or none
+  presetTransitionFade: boolean; // When true, switching presets fades the canvas
 }
 
 const defaultSettings: VisualizerSettings = {
@@ -173,6 +174,7 @@ const defaultSettings: VisualizerSettings = {
   midiRotationSensitivity: 0.02,
   centerCamera: true,
   cursorStyle: 'dot',
+  presetTransitionFade: true,
 };
 
 export function useVisualizerSettings(initialSettings?: Partial<VisualizerSettings>) {
