@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useScreenCapture, CaptureRegion } from '@/hooks/useScreenCapture';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
-import { useVisualizerSettings, ANIMATION_MODES, ANIMATION_MODES_3D } from '@/hooks/useVisualizerSettings';
+import { useVisualizerSettings, ANIMATION_MODES, ANIMATION_MODES_3D, type VisualizerSettings } from '@/hooks/useVisualizerSettings';
 import { useRegionRandomizer } from '@/hooks/useRegionRandomizer';
 import { usePlayMode } from '@/hooks/usePlayMode';
 import { useSettingsStorage, SavedRegionSettings, SavedPreset } from '@/hooks/useSettingsStorage';
@@ -304,22 +304,32 @@ export default function Index() {
     }
   }, [regions.length, lastSessionData]);
 
+  // Keys that are global preferences — preserved when switching presets
+  const GLOBAL_SETTING_KEYS: (keyof VisualizerSettings)[] = [
+    'muteNotifications',
+    'bounceStrength',
+    'movementSpeed',
+    'textureQuality',
+    'textureSmoothing',
+    'presetTransitionFade',
+    'cursorStyle',
+    'midiRotationSensitivity',
+  ];
+
   // Preset handlers
   const applyPresetData = useCallback((presetData: ReturnType<typeof storage.loadPreset>) => {
     if (!presetData) return;
-    // Preserve presetTransitionFade — it's a UI preference, not a preset setting
-    const currentFadePref = settings.presetTransitionFade;
-    loadSettings({ ...presetData.settings, presetTransitionFade: currentFadePref });
-    if (presetData.favorites) {
-      favorites.setFavoritesFromPreset(presetData.favorites);
+    // Merge incoming preset settings but preserve global preference keys
+    const mergedSettings: any = { ...presetData.settings };
+    for (const key of GLOBAL_SETTING_KEYS) {
+      mergedSettings[key] = settings[key as keyof typeof settings];
     }
+    loadSettings(mergedSettings as VisualizerSettings);
+    // Favorites and MIDI mappings are global — do NOT overwrite from preset
     if (presetData.regionSettings && presetData.regionSettings.length > 0) {
       applyRegionSettings(presetData.regionSettings);
     }
-    if (presetData.midiMappings && presetData.midiMappings.length > 0) {
-      midiMappings.setMappingsFromPreset(presetData.midiMappings);
-    }
-  }, [loadSettings, favorites, applyRegionSettings, midiMappings, settings.presetTransitionFade]);
+  }, [loadSettings, applyRegionSettings, settings]);
 
   const handleLoadPreset = useCallback((id: string) => {
     const presetData = storage.loadPreset(id);
