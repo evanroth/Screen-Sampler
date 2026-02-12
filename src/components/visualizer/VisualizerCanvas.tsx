@@ -198,8 +198,10 @@ export function VisualizerCanvas({
         offscreenCanvasesRef.current.set(region.id, offscreen);
       }
       
-      offscreen.width = regionW;
-      offscreen.height = regionH;
+      if (offscreen.width !== regionW || offscreen.height !== regionH) {
+        offscreen.width = regionW;
+        offscreen.height = regionH;
+      }
       
       const offCtx = offscreen.getContext('2d');
       if (!offCtx) return panel;
@@ -213,15 +215,10 @@ export function VisualizerCanvas({
       // Per-region transparent color processing with pooled ImageData
       if (region.transparentColor) {
         // Reuse ImageData to avoid large per-frame allocation
-        let pooled = imageDataPoolRef.current.get(region.id);
-        if (!pooled || pooled.width !== regionW || pooled.height !== regionH) {
-          pooled = offCtx.createImageData(regionW, regionH);
-          imageDataPoolRef.current.set(region.id, pooled);
-        }
-        const freshData = offCtx.getImageData(0, 0, regionW, regionH);
-        pooled.data.set(freshData.data);
+        const imageData = offCtx.getImageData(0, 0, regionW, regionH);
+        imageDataPoolRef.current.set(region.id, imageData);
         
-        const data = pooled.data;
+        const data = imageData.data;
         const threshold = region.transparentThreshold ?? 30;
         
         const hex = region.transparentColor.replace('#', '');
@@ -246,7 +243,7 @@ export function VisualizerCanvas({
           }
         }
         
-        offCtx.putImageData(pooled, 0, 0);
+        offCtx.putImageData(imageData, 0, 0);
       }
 
       // Handle fullscreen background mode

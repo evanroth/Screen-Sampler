@@ -166,11 +166,7 @@ function RegionMesh({
       // Per-region transparent color processing with pooled ImageData
       if (region.transparentColor) {
         // Reuse ImageData to avoid massive per-frame allocation (up to 16MB at 2048x2048)
-        if (!imageDataRef.current || imageDataRef.current.width !== quality || imageDataRef.current.height !== quality) {
-          imageDataRef.current = ctx.createImageData(quality, quality);
-        }
-        const freshData = ctx.getImageData(0, 0, quality, quality);
-        imageDataRef.current.data.set(freshData.data);
+        imageDataRef.current = ctx.getImageData(0, 0, quality, quality);
         
         const data = imageDataRef.current.data;
         const threshold = region.transparentThreshold ?? 30;
@@ -611,13 +607,7 @@ function FullscreenBackgroundMesh({
       
       // Apply transparent color processing with pooled ImageData
       if (region.transparentColor) {
-        // Reuse ImageData object to avoid 16MB allocation per frame
-        if (!imageDataRef.current || imageDataRef.current.width !== quality || imageDataRef.current.height !== quality) {
-          imageDataRef.current = ctx.createImageData(quality, quality);
-        }
-        // Copy current canvas pixels into pooled ImageData
-        const freshData = ctx.getImageData(0, 0, quality, quality);
-        imageDataRef.current.data.set(freshData.data);
+        imageDataRef.current = ctx.getImageData(0, 0, quality, quality);
         
         const data = imageDataRef.current.data;
         const threshold = region.transparentThreshold ?? 30;

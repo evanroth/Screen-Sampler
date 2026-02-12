@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useScreenCapture, CaptureRegion } from '@/hooks/useScreenCapture';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useVisualizerSettings, ANIMATION_MODES, ANIMATION_MODES_3D, type VisualizerSettings } from '@/hooks/useVisualizerSettings';
@@ -19,6 +19,18 @@ import { ControlPanel } from '@/components/visualizer/ControlPanel';
 import { useToast } from '@/hooks/use-toast';
 
 type AppState = 'onboarding' | 'selecting' | 'ready' | 'visualizing';
+
+// Keys that are global preferences — preserved when switching presets
+const GLOBAL_SETTING_KEYS: (keyof VisualizerSettings)[] = [
+  'muteNotifications',
+  'bounceStrength',
+  'movementSpeed',
+  'textureQuality',
+  'textureSmoothing',
+  'presetTransitionFade',
+  'cursorStyle',
+  'midiRotationSensitivity',
+];
 
 export default function Index() {
   const [appState, setAppState] = useState<AppState>('onboarding');
@@ -304,32 +316,25 @@ export default function Index() {
     }
   }, [regions.length, lastSessionData]);
 
-  // Keys that are global preferences — preserved when switching presets
-  const GLOBAL_SETTING_KEYS: (keyof VisualizerSettings)[] = [
-    'muteNotifications',
-    'bounceStrength',
-    'movementSpeed',
-    'textureQuality',
-    'textureSmoothing',
-    'presetTransitionFade',
-    'cursorStyle',
-    'midiRotationSensitivity',
-  ];
+  // Ref to always hold latest settings — avoids putting `settings` in callback deps
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
   // Preset handlers
   const applyPresetData = useCallback((presetData: ReturnType<typeof storage.loadPreset>) => {
     if (!presetData) return;
     // Merge incoming preset settings but preserve global preference keys
     const mergedSettings: any = { ...presetData.settings };
+    const currentSettings = settingsRef.current;
     for (const key of GLOBAL_SETTING_KEYS) {
-      mergedSettings[key] = settings[key as keyof typeof settings];
+      mergedSettings[key] = currentSettings[key as keyof typeof currentSettings];
     }
     loadSettings(mergedSettings as VisualizerSettings);
     // Favorites and MIDI mappings are global — do NOT overwrite from preset
     if (presetData.regionSettings && presetData.regionSettings.length > 0) {
       applyRegionSettings(presetData.regionSettings);
     }
-  }, [loadSettings, applyRegionSettings, settings]);
+  }, [loadSettings, applyRegionSettings]);
 
   const handleLoadPreset = useCallback((id: string) => {
     const presetData = storage.loadPreset(id);
