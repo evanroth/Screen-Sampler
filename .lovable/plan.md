@@ -1,48 +1,102 @@
 
 
-# Fix: Preserve Region Source Assignments Across Presets
+# Redefine Global vs Preset Settings
 
 ## Problem
+Currently, loading a preset overwrites ALL settings including ones that should remain constant across preset switches (like MIDI mappings, favorites, mute notifications, texture quality, etc.). This needs to be split into two categories.
 
-When switching between presets that have regions assigned to different screen capture sources, regions jump to the wrong source. This happens because `sourceId` (the link between a region and its capture source) is neither saved in presets nor restored when loading them.
+## Categorization
 
-Currently:
-- Existing regions keep whatever source they happen to have at load time
-- New regions created during preset loading all inherit Region 1's source
+### Global Settings (preserved when switching presets)
+These stay constant regardless of which preset is loaded:
 
-## Solution
+| Setting | Key(s) in VisualizerSettings |
+|---|---|
+| MIDI Mappings | Stored separately (midiMappings) |
+| Favorites | Stored separately (favorites array) |
+| Mute Notifications | `muteNotifications` |
+| Bounce Parameters | `bounceStrength`, `movementSpeed` |
+| Texture Settings | `textureQuality`, `textureSmoothing` |
+| Transition Fade | `presetTransitionFade` (already preserved) |
+| Remember Last Session | `autoRestore` (already separate) |
+| Mouse Icon | `cursorStyle` |
+| MIDI Rotation Sensitivity | `midiRotationSensitivity` |
 
-Save and restore `sourceId` as part of the region settings in each preset. This makes presets fully self-contained snapshots that remember which source each region was assigned to.
+### Preset Settings (change when loading a preset)
+| Setting | Key(s) |
+|---|---|
+| Visualizer Mode | `visualizerMode` |
+| Background | `backgroundStyle`, `backgroundColor`, `gradientSettings` |
+| Region Settings | Per-region data (geometry, models, effects, sources) |
+| Center Camera | `centerCamera` |
+| Auto-Rotate Camera | `autoRotateCamera`, `autoRotateCameraSpeed` |
+| Individual Rotation | `individualRotation`, `individualRotationSpeed` |
+| Object Scale | `panelScaleX`, `panelScaleY`, `panelScaleLinked` |
+| Animation Modes | `animationMode`, `animationMode3D` |
+| Effects | `opacityVariation`, `blurIntensity`, `tileEffect`, `enableRotation` |
+| Trails | `trailAmount`, `enableTrails` |
+| Random Mode | `randomModeInterval` |
+| Region Spacing | `regionSpacing3D` |
+| Play Mode | `playMode` |
 
-Since source IDs are session-specific (screen capture permissions reset between sessions), the restore logic needs a fallback: if a saved `sourceId` doesn't match any currently active source, the region falls back to the first available source.
+### Both categories saved in "Remember Last Session" and "Export Settings"
+No change needed here -- the existing last-session save and export already capture everything (all VisualizerSettings + favorites + MIDI mappings + region settings). This remains the same.
 
 ## Technical Changes
 
-### 1. Add `sourceId` to `SavedRegionSettings` interface
+### 1. Define global setting keys as a constant
 
-**File: `src/hooks/useSettingsStorage.ts`**
+**File: `src/pages/Index.tsx`**
 
-Add `sourceId?: string` to the `SavedRegionSettings` interface alongside the existing geometry fields.
-
-### 2. Save `sourceId` when extracting region settings
-
-**File: `src/pages/Index.tsx`** (`extractRegionSettings`)
-
-Include `sourceId: r.sourceId` in the mapped output so it gets persisted with each preset.
-
-### 3. Restore `sourceId` when applying region settings
-
-**File: `src/pages/Index.tsx`** (`applyRegionSettings`)
-
-- When updating existing regions: restore the saved `sourceId` if it exists and matches a currently active source; otherwise keep the region's current source.
-- When creating new regions: use the saved `sourceId` with the same active-source fallback instead of blindly using Region 1's source.
-
-The fallback logic will look like:
+Add a constant listing the VisualizerSettings keys that are global. When loading a preset, these keys will be excluded from the incoming settings and the current values preserved.
 
 ```text
-savedSourceId exists AND is in active sources? -> use it
-otherwise -> use the region's current sourceId (existing) or first available source (new)
+const GLOBAL_SETTING_KEYS = [
+  'muteNotifications',
+  'bounceStrength',
+  'movementSpeed',
+  'textureQuality',
+  'textureSmoothing',
+  'presetTransitionFade',
+  'cursorStyle',
+  'midiRotationSensitivity',
+] as const;
 ```
 
-This ensures presets work correctly within a session (sources stay mapped) while gracefully degrading across sessions (sources fall back to whatever is available).
+### 2. Update `applyPresetData` to preserve global settings
+
+**File: `src/pages/Index.tsx`**
+
+Currently `applyPresetData` calls `loadSettings(presetData.settings)` which overwrites everything. Change it to:
+- Take the incoming preset settings
+- For each global key, replace with the current value instead of the preset value
+- Stop overwriting favorites and MIDI mappings from preset data
+
+```text
+// Pseudocode
+const mergedSettings = { ...presetData.settings };
+for (const key of GLOBAL_SETTING_KEYS) {
+  mergedSettings[key] = settings[key]; // keep current global value
+}
+loadSettings(mergedSettings);
+
+// Do NOT call favorites.setFavoritesFromPreset()
+// Do NOT call midiMappings.setMappingsFromPreset()
+```
+
+### 3. Keep presets saving everything (for export compatibility)
+
+**File: `src/pages/Index.tsx`** (`handleSavePreset`)
+
+No change to what gets saved. Presets still store all settings, favorites, and MIDI mappings so that export/import files are complete snapshots. The filtering only happens at load time.
+
+### 4. Update import to still restore everything
+
+**File: `src/pages/Index.tsx`** (`handleImportSettings`)
+
+Import continues to restore ALL settings (including global ones, favorites, and MIDI mappings) since importing is an explicit full-state restore, different from switching presets.
+
+### 5. Camera position note
+
+The 3D camera position is auto-computed from `regionSpacing3D`, `panelScaleX`, and visible region count. Since these are all preset settings, the camera will restore to the correct position when switching presets. The orbit angle (manual drag position) is transient and managed by OrbitControls -- saving/restoring the exact drag angle is not practical since it resets with auto-rotate anyway.
 
