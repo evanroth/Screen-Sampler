@@ -135,7 +135,7 @@ export function PresetsSection({
     <div className="space-y-4">
       <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
         <BookmarkCheck className="w-4 h-4" />
-        Presets
+        Lock States
       </h3>
 
       {/* Save Current Settings */}
@@ -143,19 +143,19 @@ export function PresetsSection({
         <DialogTrigger asChild>
           <Button variant="secondary" className="w-full" size="sm">
             <Save className="w-4 h-4 mr-2" />
-            Save Current as Preset
+            Save Current as Lock State
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Save Preset</DialogTitle>
+            <DialogTitle>Save Lock State</DialogTitle>
             <DialogDescription>
-              Give your preset a name to save your current visualizer settings.
+              Give your lock state a name to save your current visualizer settings.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input
-              placeholder="My Awesome Preset"
+              placeholder="My Awesome Lock State"
               value={presetName}
               onChange={(e) => setPresetName(e.target.value)}
               onKeyDown={(e) => {
@@ -169,7 +169,7 @@ export function PresetsSection({
           </div>
           <DialogFooter>
             <Button onClick={handleSavePreset} disabled={!presetName.trim()}>
-              Save Preset
+              Save Lock State
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -179,7 +179,7 @@ export function PresetsSection({
       {presets.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-muted-foreground">Saved Presets</Label>
+            <Label className="text-xs text-muted-foreground">Saved Lock States</Label>
             <span className="text-xs text-muted-foreground">{presets.length}/30</span>
           </div>
 
@@ -209,7 +209,7 @@ export function PresetsSection({
                         size="icon"
                         className="h-7 w-7"
                         onClick={() => onLoadPreset(preset.id)}
-                        title="Load preset"
+                        title="Load lock state"
                       >
                         <Download className="w-3.5 h-3.5" />
                       </Button>
@@ -219,14 +219,14 @@ export function PresetsSection({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            title="Delete preset"
+                            title="Delete lock state"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Preset</AlertDialogTitle>
+                            <AlertDialogTitle>Delete Lock State</AlertDialogTitle>
                             <AlertDialogDescription>
                               Are you sure you want to delete "{preset.name}"? This action cannot be undone.
                             </AlertDialogDescription>
@@ -249,13 +249,13 @@ export function PresetsSection({
             </ScrollArea>
           </div>
 
-          {presets.length > 3 && <p className="text-xs text-muted-foreground">Scroll to see all presets.</p>}
+          {presets.length > 3 && <p className="text-xs text-muted-foreground">Scroll to see all lock states.</p>}
         </div>
       )}
 
       {presets.length === 0 && (
         <p className="text-xs text-muted-foreground text-center py-2">
-          No saved presets yet. Save your current settings to create one.
+          No saved lock states yet. Save your current settings to create one.
         </p>
       )}
 
@@ -267,7 +267,7 @@ export function PresetsSection({
         <Switch checked={presetTransitionFade} onCheckedChange={onTogglePresetTransitionFade} />
       </div>
       <p className="text-xs text-muted-foreground">
-        {presetTransitionFade ? "Presets crossfade smoothly when switched." : "Presets switch instantly."}
+        {presetTransitionFade ? "Lock states crossfade smoothly when switched." : "Lock states switch instantly."}
       </p>
 
       <Separator className="bg-border" />

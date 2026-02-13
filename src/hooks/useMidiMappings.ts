@@ -139,9 +139,9 @@ export const MAPPABLE_CONTROLS: MappableControl[] = [
   { id: 'region9Bounce', name: 'Region 9 Bounce', targetType: 'regionBounce', targetKey: '8', preferredMessageType: 'noteon' },
   { id: 'allRegionsBounce', name: 'All Regions Bounce', targetType: 'regionBounce', targetKey: 'all', preferredMessageType: 'noteon' },
   
-  // Preset navigation - global (Note On - cycles through saved presets)
-  { id: 'nextPreset', name: 'Next Preset', targetType: 'presetNavigation', targetKey: 'next', preferredMessageType: 'noteon' },
-  { id: 'previousPreset', name: 'Previous Preset', targetType: 'presetNavigation', targetKey: 'previous', preferredMessageType: 'noteon' },
+  // Lock State navigation - global (Note On - cycles through saved lock states)
+  { id: 'nextPreset', name: 'Next Lock State', targetType: 'presetNavigation', targetKey: 'next', preferredMessageType: 'noteon' },
+  { id: 'previousPreset', name: 'Previous Lock State', targetType: 'presetNavigation', targetKey: 'previous', preferredMessageType: 'noteon' },
   
   // Favorite navigation - global (Note On - triggers jump to next/previous favorite for all regions)
   { id: 'jumpToNextFavorite', name: 'Jump to Next Favorite', targetType: 'favoriteNavigation', targetKey: 'next', preferredMessageType: 'noteon' },
