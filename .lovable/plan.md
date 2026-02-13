@@ -1,109 +1,132 @@
 
 
-# Fix: App Crash After ~10 Minutes of Continuous Use
+# Fix: Persistent Crash After ~10 Minutes of Continuous Use
 
 ## Root Cause Analysis
 
-After thorough investigation, the crash is caused by **cumulative memory pressure from per-frame allocations** that overwhelm the browser's garbage collector over time. There are three distinct issues working together:
+The previous round of fixes addressed offscreen canvas reallocation and ImageData pooling, but missed three critical sources of per-frame GC pressure that compound over time and eventually overwhelm the browser.
 
-### Issue 1: Offscreen Canvas Backing Store Reallocated Every Frame (Critical)
-**File:** `src/components/visualizer/VisualizerCanvas.tsx`, lines 200-201
+### Issue 1: `render` callback in VisualizerCanvas.tsx is recreated every single frame (Critical)
+
+The `render` function is wrapped in `useCallback` with dependencies `[regions, settings, audioLevel, isActive, getVideoElement]`. Both `audioLevel` and `settings` change on every animation frame (audio analyzer updates audioLevel ~60fps; gradient animations update settings continuously). This means:
+
+- `render` is recreated 60 times/second
+- The `useEffect` that starts the animation loop (depends on `render`) re-runs 60 times/second
+- Each re-run: cancel old `requestAnimationFrame` + allocate new closure + schedule new `requestAnimationFrame`
+- Over 10 minutes: ~36,000 closure allocations + effect teardown/setup cycles
+
+### Issue 2: Keyboard event listener in Index.tsx is re-attached every frame (Critical)
+
+The keydown handler effect (line 522) depends on `settings` (the entire settings object) and `regions`. Since `settings` changes every frame during gradient animations, the event listener is constantly removed and re-added:
 
 ```text
-offscreen.width = regionW;
-offscreen.height = regionH;
+window.removeEventListener('keydown', oldHandler)
+window.addEventListener('keydown', newHandler)
 ```
 
-Setting a canvas's `width` or `height` **destroys and reallocates its entire backing buffer** -- even if the dimensions haven't changed. At 60fps with 1920x1080 video, this allocates and discards ~8MB of pixel data per region per frame. Over 10 minutes that's ~2.8 TB of transient allocations for the GC to handle.
+This creates ~36,000 listener attach/detach cycles over 10 minutes, each generating garbage from the old closure.
 
-### Issue 2: `getImageData()` Creates New ArrayBuffer Every Frame (Critical)
-**Files:** `VisualizerCanvas.tsx` line 221, `VisualizerCanvas3D.tsx` lines 173 and 619
+### Issue 3: `toDataURL` snapshots during rapid lock state cycling (Moderate)
 
-When transparent color keying is active, `ctx.getImageData()` is called every frame. Despite the code pooling the destination ImageData, `getImageData()` always returns a **new** ImageData with a fresh ArrayBuffer. At texture quality 2048, each call allocates 16MB that is immediately discarded after copying.
-
-### Issue 3: Cascading Callback Recreation From `settings` Dependency (Moderate)
-**File:** `src/pages/Index.tsx`, line 332
-
-The recent change made `applyPresetData` depend on the entire `settings` object. Since `settings` changes frequently (gradient animation updates it every frame during transitions, audio level triggers bounces), this causes a cascade:
-
-`settings` changes -> `applyPresetData` recreates -> `handleLoadPreset` recreates -> `handleCyclePreset` recreates -> keyboard event listener effect re-runs (removes + re-adds listener)
-
-This isn't a memory leak per se, but adds significant GC pressure from constant closure and event listener churn.
+When switching lock states with "Transition Fade" enabled, `canvasEl.toDataURL('image/png')` generates a large base64 data URL (several MB for a 1080p canvas). If the user cycles lock states rapidly (keyboard q/w), multiple snapshots can accumulate before the previous transition completes, because `presetSnapshotUrl` state is overwritten but the old `<img>` element's transition may still be in progress.
 
 ## Fix Plan
 
-### Fix 1: Only resize offscreen canvas when dimensions actually change
+### Fix 1: Use refs for frequently-changing values in VisualizerCanvas.tsx render loop
+
+Store `regions`, `settings`, `audioLevel`, and `getVideoElement` in refs. The `render` callback reads from refs instead of closures, so its dependency array becomes `[isActive]` only. The animation loop starts once and runs continuously without being torn down.
+
 **File:** `src/components/visualizer/VisualizerCanvas.tsx`
 
-Add a guard before setting dimensions:
+- Add refs: `regionsRef`, `settingsRef`, `audioLevelRef`, `getVideoElementRef`
+- Keep refs synced with props at the top of the component
+- Change `render` to read from refs instead of closure variables
+- Simplify dependency array to `[isActive]`
 
-```text
-// Before (every frame):
-offscreen.width = regionW;
-offscreen.height = regionH;
+### Fix 2: Use refs for frequently-changing values in Index.tsx keyboard handler
 
-// After (only when changed):
-if (offscreen.width !== regionW || offscreen.height !== regionH) {
-  offscreen.width = regionW;
-  offscreen.height = regionH;
-}
-```
+Store `settings`, `regions`, and callback functions in refs so the keyboard handler effect only runs once (on mount) and reads current values from refs.
 
-### Fix 2: Eliminate redundant `getImageData` allocation
-**Files:** `VisualizerCanvas.tsx`, `VisualizerCanvas3D.tsx` (RegionMesh + FullscreenBackgroundMesh)
-
-Instead of calling `getImageData()` (which allocates a new ArrayBuffer) and then copying into a pooled ImageData, read directly into the pooled ImageData using a single `getImageData` call and reuse the result:
-
-```text
-// Before (allocates new ArrayBuffer every frame):
-const freshData = ctx.getImageData(0, 0, quality, quality);
-imageDataRef.current.data.set(freshData.data);  // copy then discard
-
-// After (reuse the same ImageData object):
-// Just call getImageData and store the result directly as the pool entry.
-// The key insight: we can skip the copy entirely by just reassigning the ref.
-imageDataRef.current = ctx.getImageData(0, 0, quality, quality);
-```
-
-This still allocates per frame but eliminates the redundant copy step and the double-allocation pattern. For a true zero-alloc path, we can use `Uint8ClampedArray` with a pre-allocated buffer and read pixel data via `drawImage` to a fixed-size canvas -- but the simpler fix (removing the unnecessary copy) cuts allocation in half and is the pragmatic first step.
-
-### Fix 3: Snapshot global settings via ref instead of depending on `settings`
 **File:** `src/pages/Index.tsx`
 
-Remove `settings` from `applyPresetData`'s dependency array. Instead, use a ref to read the current global settings at call time:
+- Add `regionsRef` (synced with `regions`)
+- The existing `settingsRef` already tracks settings
+- Change the keyboard `useEffect` to read from refs inside the handler
+- Remove `settings`, `regions`, `handleCyclePreset`, `handleJumpToFavorite`, and other frequently-changing values from the dependency array
 
-```text
-// Add a ref that always holds the latest settings
-const settingsRef = useRef(settings);
-settingsRef.current = settings;
+### Fix 3: Revoke previous snapshot before creating a new one
 
-// In applyPresetData, read from the ref instead of the closure
-const applyPresetData = useCallback((presetData) => {
-  if (!presetData) return;
-  const mergedSettings: any = { ...presetData.settings };
-  const currentSettings = settingsRef.current;
-  for (const key of GLOBAL_SETTING_KEYS) {
-    mergedSettings[key] = currentSettings[key];
-  }
-  loadSettings(mergedSettings as VisualizerSettings);
-  if (presetData.regionSettings?.length > 0) {
-    applyRegionSettings(presetData.regionSettings);
-  }
-}, [loadSettings, applyRegionSettings]);
-// No more `settings` dependency -- breaks the cascade
-```
+In `handleLoadPreset`, if `presetSnapshotUrl` already exists, skip creating a new snapshot or revoke the old one. This prevents accumulation during rapid cycling.
 
-### Fix 4: Move `GLOBAL_SETTING_KEYS` to module scope
 **File:** `src/pages/Index.tsx`
 
-The array is currently defined inside the component body (line 308), meaning it's recreated on every render. Move it to module scope (above the component) since it's a static constant.
+- Add a guard: if a transition snapshot is already visible, skip the `toDataURL` call and apply the preset immediately without a new overlay
 
 ## Summary of Changes
 
 | File | Change | Impact |
 |---|---|---|
-| `VisualizerCanvas.tsx` | Guard offscreen canvas resize | Eliminates ~8MB/frame/region allocation |
-| `VisualizerCanvas.tsx` | Simplify transparent color ImageData usage | Halves allocation when color keying active |
-| `VisualizerCanvas3D.tsx` | Same ImageData fix in RegionMesh + FullscreenBackgroundMesh | Same benefit for 3D mode |
-| `Index.tsx` | Use ref for settings in `applyPresetData`, move constant to module scope | Stops cascading callback/listener churn |
+| `VisualizerCanvas.tsx` | Use refs for render loop values, remove settings/audioLevel/regions from `useCallback` deps | Eliminates ~36,000/10min closure recreations + effect re-runs |
+| `Index.tsx` | Use refs in keyboard handler, remove settings/regions from effect deps | Eliminates ~36,000/10min listener attach/detach cycles |
+| `Index.tsx` | Guard against overlapping transition snapshots | Prevents multi-MB data URL accumulation during rapid lock state cycling |
+
+## Technical Details
+
+### VisualizerCanvas.tsx changes
+
+```text
+// Add refs at component top
+const regionsRef = useRef(regions);
+const settingsRef = useRef(settings);
+const audioLevelRef = useRef(audioLevel);
+const getVideoElementRef = useRef(getVideoElement);
+regionsRef.current = regions;
+settingsRef.current = settings;
+audioLevelRef.current = audioLevel;
+getVideoElementRef.current = getVideoElement;
+
+// In render callback, replace all `settings.X` with `settingsRef.current.X`,
+// `regions` with `regionsRef.current`, `audioLevel` with `audioLevelRef.current`,
+// `getVideoElement(...)` with `getVideoElementRef.current(...)`
+
+// Change dependency array from [regions, settings, audioLevel, isActive, getVideoElement]
+// to just [isActive]
+```
+
+### Index.tsx keyboard handler changes
+
+```text
+// Add regionsRef
+const regionsRef = useRef(regions);
+regionsRef.current = regions;
+
+// Also add refs for callbacks used inside the handler
+const handleCyclePresetRef = useRef(handleCyclePreset);
+handleCyclePresetRef.current = handleCyclePreset;
+const handleJumpToFavoriteRef = useRef(handleJumpToFavorite);
+handleJumpToFavoriteRef.current = handleJumpToFavorite;
+// etc.
+
+// In the useEffect, read from refs:
+useEffect(() => {
+  const h = (e: KeyboardEvent) => {
+    const currentSettings = settingsRef.current;
+    const currentRegions = regionsRef.current;
+    // ... use currentSettings and currentRegions instead of settings/regions
+  };
+  window.addEventListener('keydown', h, true);
+  return () => window.removeEventListener('keydown', h, true);
+}, []);  // Empty deps -- handler reads from refs
+```
+
+### Snapshot guard
+
+```text
+// In handleLoadPreset, before toDataURL:
+if (settings.presetTransitionFade && !presetSnapshotVisible) {
+  // Only create snapshot if no transition is already in progress
+  const canvasEl = document.querySelector('canvas');
+  if (canvasEl) { ... }
+}
+```
 
