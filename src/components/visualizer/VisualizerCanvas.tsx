@@ -26,8 +26,17 @@ export function VisualizerCanvas({
   const initializedRef = useRef(false);
   const currentRandomModeRef = useRef<AnimationMode>(ANIMATION_MODES[0]);
   const lastModeChangeRef = useRef<number>(0);
-  // Pool ImageData per region to avoid large allocations per frame during transparent color processing
   const imageDataPoolRef = useRef<Map<string, ImageData>>(new Map());
+
+  // Stable refs for frequently-changing props — prevents render callback recreation
+  const regionsRef = useRef(regions);
+  const settingsRef = useRef(settings);
+  const audioLevelRef = useRef(audioLevel);
+  const getVideoElementRef = useRef(getVideoElement);
+  regionsRef.current = regions;
+  settingsRef.current = settings;
+  audioLevelRef.current = audioLevel;
+  getVideoElementRef.current = getVideoElement;
 
   // Initialize panels when regions change
   useEffect(() => {
@@ -61,25 +70,25 @@ export function VisualizerCanvas({
     });
   }, [regions, settings.opacityVariation, settings.blurIntensity, settings.enableRotation]);
 
-  // Handle canvas resize - only reinitialize on actual window resize
+  // Handle canvas resize
   useEffect(() => {
     const handleResize = () => {
       if (!canvasRef.current) return;
       canvasRef.current.width = window.innerWidth;
       canvasRef.current.height = window.innerHeight;
       
-      // Reinitialize panels for new dimensions
-      panelsRef.current = regions.map((region, idx) => 
+      const currentRegions = regionsRef.current;
+      const currentSettings = settingsRef.current;
+      panelsRef.current = currentRegions.map((region, idx) => 
         createPanel(region, canvasRef.current!.width, canvasRef.current!.height, {
-          opacityVariation: settings.opacityVariation,
-          blurIntensity: settings.blurIntensity,
-          enableRotation: settings.enableRotation,
+          opacityVariation: currentSettings.opacityVariation,
+          blurIntensity: currentSettings.blurIntensity,
+          enableRotation: currentSettings.enableRotation,
         }, idx)
       );
       initializedRef.current = true;
     };
     
-    // Only set canvas size initially, don't reinitialize panels
     if (!initializedRef.current && canvasRef.current) {
       canvasRef.current.width = window.innerWidth;
       canvasRef.current.height = window.innerHeight;
@@ -87,14 +96,20 @@ export function VisualizerCanvas({
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [regions, settings.opacityVariation, settings.blurIntensity, settings.enableRotation]);
+  }, []); // Empty deps — reads from refs
 
   const render = useCallback((timestamp: number) => {
-    if (!canvasRef.current || !isActive) return;
+    if (!canvasRef.current) return;
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Read current values from refs
+    const settings = settingsRef.current;
+    const regions = regionsRef.current;
+    const audioLevel = audioLevelRef.current;
+    const getVideoElement = getVideoElementRef.current;
 
     const deltaTime = timestamp - lastTimeRef.current;
     lastTimeRef.current = timestamp;
@@ -212,9 +227,8 @@ export function VisualizerCanvas({
         0, 0, regionW, regionH
       );
 
-      // Per-region transparent color processing with pooled ImageData
+      // Per-region transparent color processing
       if (region.transparentColor) {
-        // Reuse ImageData to avoid large per-frame allocation
         const imageData = offCtx.getImageData(0, 0, regionW, regionH);
         imageDataPoolRef.current.set(region.id, imageData);
         
@@ -283,7 +297,6 @@ export function VisualizerCanvas({
         activeMode = currentRandomModeRef.current;
       }
 
-      // Always update panel - continue smooth movement during transitions
       const updated = updatePanel(
         panel,
         finalWidth,
@@ -302,7 +315,6 @@ export function VisualizerCanvas({
 
       ctx.save();
       
-      // Calculate transition effects
       let transitionOpacity = 1;
       let transitionScale = 1;
       
@@ -311,27 +323,22 @@ export function VisualizerCanvas({
       }
       
       if (region.morphProgress !== undefined && region.transitionType === 'zoom') {
-        // Scale goes from 1 -> 0.1 -> 1
         const distFromMid = Math.abs(region.morphProgress - 0.5) * 2;
         transitionScale = 0.1 + distFromMid * 0.9;
       }
       
-      // Position at panel center with per-region offset
       const offsetX = region.position2D?.x ?? 0;
       const offsetY = region.position2D?.y ?? 0;
       ctx.translate(drawX + finalWidth / 2 + offsetX, drawY + finalHeight / 2 + offsetY);
       
-      // Apply transition scale
       if (transitionScale !== 1) {
         ctx.scale(transitionScale, transitionScale);
       }
       
-      // Apply rotation normally during transitions
       if (settings.enableRotation) {
         ctx.rotate((drawRotation * Math.PI) / 180);
       }
       
-      // Apply effects
       const baseOpacity = (settings.tileEffect === 'all' || settings.tileEffect === 'opacity') 
         ? updated.opacity 
         : 1;
@@ -360,7 +367,7 @@ export function VisualizerCanvas({
     });
 
     animationRef.current = requestAnimationFrame(render);
-  }, [regions, settings, audioLevel, isActive, getVideoElement]);
+  }, []); // Empty deps — reads everything from refs
 
   useEffect(() => {
     if (isActive) {
