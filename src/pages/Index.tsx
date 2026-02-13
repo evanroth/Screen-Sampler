@@ -354,7 +354,7 @@ export default function Index() {
       }
       // Apply new preset underneath the snapshot
       applyPresetData(presetData);
-      toast({ title: "Preset loaded" });
+      toast({ title: "Lock state loaded" });
       // After two frames (so new content renders), fade the snapshot out
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -363,7 +363,7 @@ export default function Index() {
       });
     } else {
       applyPresetData(presetData);
-      toast({ title: "Preset loaded" });
+      toast({ title: "Lock state loaded" });
     }
   }, [storage, settings.presetTransitionFade, applyPresetData, toast]);
 
@@ -376,7 +376,7 @@ export default function Index() {
       midiMappings.getMappings(),
     );
     if (!preset) {
-      toast({ title: 'Preset limit reached', description: `Maximum of 30 presets allowed. Delete one to save a new one.`, variant: 'destructive' });
+      toast({ title: 'Limit reached', description: `Maximum of 30 lock states allowed. Delete one to save a new one.`, variant: 'destructive' });
       return null as unknown as SavedPreset;
     }
     toast({ title: `Saved "${preset.name}"` });
@@ -385,7 +385,7 @@ export default function Index() {
 
   const handleDeletePreset = useCallback((id: string) => {
     storage.deletePreset(id);
-    toast({ title: "Preset deleted" });
+    toast({ title: "Lock state deleted" });
   }, [storage, toast]);
 
   const handleImportSettings = useCallback((parsed: unknown): boolean => {
@@ -407,7 +407,7 @@ export default function Index() {
   // Cycle through presets (next/previous with looping)
   const handleCyclePreset = useCallback((direction: 'next' | 'previous') => {
     if (storage.presets.length === 0) {
-      toast({ title: "No saved presets" });
+      toast({ title: "No saved lock states" });
       return;
     }
     const total = storage.presets.length;
@@ -422,7 +422,7 @@ export default function Index() {
     setCurrentPresetIndex(nextIndex);
     const preset = storage.presets[nextIndex];
     handleLoadPreset(preset.id);
-    toast({ title: `Preset: ${preset.name}` });
+    toast({ title: `Lock State: ${preset.name}` });
   }, [storage.presets, currentPresetIndex, handleLoadPreset, toast]);
 
   // Keep ref in sync for MIDI callback
