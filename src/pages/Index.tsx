@@ -316,9 +316,11 @@ export default function Index() {
     }
   }, [regions.length, lastSessionData]);
 
-  // Ref to always hold latest settings — avoids putting `settings` in callback deps
+  // Stable refs for frequently-changing values — avoids putting them in callback/effect deps
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+  const regionsRef = useRef(regions);
+  regionsRef.current = regions;
 
   // Preset handlers
   const applyPresetData = useCallback((presetData: ReturnType<typeof storage.loadPreset>) => {
@@ -340,8 +342,9 @@ export default function Index() {
     const presetData = storage.loadPreset(id);
     if (!presetData) return;
 
-    if (settings.presetTransitionFade) {
+    if (settings.presetTransitionFade && !presetSnapshotVisible) {
       // True crossfade: snapshot current canvas, show overlay, apply new settings, fade overlay out
+      // Guard: skip if a transition is already in progress to prevent snapshot accumulation
       const canvasEl = document.querySelector('canvas') as HTMLCanvasElement | null;
       if (canvasEl) {
         try {
@@ -519,19 +522,39 @@ export default function Index() {
   });
 
   useEffect(() => { const h = () => setIsFullscreen(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => document.removeEventListener('fullscreenchange', h); }, []);
+  // Stable refs for callbacks used inside the keyboard handler
+  const handleCyclePresetRef = useRef(handleCyclePreset);
+  handleCyclePresetRef.current = handleCyclePreset;
+  const handleJumpToFavoriteRef = useRef(handleJumpToFavorite);
+  handleJumpToFavoriteRef.current = handleJumpToFavorite;
+  const updateSettingRef = useRef(updateSetting);
+  updateSettingRef.current = updateSetting;
+  const gradientAnimationRef = useRef(gradientAnimation);
+  gradientAnimationRef.current = gradientAnimation;
+  const customModelsRef = useRef(customModels.models);
+  customModelsRef.current = customModels.models;
+  const remoteModelsRef = useRef(remoteModels);
+  remoteModelsRef.current = remoteModels;
+  const appStateRef = useRef(appState);
+  appStateRef.current = appState;
+
   useEffect(() => { 
     const h = (e: KeyboardEvent) => { 
       // Skip keyboard shortcuts when typing in inputs
       const target = e.target as HTMLElement;
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
       
-      if (e.key === 'Escape' && appState === 'visualizing') setIsControlPanelOpen(true);
+      const currentSettings = settingsRef.current;
+      const currentRegions = regionsRef.current;
+      const currentAppState = appStateRef.current;
+      
+      if (e.key === 'Escape' && currentAppState === 'visualizing') setIsControlPanelOpen(true);
       
       // 's' key: In 3D mode with regions, cycle next favorite for Region 1; otherwise toggle settings panel
       if (e.key === 's' || e.key === 'S') {
-        if (regions.length > 0 && settings.visualizerMode === '3d') {
+        if (currentRegions.length > 0 && currentSettings.visualizerMode === '3d') {
           e.preventDefault();
-          handleJumpToFavorite('next', 0); // Next favorite for Region 1
+          handleJumpToFavoriteRef.current('next', 0);
         } else {
           e.preventDefault();
           e.stopPropagation();
@@ -542,28 +565,28 @@ export default function Index() {
       // 'q' and 'w' cycle through saved presets (previous / next)
       if (e.key === 'q' || e.key === 'Q') {
         e.preventDefault();
-        handleCyclePreset('previous');
+        handleCyclePresetRef.current('previous');
       }
       if (e.key === 'w' || e.key === 'W') {
         e.preventDefault();
-        handleCyclePreset('next');
+        handleCyclePresetRef.current('next');
       }
       
       // 'p' key to toggle Play Mode
       if (e.key === 'p' || e.key === 'P') {
-        updateSetting('playMode', { ...settings.playMode, enabled: !settings.playMode.enabled });
+        updateSettingRef.current('playMode', { ...currentSettings.playMode, enabled: !currentSettings.playMode.enabled });
       }
       
       // 'g' key to Randomize Gradient
       if (e.key === 'g' || e.key === 'G') {
         e.preventDefault();
-        gradientAnimation.randomize();
+        gradientAnimationRef.current.randomize();
       }
       
       // 'r' key to toggle Auto-Rotate Camera
       if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
-        updateSetting('autoRotateCamera', !settings.autoRotateCamera);
+        updateSettingRef.current('autoRotateCamera', !currentSettings.autoRotateCamera);
       }
       
       // Spacebar to toggle Settings Panel
@@ -572,90 +595,76 @@ export default function Index() {
         setIsControlPanelOpen(prev => !prev);
       }
       
-      // Arrow keys for navigation - prevent default to stop Tabs component from capturing
+      // Arrow keys for navigation
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         const direction = e.key === 'ArrowRight' ? 1 : -1;
         
-        if (settings.playMode.enabled && regions.length > 0) {
-          // In Play Mode: cycle through regions manually
-          const visibleIndex = regions.findIndex(r => r.visible !== false);
-          const nextIndex = (visibleIndex + direction + regions.length) % regions.length;
+        if (currentSettings.playMode.enabled && currentRegions.length > 0) {
+          const visibleIndex = currentRegions.findIndex(r => r.visible !== false);
+          const nextIndex = (visibleIndex + direction + currentRegions.length) % currentRegions.length;
           setRegions(prev => prev.map((r, i) => ({ ...r, visible: i === nextIndex })));
-        } else if (customModels.models.length > 1 && settings.visualizerMode === '3d') {
-          // Custom models mode: cycle through custom 3D models
-          // Find which model is currently assigned to the first region (or none)
-          const currentModelId = regions[0]?.customModelId;
-          const modelIds = customModels.models.map(m => m.id);
+        } else if (customModelsRef.current.length > 1 && currentSettings.visualizerMode === '3d') {
+          const currentModelId = currentRegions[0]?.customModelId;
+          const modelIds = customModelsRef.current.map(m => m.id);
           
           let currentIndex = currentModelId ? modelIds.indexOf(currentModelId) : -1;
-          // If no model assigned yet or model not found, start from beginning
           if (currentIndex === -1) currentIndex = direction === 1 ? -1 : modelIds.length;
           
           const nextIndex = (currentIndex + direction + modelIds.length) % modelIds.length;
           const nextModelId = modelIds[nextIndex];
           
-          // Apply the model to Region 1 only, preserve other regions
           setRegions(prev => prev.map((r, i) => i === 0 ? { ...r, customModelId: nextModelId } : r));
-        } else if (settings.visualizerMode === '3d') {
-          // 3D mode: cycle through 3D animations (default shapes)
-          // Clear custom model on Region 1 only so the default shape shows
+        } else if (currentSettings.visualizerMode === '3d') {
           setRegions(prev => prev.map((r, i) => i === 0 ? { ...r, customModelId: undefined } : r));
           const modes = ANIMATION_MODES_3D;
-          const currentIndex = modes.indexOf(settings.animationMode3D);
+          const currentIndex = modes.indexOf(currentSettings.animationMode3D);
           const nextIndex = (currentIndex + direction + modes.length) % modes.length;
-          updateSetting('animationMode3D', modes[nextIndex]);
+          updateSettingRef.current('animationMode3D', modes[nextIndex]);
         } else {
-          // 2D mode: cycle through 2D animations
           const modes = ANIMATION_MODES;
-          const currentIndex = modes.indexOf(settings.animationMode);
+          const currentIndex = modes.indexOf(currentSettings.animationMode);
           const nextIndex = (currentIndex + direction + modes.length) % modes.length;
-          updateSetting('animationMode', modes[nextIndex]);
+          updateSettingRef.current('animationMode', modes[nextIndex]);
         }
       }
       
       // Helper function to cycle through ALL models for a specific region
-      const cycleAllModelsForRegion = async (regionIndex: number, direction: 1 | -1) => {
-        if (settings.visualizerMode !== '3d' || regions.length <= regionIndex) return;
+      const cycleAllModelsForRegion = async (regionIndex: number, dir: 1 | -1) => {
+        if (currentSettings.visualizerMode !== '3d' || currentRegions.length <= regionIndex) return;
         
-        // Build complete ordered list: Default shapes, External models, Custom models
         const allModelIds: string[] = [
           ...(ANIMATION_MODES_3D as unknown as string[]),
-          ...remoteModels.models.map(m => m.id),
-          ...customModels.models.map(m => m.id),
+          ...remoteModelsRef.current.models.map(m => m.id),
+          ...customModelsRef.current.map(m => m.id),
         ];
         
         if (allModelIds.length === 0) return;
         
-        // Get current model for this region
-        const region = regions[regionIndex];
-        const currentModelId = region?.customModelId || region?.animationMode3D || settings.animationMode3D;
+        const region = currentRegions[regionIndex];
+        const currentModelId = region?.customModelId || region?.animationMode3D || currentSettings.animationMode3D;
         
         let currentIndex = allModelIds.indexOf(currentModelId);
-        if (currentIndex === -1) currentIndex = direction === 1 ? -1 : allModelIds.length;
+        if (currentIndex === -1) currentIndex = dir === 1 ? -1 : allModelIds.length;
         
-        const nextIndex = (currentIndex + direction + allModelIds.length) % allModelIds.length;
+        const nextIndex = (currentIndex + dir + allModelIds.length) % allModelIds.length;
         const nextModelId = allModelIds[nextIndex];
         
-        // Determine model type and apply appropriately
         const isDefaultShape = (ANIMATION_MODES_3D as unknown as string[]).includes(nextModelId);
-        const isRemoteModel = remoteModels.models.some(m => m.id === nextModelId);
+        const isRemoteModel = remoteModelsRef.current.models.some(m => m.id === nextModelId);
         
         if (isDefaultShape) {
-          // Apply default shape to this region
           setRegions(prev => prev.map((r, i) => 
             i === regionIndex ? { ...r, customModelId: undefined, animationMode3D: nextModelId as any, modelSource: 'default' } : r
           ));
         } else if (isRemoteModel) {
-          // Load and apply external model
-          const geometry = await remoteModels.loadModel(nextModelId);
+          const geometry = await remoteModelsRef.current.loadModel(nextModelId);
           if (geometry) {
             setRegions(prev => prev.map((r, i) => 
               i === regionIndex ? { ...r, customModelId: nextModelId, animationMode3D: undefined, modelSource: 'external' } : r
             ));
           }
         } else {
-          // Apply custom model
           setRegions(prev => prev.map((r, i) => 
             i === regionIndex ? { ...r, customModelId: nextModelId, animationMode3D: undefined, modelSource: 'custom' } : r
           ));
@@ -663,50 +672,46 @@ export default function Index() {
       };
       
       // 'z' and 'x' cycle through ALL models for Region 1
-      if ((e.key === 'z' || e.key === 'Z') && regions.length > 0 && settings.visualizerMode === '3d') {
+      if ((e.key === 'z' || e.key === 'Z') && currentRegions.length > 0 && currentSettings.visualizerMode === '3d') {
         e.preventDefault();
-        cycleAllModelsForRegion(0, -1); // Previous
+        cycleAllModelsForRegion(0, -1);
       }
-      if ((e.key === 'x' || e.key === 'X') && regions.length > 0 && settings.visualizerMode === '3d') {
+      if ((e.key === 'x' || e.key === 'X') && currentRegions.length > 0 && currentSettings.visualizerMode === '3d') {
         e.preventDefault();
-        cycleAllModelsForRegion(0, 1); // Next
+        cycleAllModelsForRegion(0, 1);
       }
       
       // '<' and '>' cycle through ALL models for Region 2
-      if ((e.key === ',' || e.key === '<') && regions.length > 1 && settings.visualizerMode === '3d') {
+      if ((e.key === ',' || e.key === '<') && currentRegions.length > 1 && currentSettings.visualizerMode === '3d') {
         e.preventDefault();
-        cycleAllModelsForRegion(1, -1); // Previous
+        cycleAllModelsForRegion(1, -1);
       }
-      if ((e.key === '.' || e.key === '>') && regions.length > 1 && settings.visualizerMode === '3d') {
+      if ((e.key === '.' || e.key === '>') && currentRegions.length > 1 && currentSettings.visualizerMode === '3d') {
         e.preventDefault();
-        cycleAllModelsForRegion(1, 1); // Next
+        cycleAllModelsForRegion(1, 1);
       }
       
-      // 'a' and 's' cycle through FAVORITED models for Region 1 (but s is settings toggle, so skip s)
-      // Actually user wants a/s for Region 1 favorites, but s is settings. Let me check...
-      // Wait, user said 'a' and 's' for Region 1 favorites AND 'k' and 'l' for Region 2 favorites
-      // But 's' is already used for settings panel. I'll implement as requested but note the conflict.
-      if ((e.key === 'a' || e.key === 'A') && regions.length > 0 && settings.visualizerMode === '3d') {
+      // 'a' for Region 1 previous favorite
+      if ((e.key === 'a' || e.key === 'A') && currentRegions.length > 0 && currentSettings.visualizerMode === '3d') {
         e.preventDefault();
-        handleJumpToFavorite('previous', 0); // Previous favorite for Region 1
+        handleJumpToFavoriteRef.current('previous', 0);
       }
-      // Note: 's' is already handled above for settings panel toggle
       
       // 'k' and 'l' cycle through FAVORITED models for Region 2
-      if ((e.key === 'k' || e.key === 'K') && regions.length > 1 && settings.visualizerMode === '3d') {
+      if ((e.key === 'k' || e.key === 'K') && currentRegions.length > 1 && currentSettings.visualizerMode === '3d') {
         e.preventDefault();
-        handleJumpToFavorite('previous', 1); // Previous favorite for Region 2
+        handleJumpToFavoriteRef.current('previous', 1);
       }
-      if ((e.key === 'l' || e.key === 'L') && regions.length > 1 && settings.visualizerMode === '3d') {
+      if ((e.key === 'l' || e.key === 'L') && currentRegions.length > 1 && currentSettings.visualizerMode === '3d') {
         e.preventDefault();
-        handleJumpToFavorite('next', 1); // Next favorite for Region 2
+        handleJumpToFavoriteRef.current('next', 1);
       }
       
       // Number keys 1-9 toggle region visibility
       const num = parseInt(e.key, 10);
-      if (num >= 1 && num <= 9 && regions.length >= num) {
+      if (num >= 1 && num <= 9 && currentRegions.length >= num) {
         const regionIndex = num - 1;
-        const region = regions[regionIndex];
+        const region = currentRegions[regionIndex];
         if (region) {
           setRegions(prev => prev.map((r, i) => 
             i === regionIndex ? { ...r, visible: !(r.visible ?? true) } : r
@@ -714,9 +719,9 @@ export default function Index() {
         }
       }
     }; 
-    window.addEventListener('keydown', h, true); // Use capture phase to intercept before Select components
+    window.addEventListener('keydown', h, true);
     return () => window.removeEventListener('keydown', h, true);
-  }, [appState, regions, settings, updateSetting, customModels.models, remoteModels, toast, handleJumpToFavorite, gradientAnimation, handleCyclePreset]);
+  }, []); // Empty deps — handler reads from refs
 
   // Apply cursor style globally
   useEffect(() => {
